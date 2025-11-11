@@ -1,0 +1,63 @@
+{
+  "name": "ts-start",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
+  "sideEffects": false,
+  "scripts": {
+    "dev": "npx convex dev --once && npm-run-all --parallel dev:web dev:db",
+    "dev:web": "vite dev",
+    "dev:db": "convex dev --run board:seed",
+    "build": "vite build && tsc --noEmit",
+    "start": "vite start"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "packageManager": "pnpm@10.19.0",
+  "dependencies": {
+    "@clerk/tanstack-react-start": "^0.26.9",
+    "@convex-dev/react-query": "0.0.0-alpha.11",
+    "@emotion/cache": "^11.14.0",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@fontsource-variable/roboto": "^5.2.8",
+    "@mui/icons-material": "^7.3.4",
+    "@mui/material": "^7.3.4",
+    "@tanstack/react-form": "^1.23.8",
+    "@tanstack/react-query": "^5.90.7",
+    "@tanstack/react-query-devtools": "^5.90.2",
+    "@tanstack/react-router": "^1.134.9",
+    "@tanstack/react-router-devtools": "^1.134.9",
+    "@tanstack/react-router-ssr-query": "^1.134.20",
+    "@tanstack/react-start": "^1.134.6",
+    "@tanstack/zod-adapter": "^1.134.20",
+    "axios": "^1.13.2",
+    "convex": "^1.29.0",
+    "date-fns": "^4.1.0",
+    "got": "^14.6.3",
+    "howler": "^2.2.4",
+    "ky": "^1.14.0",
+    "motion": "^12.23.24",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "@tanstack/eslint-plugin-query": "^5.91.2",
+    "@types/node": "^24.10.0",
+    "@types/react": "^19.2.2",
+    "@types/react-dom": "^19.2.2",
+    "@vitejs/plugin-react": "^5.1.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.12",
+    "vite-tsconfig-paths": "^5.1.4"
+  },
+  "pnpm": {
+    "overrides": {
+      "srvx": "0.8.15"
+    }
+  }
+}
