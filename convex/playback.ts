@@ -1,7 +1,6 @@
 import { mutation } from './_generated/server';
 
 import { v } from 'convex/values';
-import { Id } from './_generated/dataModel';
 
 export const update = mutation({
   args: {
@@ -24,13 +23,14 @@ export const update = mutation({
     }
 
     // add convex ID as external ID in clerk and add to session ??
-    const userId: Id<'users'> = identity.subject as Id<'users'>;
+    // const userId: Id<'users'> = identity.subject as Id<'users'>;
+    const clerkId = identity.subject;
     // alternatively create a getUserById function and call db
-    if (userId) {
+    if (clerkId) {
       let doc = await db
         .query('user_playback')
-        .withIndex('by_user_episode', (q) =>
-          q.eq('userId', userId).eq('episodeId', episodeId)
+        .withIndex('by_clerk_episode', (q) =>
+          q.eq('clerkId', clerkId).eq('episodeId', episodeId)
         )
         .first();
       // let doc = await db.query('user_playback').filter(q => q.eq(q.field('userId'), identity.subject).eq(q.field('episodeId'), episodeId)).first()
@@ -41,7 +41,7 @@ export const update = mutation({
         );
 
         await db.insert('user_playback', {
-          userId,
+          clerkId,
           episodeId,
           positionSeconds,
           completed: false,

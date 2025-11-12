@@ -46,28 +46,75 @@ export const currentUser = query((ctx: QueryCtx) => getCurrentUser(ctx));
 export const getUser = internalQuery({
   args: { subject: v.string() },
   async handler(ctx, args) {
-    return await userQuery(ctx, args.subject);
+    return await userByClerkId(ctx, args.subject);
   },
 });
 
 /** Create a new Clerk user or update existing Clerk user data. */
 export const updateOrCreateUser = internalMutation({
-  args: { clerkUser: v.any() }, // no runtime validation, trust Clerk
-  async handler(ctx, { clerkUser }: { clerkUser: UserJSON }) {
-    const userRecord = await userQuery(ctx, clerkUser.id);
+  args: { data: v.any() }, // no runtime validation, trust Clerk
+  // async handler(ctx, { clerkUser }: { clerkUser: UserJSON }) {
+  async handler(ctx, { data: clerkUser }: { data: UserJSON }) {
+    const userRecord = await userByClerkId(ctx, clerkUser.id);
 
     if (userRecord === null) {
       // const colors = ["red", "green", "blue"];
       // const color = colors[Math.floor(Math.random() * colors.length)];
       await ctx.db.insert('users', {
-        ...clerkUser,
+        // ...clerkUser,
         clerkId: clerkUser.id,
-        name: clerkUser.first_name || '',
-      }); // color
+        username: clerkUser.username,
+        first_name: clerkUser.first_name || null,
+        last_name: clerkUser.last_name || null,
+        image_url: clerkUser.image_url,
+        has_image: clerkUser.has_image,
+        password_enabled: clerkUser.password_enabled,
+        two_factor_enabled: clerkUser.two_factor_enabled,
+        totp_enabled: clerkUser.totp_enabled,
+        backup_code_enabled: clerkUser.backup_code_enabled,
+        email_addresses: clerkUser.email_addresses,
+        primary_email_address_id: clerkUser.primary_email_address_id,
+        phone_numbers: clerkUser.phone_numbers,
+        primary_phone_number_id: clerkUser.primary_phone_number_id,
+        banned: clerkUser.banned,
+        create_organization_enabled: clerkUser.create_organization_enabled,
+        created_at: clerkUser.created_at,
+        updated_at: clerkUser.updated_at,
+        external_accounts: clerkUser.external_accounts,
+        // passkeys: clerkUser.passkeys,
+        password_last_updated_at: clerkUser.password_last_updated_at,
+        saml_accounts: clerkUser.saml_accounts,
+        verification_attempts_remaining:
+          clerkUser.verification_attempts_remaining,
+      });
     } else {
       await ctx.db.patch(userRecord._id, {
-        ...clerkUser,
+        // ...clerkUser,
+        // clerkId: clerkUser.id,
         clerkId: clerkUser.id,
+        username: clerkUser.username,
+        first_name: clerkUser.first_name || null,
+        last_name: clerkUser.last_name || null,
+        image_url: clerkUser.image_url,
+        has_image: clerkUser.has_image,
+        password_enabled: clerkUser.password_enabled,
+        two_factor_enabled: clerkUser.two_factor_enabled,
+        totp_enabled: clerkUser.totp_enabled,
+        backup_code_enabled: clerkUser.backup_code_enabled,
+        email_addresses: clerkUser.email_addresses,
+        primary_email_address_id: clerkUser.primary_email_address_id,
+        phone_numbers: clerkUser.phone_numbers,
+        primary_phone_number_id: clerkUser.primary_phone_number_id,
+        banned: clerkUser.banned,
+        create_organization_enabled: clerkUser.create_organization_enabled,
+        created_at: clerkUser.created_at,
+        updated_at: clerkUser.updated_at,
+        external_accounts: clerkUser.external_accounts,
+        // passkeys: clerkUser.passkeys,
+        password_last_updated_at: clerkUser.password_last_updated_at,
+        saml_accounts: clerkUser.saml_accounts,
+        verification_attempts_remaining:
+          clerkUser.verification_attempts_remaining,
       });
     }
   },
@@ -77,7 +124,7 @@ export const updateOrCreateUser = internalMutation({
 export const deleteUser = internalMutation({
   args: { id: v.string() },
   async handler(ctx, { id }) {
-    const userRecord = await userQuery(ctx, id);
+    const userRecord = await userByClerkId(ctx, id);
 
     if (userRecord === null) {
       console.warn("can't delete user, does not exist", id);
@@ -102,10 +149,10 @@ type Optional<T> = {
   [P in keyof T]?: T[P];
 };
 
-export async function userQuery(
+export async function userByClerkId(
   ctx: QueryCtx,
   clerkUserId: string
-): Promise<(Doc<'users'> & Optional<UserJSON>) | null> {
+): Promise<Doc<'users'> | null> {
   // ): Promise<(Omit<Doc<'users'>, 'clerkUser'> & { clerkUser: UserJSON }) | null> {
   return await ctx.db
     .query('users')
@@ -116,7 +163,7 @@ export async function userQuery(
 export async function userById(
   ctx: QueryCtx,
   id: Id<'users'>
-): Promise<(Doc<'users'> & Optional<UserJSON>) | null> {
+): Promise<Doc<'users'> | null> {
   // ): Promise<(Omit<Doc<'users'>, 'clerkUser'> & { clerkUser: UserJSON }) | null> {
   return await ctx.db.get(id);
 }
@@ -126,7 +173,7 @@ async function getCurrentUser(ctx: QueryCtx): Promise<Doc<'users'> | null> {
   if (identity === null) {
     return null;
   }
-  return await userQuery(ctx, identity.subject);
+  return await userByClerkId(ctx, identity.subject);
 }
 
 export async function mustGetCurrentUser(ctx: QueryCtx): Promise<Doc<'users'>> {

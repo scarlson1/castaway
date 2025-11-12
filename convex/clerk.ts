@@ -32,10 +32,14 @@ export const handleClerkWebhook = httpAction(async (ctx, req) => {
       }
       console.log('creating/updating user', event.data.id);
       await ctx.runMutation(internal.users.updateOrCreateUser, {
-        ...event.data,
-        clerkId: event.data.id,
-        // clerkUser: event.data,
+        data: event.data,
       });
+
+      // await ctx.runMutation(internal.users.updateOrCreateUser, {
+      //   ...event.data,
+      //   // clerkId: event.data.id,
+      //   // clerkUser: event.data,
+      // });
       break;
     }
     case 'user.deleted': {
