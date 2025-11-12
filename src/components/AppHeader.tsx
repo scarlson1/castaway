@@ -8,6 +8,8 @@ import { PersonRounded } from '@mui/icons-material';
 import { alpha, Button, GlobalStyles, Stack, styled } from '@mui/material';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
+import { useLocation } from '@tanstack/react-router';
+import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 // import { HeaderNavBar } from '~/components/HeaderNavBar';
 // import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 import CastawayLogo from '~/components/icons/CastawayLogo';
@@ -22,11 +24,12 @@ const Header = styled('header')(({ theme }) => [
     transition: theme.transitions.create('top'),
     zIndex: theme.zIndex.appBar,
     backgroundColor: 'rgba(255,255,255,0.6)',
-    backdropFilter: 'blur(8px)',
+    backdropFilter: 'blur(16px)',
     borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`,
   } as const,
   theme.applyStyles('dark', {
-    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.6)`,
+    backdropFilter: 'blur(16px)',
+    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.8)`,
   }),
 ]);
 
@@ -97,19 +100,20 @@ const Navigation = styled('nav')(({ theme }) => [
 
 const HEIGHT = 60; // TODO: use theme.mixins.toolbar.minHeight ??
 
-interface AppHeaderProps {
-  githubRepository?: string;
-}
+// interface AppHeaderProps {
+//   githubRepository?: string;
+// }
 
-export function AppHeader(props: AppHeaderProps) {
-  const { githubRepository = 'https://github.com/scarlson1' } = props;
+export function AppHeader() {
+  // props: AppHeaderProps
+  const location = useLocation();
 
   return (
     <Header>
       <GlobalStyles
         styles={{
           ':root': {
-            '--MuiDocs-header-height': `${HEIGHT}px`,
+            '--Castaway-header-height': `${HEIGHT}px`,
           },
         }}
       />
@@ -117,7 +121,7 @@ export function AppHeader(props: AppHeaderProps) {
         sx={{ display: 'flex', alignItems: 'center', minHeight: HEIGHT }}
       >
         {/* <LogoWithCopyMenu /> */}
-        <CastawayLogo sx={{ fontSize: 28, mr: 1 }} />
+        <CastawayLogo sx={{ fontSize: 32, mr: 1 }} />
         <Box sx={{ display: { xs: 'none', md: 'initial' } }}>
           {/* <HeaderNavBar /> */}
           <Navigation>
@@ -134,33 +138,18 @@ export function AppHeader(props: AppHeaderProps) {
         <Box sx={{ ml: 'auto' }} />
         <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
           {/* <DeferredAppSearch /> */}
-          {/* <Tooltip title='Github' enterDelay={300}>
-            <IconButton
-              component='a'
-              color='primary'
-              // size='small'
-              href={githubRepository}
-              target='_blank'
-              rel='noopener'
-              data-ga-event-category='header'
-              data-ga-event-action='github'
-            >
-              <GitHub fontSize='inherit' />
-            </IconButton>
-          </Tooltip> */}
 
           <ModeToggle />
+          <SignedIn>
+            <UserButton />
+          </SignedIn>
           <SignedOut>
-            {/* <MuiButtonLink to='/auth/signin'>Sign In</MuiButtonLink> */}
-            {/* <SignInButton mode='modal' fallbackRedirectUrl={location.href} /> */}
-            <SignInButton mode='modal' fallbackRedirectUrl={location.href}>
+            <SignInButton mode='modal' fallbackRedirectUrl={location?.href}>
               <Button
                 variant='contained'
                 color='primary'
-                startIcon={<PersonRounded />} // Optional
+                startIcon={<PersonRounded />}
                 sx={{
-                  // Add custom styles to match Clerk's aesthetic, e.g., rounded corners, specific color
-                  borderRadius: '8px',
                   textTransform: 'none',
                   boxShadow: 'none',
                   '&:hover': {
@@ -172,15 +161,9 @@ export function AppHeader(props: AppHeaderProps) {
               </Button>
             </SignInButton>
           </SignedOut>
-          <SignedIn>
-            {/* <MuiButtonLink to='/auth/signin'>Sign out</MuiButtonLink> */}
-            {/* TODO: account menu */}
-            <UserButton />
-          </SignedIn>
         </Stack>
         <Box sx={{ display: { md: 'none' }, ml: 1 }}>
-          {/* <HeaderNavDropdown /> */}
-          TODO: header nav dropdown
+          <HeaderNavDropdown />
         </Box>
       </Container>
     </Header>

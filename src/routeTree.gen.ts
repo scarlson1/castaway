@@ -13,10 +13,13 @@ import { Route as TrendingRouteImport } from './routes/trending'
 import { Route as PodcastsRouteImport } from './routes/podcasts'
 import { Route as DiscoverRouteImport } from './routes/discover'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TrendingIndexRouteImport } from './routes/trending.index'
+import { Route as TrendingAppleRouteImport } from './routes/trending.apple'
 import { Route as PodcastPodIdRouteImport } from './routes/podcast.$podId'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthSigninRouteImport } from './routes/auth.signin'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
+import { Route as PodcastAppleItunesIdRouteImport } from './routes/podcast.apple_.$itunesId'
 
 const TrendingRoute = TrendingRouteImport.update({
   id: '/trending',
@@ -38,6 +41,16 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TrendingIndexRoute = TrendingIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => TrendingRoute,
+} as any)
+const TrendingAppleRoute = TrendingAppleRouteImport.update({
+  id: '/apple',
+  path: '/apple',
+  getParentRoute: () => TrendingRoute,
+} as any)
 const PodcastPodIdRoute = PodcastPodIdRouteImport.update({
   id: '/podcast/$podId',
   path: '/podcast/$podId',
@@ -58,37 +71,50 @@ const ApiSearchRoute = ApiSearchRouteImport.update({
   path: '/api/search',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PodcastAppleItunesIdRoute = PodcastAppleItunesIdRouteImport.update({
+  id: '/podcast/apple_/$itunesId',
+  path: '/podcast/apple/$itunesId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
   '/podcasts': typeof PodcastsRoute
-  '/trending': typeof TrendingRoute
+  '/trending': typeof TrendingRouteWithChildren
   '/api/search': typeof ApiSearchRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
+  '/trending/apple': typeof TrendingAppleRoute
+  '/trending/': typeof TrendingIndexRoute
+  '/podcast/apple/$itunesId': typeof PodcastAppleItunesIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
   '/podcasts': typeof PodcastsRoute
-  '/trending': typeof TrendingRoute
   '/api/search': typeof ApiSearchRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
+  '/trending/apple': typeof TrendingAppleRoute
+  '/trending': typeof TrendingIndexRoute
+  '/podcast/apple/$itunesId': typeof PodcastAppleItunesIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
   '/podcasts': typeof PodcastsRoute
-  '/trending': typeof TrendingRoute
+  '/trending': typeof TrendingRouteWithChildren
   '/api/search': typeof ApiSearchRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
+  '/trending/apple': typeof TrendingAppleRoute
+  '/trending/': typeof TrendingIndexRoute
+  '/podcast/apple_/$itunesId': typeof PodcastAppleItunesIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -101,16 +127,21 @@ export interface FileRouteTypes {
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
+    | '/trending/apple'
+    | '/trending/'
+    | '/podcast/apple/$itunesId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/discover'
     | '/podcasts'
-    | '/trending'
     | '/api/search'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
+    | '/trending/apple'
+    | '/trending'
+    | '/podcast/apple/$itunesId'
   id:
     | '__root__'
     | '/'
@@ -121,17 +152,21 @@ export interface FileRouteTypes {
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
+    | '/trending/apple'
+    | '/trending/'
+    | '/podcast/apple_/$itunesId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   DiscoverRoute: typeof DiscoverRoute
   PodcastsRoute: typeof PodcastsRoute
-  TrendingRoute: typeof TrendingRoute
+  TrendingRoute: typeof TrendingRouteWithChildren
   ApiSearchRoute: typeof ApiSearchRoute
   AuthSigninRoute: typeof AuthSigninRoute
   AuthSignupRoute: typeof AuthSignupRoute
   PodcastPodIdRoute: typeof PodcastPodIdRoute
+  PodcastAppleItunesIdRoute: typeof PodcastAppleItunesIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -164,6 +199,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/trending/': {
+      id: '/trending/'
+      path: '/'
+      fullPath: '/trending/'
+      preLoaderRoute: typeof TrendingIndexRouteImport
+      parentRoute: typeof TrendingRoute
+    }
+    '/trending/apple': {
+      id: '/trending/apple'
+      path: '/apple'
+      fullPath: '/trending/apple'
+      preLoaderRoute: typeof TrendingAppleRouteImport
+      parentRoute: typeof TrendingRoute
+    }
     '/podcast/$podId': {
       id: '/podcast/$podId'
       path: '/podcast/$podId'
@@ -192,18 +241,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/podcast/apple_/$itunesId': {
+      id: '/podcast/apple_/$itunesId'
+      path: '/podcast/apple/$itunesId'
+      fullPath: '/podcast/apple/$itunesId'
+      preLoaderRoute: typeof PodcastAppleItunesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
+
+interface TrendingRouteChildren {
+  TrendingAppleRoute: typeof TrendingAppleRoute
+  TrendingIndexRoute: typeof TrendingIndexRoute
+}
+
+const TrendingRouteChildren: TrendingRouteChildren = {
+  TrendingAppleRoute: TrendingAppleRoute,
+  TrendingIndexRoute: TrendingIndexRoute,
+}
+
+const TrendingRouteWithChildren = TrendingRoute._addFileChildren(
+  TrendingRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   DiscoverRoute: DiscoverRoute,
   PodcastsRoute: PodcastsRoute,
-  TrendingRoute: TrendingRoute,
+  TrendingRoute: TrendingRouteWithChildren,
   ApiSearchRoute: ApiSearchRoute,
   AuthSigninRoute: AuthSigninRoute,
   AuthSignupRoute: AuthSignupRoute,
   PodcastPodIdRoute: PodcastPodIdRoute,
+  PodcastAppleItunesIdRoute: PodcastAppleItunesIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

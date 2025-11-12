@@ -26,9 +26,10 @@ import {
   intervalToDuration,
 } from 'date-fns';
 import { Suspense } from 'react';
-import AudioPlayer from '~/components/AudioPlayer';
-import type { EpisodeItem } from '~/lib/podcastIndexTypes';
-import { fetchEpisodes, fetchPodDetails } from '~/serverFn/podcast';
+import { ErrorBoundary } from 'react-error-boundary';
+import { useQueue, type QueueItem } from '~/hooks/useQueue';
+import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
+import { fetchEpisodesByPodGuid, fetchPodDetails } from '~/serverFn/podcast';
 import { getRootDomain } from '~/utils/getDomain';
 
 // function getDomain(str: string) {
@@ -59,126 +60,146 @@ function RouteComponent() {
 
   return (
     <>
-      <Stack direction='row' spacing={2}>
-        <Box
-          component='img'
-          src={data?.feed?.artwork}
-          alt={`${data.feed.title} cover art`}
-          sx={{
-            height: { xs: 100, sm: 160, md: 200 },
-            width: { xs: 100, sm: 160, md: 200 },
-            objectFit: 'contain',
-            borderRadius: 1,
-            // flex:
-          }}
-        />
-        <Box sx={{ flex: '1 1 auto' }}>
-          <Stack
-            direction='row'
-            sx={{ justifyContent: 'space-between', alignItems: 'center' }}
-          >
-            <Typography variant='h5'>{data?.feed?.title}</Typography>
-            <Button>Follow</Button>
-          </Stack>
-          <Rating name='rating' value={5} readOnly size='small' />
-          <Divider sx={{ my: 1 }} />
-          <Stack direction='row' spacing={2}>
-            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
-              <MicRounded fontSize='small' color='secondary' />
-              <Typography variant='subtitle2' color='textSecondary'>
-                {data.feed.author}
-              </Typography>
-            </Stack>
-            {data.feed.link ? (
-              <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
-                <LinkRounded fontSize='small' color='secondary' />
-                <Link
-                  target='_blank'
-                  rel='noopener noreferrer'
-                  href={data.feed.link}
-                  underline='none'
-                >
-                  {getRootDomain(data.feed.link)}
-                </Link>
-              </Stack>
-            ) : null}
-            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
-              <RadioRounded fontSize='small' color='secondary' />
-              <Typography
-                variant='subtitle2'
-                color='textSecondary'
-              >{`${data.feed.episodeCount} episodes`}</Typography>
-            </Stack>
-            {data.feed.explicit ? (
-              <Tooltip title='Explicit'>
-                <ExplicitRounded fontSize='small' color='error' />
-              </Tooltip>
-            ) : null}
-          </Stack>
-          <Typography variant='body2' sx={{ py: 2 }}>
-            {data.feed.description}
-          </Typography>
-        </Box>
-      </Stack>
-      <Box
-        sx={{
-          position: 'fixed',
-          bottom: 0,
-          left: 0,
-          right: 0,
-          // p: 3,
-          // bgcolor: 'grey.900',
-          // color: 'white',
-          // borderRadius: 3,
-        }}
-      >
-        <AudioPlayer
-          coverArt='https://image.simplecastcdn.com/images/8ba89b80-a681-4cd2-87bd-79a6315b0474/90d6cab9-9a3e-4dd6-a633-5021470ab1c6/3000x3000/withpod-1x1.jpg?aid=rss_feed'
-          id='test123'
-          title='Test podcast title'
-          src='https://dts.podtrac.com/redirect.mp3/pdst.fm/e/injector.simplecastaudio.com/59eb82e8-198b-4b11-b64a-c04a9083812d/episodes/3e481872-a2ab-4735-8959-3d32f0c1c1e2/audio/128/default.mp3?aid=rss_feed&awCollectionId=59eb82e8-198b-4b11-b64a-c04a9083812d&awEpisodeId=3e481872-a2ab-4735-8959-3d32f0c1c1e2&feed=Ftpd36Dg'
-          releaseDate='Nov. 8'
-          podName='Pod Save America'
-        />
-      </Box>
+      <PodDetails feed={data.feed} />
+
       <Box sx={{ py: 4 }}>
-        <Suspense>
-          <EpisodesList podId={parseInt(podId)} />
-        </Suspense>
+        {/* TODO: add error boundary */}
+        <ErrorBoundary fallback={<div>Something went wrong</div>}>
+          <Suspense>
+            <EpisodesList
+              podId={data.feed.podcastGuid}
+              podTitle={data.feed.title}
+            />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     </>
   );
 }
 
-export const episodeQueryOptions = (id: number) =>
+export function PodDetails({ feed }: { feed: PodcastFeed }) {
+  return (
+    <Stack direction='row' spacing={2}>
+      <Box
+        component='img'
+        src={feed?.artwork}
+        alt={`${feed.title} cover art`}
+        sx={{
+          height: { xs: 100, sm: 160, md: 200 },
+          width: { xs: 100, sm: 160, md: 200 },
+          objectFit: 'contain',
+          borderRadius: 1,
+          // flex:
+        }}
+      />
+      <Box sx={{ flex: '1 1 auto' }}>
+        <Stack
+          direction='row'
+          sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <Typography variant='h5'>{feed?.title}</Typography>
+          <Button onClick={() => alert('TODO: implement subscribe to pod')}>
+            Follow
+          </Button>
+        </Stack>
+        <Rating name='rating' value={5} readOnly size='small' />
+        <Divider sx={{ my: 1 }} />
+        <Stack direction='row' spacing={2}>
+          <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+            <MicRounded fontSize='small' color='secondary' />
+            <Typography variant='subtitle2' color='textSecondary'>
+              {feed.author}
+            </Typography>
+          </Stack>
+          {feed.link ? (
+            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+              <LinkRounded fontSize='small' color='secondary' />
+              <Link
+                target='_blank'
+                rel='noopener noreferrer'
+                href={feed.link}
+                underline='none'
+              >
+                {getRootDomain(feed.link)}
+              </Link>
+            </Stack>
+          ) : null}
+          <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+            <RadioRounded fontSize='small' color='secondary' />
+            <Typography
+              variant='subtitle2'
+              color='textSecondary'
+            >{`${feed.episodeCount} episodes`}</Typography>
+          </Stack>
+          {feed.explicit ? (
+            <Tooltip title='Explicit'>
+              <ExplicitRounded fontSize='small' color='error' />
+            </Tooltip>
+          ) : null}
+        </Stack>
+        <Typography variant='body2' sx={{ py: 2 }}>
+          {feed.description}
+        </Typography>
+      </Box>
+    </Stack>
+  );
+}
+
+export const episodesQueryOptions = (
+  id: string,
+  options: { max?: number } = {}
+) =>
   queryOptions({
-    queryKey: ['podcast', id, 'episodes'],
-    queryFn: () => fetchEpisodes({ data: { id } }),
+    queryKey: ['podcast', id, 'episodes', options],
+    queryFn: () => fetchEpisodesByPodGuid({ data: { id, ...options } }),
     staleTime: Infinity, // Or a suitable value for your use case
   });
 
-function EpisodesList({ podId }: { podId: number }) {
-  const { data } = useSuspenseQuery(episodeQueryOptions(podId));
+export function EpisodesList({
+  podId,
+  podTitle,
+  limit = 100,
+}: {
+  podId: string;
+  podTitle: string;
+  limit?: number;
+}) {
+  const { data } = useSuspenseQuery(
+    episodesQueryOptions(podId, { max: limit })
+  );
+  const setPlaying = useQueue((state) => state.setPlaying);
 
   return (
     <Box>
       <TextField placeholder='search episodes' label='TODO: episode search' />
-      {data.items.map((e) => (
+      {data?.items?.map((e) => (
         <Box key={e.id}>
-          <EpisodeRow episode={e} />
+          <EpisodeRow
+            episode={e}
+            podId={podId}
+            podTitle={podTitle}
+            setPlaying={setPlaying}
+          />
           <Divider />
         </Box>
       ))}
-      <Typography variant='body2' sx={{ py: 2 }} component='div'>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      </Typography>
     </Box>
   );
 }
 
 // TODO: use tanstack table or mui X datagrid
 
-function EpisodeRow({ episode }: { episode: EpisodeItem }) {
+function EpisodeRow({
+  episode,
+  setPlaying,
+  podId,
+  podTitle,
+}: {
+  episode: EpisodeItem;
+  setPlaying: (id: QueueItem) => void;
+  podId: string;
+  podTitle: string;
+}) {
   return (
     <Stack
       direction='row'
@@ -224,7 +245,11 @@ function EpisodeRow({ episode }: { episode: EpisodeItem }) {
           pl: 2,
         }}
       >
-        <IconButton size='small'>
+        {/* TODO: show pause icon and progress circle  */}
+        <IconButton
+          size='small'
+          onClick={() => setPlaying({ ...episode, podId, podTitle })}
+        >
           <PlayArrowRounded fontSize='inherit' color='primary' />
         </IconButton>
       </Box>

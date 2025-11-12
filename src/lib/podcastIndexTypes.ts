@@ -95,7 +95,7 @@ export type PodcastsByFeedIdResult = z.infer<typeof PodcastsByFeedIdResult>;
 const episodeLiveItem = z.object({
   id: z.int(),
   title: z.string(),
-  link: z.string(),
+  link: z.string().optional(),
   description: z.string(),
   guid: z.string(),
   datePublished: z.int(),
@@ -103,65 +103,78 @@ const episodeLiveItem = z.object({
   dateCrawled: z.int(),
   enclosureUrl: z.string(),
   enclosureType: z.string(),
-  enclosureLength: z.int(),
-  startTime: z.int(),
-  endTime: z.int(),
-  status: z.string(),
-  contentLink: z.string(),
+  enclosureLength: z.int().optional(),
+  startTime: z.int().optional(),
+  endTime: z.int().optional(),
+  status: z.string().optional(),
+  contentLink: z.string().optional(),
   duration: z.int().nullable(),
   explicit: z.int(),
-  episode: z.int(),
+  episode: z.int().optional(),
   episodeType: z.string(),
-  season: z.int(),
-  image: z.string(),
+  season: z.int().optional(),
+  image: z.string().optional(),
   feedItunesId: z.int(),
+  feedUrl: z.string().optional(),
   feedImage: z.string(),
   feedId: z.int(),
+  podcastGuid: z.string(),
   feedLanguage: z.string(),
   feedDead: z.int(),
-  feedDuplicateOf: z.int(),
-  chaptersUrl: z.string(),
-  transcriptUrl: z.string(),
+  feedDuplicateOf: z.int().nullable(),
+  chaptersUrl: z.string().nullable(),
+  transcriptUrl: z.string().nullable(),
 });
+export type EpisodeLiveItem = z.infer<typeof episodeLiveItem>;
 
 const episodeItem = episodeLiveItem.extend({
-  transcripts: z.array(
-    z.object({
-      url: z.string(),
-      type: z.string(),
-    })
-  ),
-  soundbite: z.object({
-    startTime: z.number(),
-    duration: z.number(),
-    title: z.string(),
-  }),
-  soundbites: z.array(
-    z.object({
+  transcripts: z
+    .array(
+      z.object({
+        url: z.string(),
+        type: z.string(),
+      })
+    )
+    .optional(),
+  soundbite: z
+    .object({
       startTime: z.number(),
       duration: z.number(),
       title: z.string(),
     })
-  ),
-  persons: z.array(
-    z.object({
-      id: z.int(),
-      name: z.string(),
-      role: z.string(),
-      group: z.string(),
-      href: z.string().optional(),
-      img: z.string().optional(),
-    })
-  ),
-  socialInteract: z.array(
-    z.object({
-      url: z.string().optional(),
-      protocol: z.string(),
-      accountId: z.string(),
-      accountUrl: z.string().optional(),
-      priority: z.int().optional(),
-    })
-  ),
+    .optional(),
+  soundbites: z
+    .array(
+      z.object({
+        startTime: z.number(),
+        duration: z.number(),
+        title: z.string(),
+      })
+    )
+    .optional(),
+  persons: z
+    .array(
+      z.object({
+        id: z.int(),
+        name: z.string(),
+        role: z.string(),
+        group: z.string(),
+        href: z.string().optional(),
+        img: z.string().optional(),
+      })
+    )
+    .optional(),
+  socialInteract: z
+    .array(
+      z.object({
+        url: z.string().optional(),
+        protocol: z.string(),
+        accountId: z.string(),
+        accountUrl: z.string().optional(),
+        priority: z.int().optional(),
+      })
+    )
+    .optional(),
   value: FeedValue.optional(),
 });
 export type EpisodeItem = z.infer<typeof episodeItem>;
@@ -175,3 +188,13 @@ export const EpisodesByFeedId = z.object({
   description: z.string().optional(),
 });
 export type EpisodesByFeedId = z.infer<typeof EpisodesByFeedId>;
+
+export const EpisodesByPodGuidResult = z.object({
+  status: z.enum(['true', 'false']),
+  liveItems: z.array(episodeLiveItem),
+  items: z.array(episodeItem),
+  count: z.number(),
+  query: z.any(), // z.string().or(z.array(z.string())),
+  description: z.string().optional(),
+});
+export type EpisodesByPodGuidResult = z.infer<typeof EpisodesByPodGuidResult>;

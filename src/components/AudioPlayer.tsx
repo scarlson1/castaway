@@ -22,16 +22,16 @@ import { useHowler } from '~/hooks/useHowler';
 
 const Widget = styled('div')(({ theme }) => ({
   padding: 16,
-  // borderRadius: 16,
   // width: 343,
   maxWidth: '100%',
   margin: 'auto',
-  position: 'relative',
-  zIndex: theme.zIndex.drawer,
-  backgroundColor: 'rgba(255,255,255,0.4)',
-  backdropFilter: 'blur(16px)',
+  zIndex: theme.zIndex.appBar, // theme.zIndex.drawer,
+  borderTop: `1px solid ${(theme.vars || theme).palette.divider}`,
+  backgroundColor: 'rgba(255,255,255,0.6)',
+  backdropFilter: 'blur(10px)',
   ...theme.applyStyles('dark', {
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    // backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.6)`,
   }),
 }));
 
@@ -265,6 +265,7 @@ function ProgressSlider({ position, duration, seek }: ProgressSliderProps) {
   );
 }
 
+// TODO: fix not rerendering after incrementing rate (store in state instead of howler.rate() method)
 function RateButtons({
   rate,
   setRate,

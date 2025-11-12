@@ -26,6 +26,7 @@ export const useHowler = (
   const [duration, setDuration] = useState(0);
   const [position, setPosition] = useState(0);
   const [volume, setVolume] = useState(0.5); // 0 to 1
+  const [rate, setRate] = useState(1);
 
   // Initialize Howler sound
   useEffect(() => {
@@ -35,6 +36,7 @@ export const useHowler = (
       src: [src],
       html5: true, // allows streaming large files (play before download complete)
       // preload: 'metadata', // need to call load() if not set to true ??
+      autoplay: true,
       volume,
       onplay: () => {
         setIsPlaying(true);
@@ -51,9 +53,9 @@ export const useHowler = (
       },
       // onmute: () => {},
       // onvolume: () => {},
-      // onrate: (id) => {
-      //   console.log(`rate change ${id}`);
-      // },
+      onrate: (id, rest) => {
+        console.log(`rate change ${id}`, rest);
+      },
       // onseek: () => {},
       onunlock: () => {
         console.log(`audio unlocked`);
@@ -132,11 +134,11 @@ export const useHowler = (
     }
   }, []);
 
-  const setRate = useCallback((r: number) => {
+  const handleSetRate = useCallback((r: number) => {
     const sound = soundRef.current;
     if (sound && r > 0.5 && r < 4) {
       sound.rate(r);
-      // setRate() // TODO: store in state ??
+      setRate(r); // TODO: store in state ??
     }
   }, []);
 
@@ -147,7 +149,7 @@ export const useHowler = (
     seek,
     mute,
     setVol,
-    setRate,
+    setRate: handleSetRate,
     isPlaying,
     duration,
     position,

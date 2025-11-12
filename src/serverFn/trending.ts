@@ -1,4 +1,5 @@
 import { createServerFn } from '@tanstack/react-start';
+import ky from 'ky';
 import z from 'zod';
 import { getPodClient } from '~/lib/podcastIndexClient';
 
@@ -25,4 +26,52 @@ export const fetchTrending = createServerFn()
       data.notcat
     );
     return results;
+  });
+
+export interface AppleChartHit {
+  artistName: string;
+  id: string;
+  name: string;
+  kind: string;
+  artworkUrl100: string;
+  genres: {
+    genreId: string;
+    name: string;
+    url: string;
+  }[];
+  url: string;
+}
+
+export interface AppleChartsResult {
+  feed: {
+    title: string;
+    id: string;
+    author: {
+      name: string;
+      url: string;
+    };
+    links: Record<string, string>[];
+    copyright: string;
+    country: string;
+    icon: string;
+    updated: string;
+    results: AppleChartHit[];
+  };
+}
+
+export const fetchAppleChartsOptions = z.object({
+  market: z.string().optional(),
+  limit: z.number().max(100).optional(),
+});
+export type FetchAppleChartsOptions = z.infer<typeof fetchAppleChartsOptions>;
+
+export const fetchAppleCharts = createServerFn()
+  .inputValidator(fetchAppleChartsOptions)
+  .handler(async ({ data: { market = 'us', limit = 100 } }) => {
+    const result = await ky
+      .get<AppleChartsResult>(
+        `https://rss.applemarketingtools.com/api/v2/${market}/podcasts/top/${limit}/podcasts.json`
+      )
+      .json();
+    return result;
   });

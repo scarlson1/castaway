@@ -5,6 +5,7 @@ import querystring, { type ParsedUrlQueryInput } from 'querystring';
 import z from 'zod';
 import type {
   EpisodesByFeedId,
+  EpisodesByPodGuidResult,
   PodcastsByFeedIdResult,
   SearchByTermResult,
   TrendingResult,
@@ -21,6 +22,7 @@ const PATH_ADD_BY_FEED_URL = 'add/byfeedurl';
 const PATH_ADD_BY_ITUNES_ID = 'add/byitunesid';
 const PATH_EPISODES_BY_FEED_ID = 'episodes/byfeedid';
 const PATH_EPISODES_BY_FEED_URL = 'episodes/byfeedurl';
+const PATH_EPISODES_BY_PODCAST_GUID = 'episodes/bypodcastguid';
 const PATH_EPISODES_BY_ITUNES_ID = 'episodes/byitunesid';
 const PATH_EPISODES_BY_ID = 'episodes/byid';
 const PATH_EPISODES_RANDOM = 'episodes/random';
@@ -48,6 +50,7 @@ const PodIndexPath = z.enum([
   'add/byitunesid',
   'episodes/byfeedid',
   'episodes/byfeedurl',
+  'episodes/bypodcastguid',
   'episodes/byitunesid',
   'episodes/byid',
   'episodes/random',
@@ -95,7 +98,7 @@ const withResponse = <T>(response) => {
 export default (
   key: string,
   secret: string,
-  userAgent: string = 'SCPodcastPlayer/0.1'
+  userAgent: string = 'CastawayPod/0.1'
 ) => {
   if (!key || !secret) {
     throw new Error(
@@ -182,7 +185,9 @@ export default (
       });
     },
     podcastsByFeedItunesId: async (itunesId: number) => {
-      return custom(PATH_PODCASTS_BY_ITUNES_ID, { id: itunesId });
+      return custom<PodcastsByFeedIdResult>(PATH_PODCASTS_BY_ITUNES_ID, {
+        id: itunesId,
+      });
     },
     podcastsByGUID: async (guid: number) => {
       return custom(PATH_PODCASTS_BY_GUID, { guid: guid });
@@ -247,6 +252,23 @@ export default (
       };
       if (fullText) queries['fullText'] = '';
       return custom(PATH_EPISODES_BY_FEED_URL, queries);
+    },
+    episodesByPodGuid: async (
+      guid: string,
+      since: number | null = null,
+      max = 1000,
+      fullText = true
+    ) => {
+      let queries = {
+        guid,
+        since: since,
+        max: max,
+      };
+      if (fullText) queries['fullText'] = '';
+      return custom<EpisodesByPodGuidResult>(
+        PATH_EPISODES_BY_PODCAST_GUID,
+        queries
+      );
     },
     episodesByItunesId: async (
       itunesId,
