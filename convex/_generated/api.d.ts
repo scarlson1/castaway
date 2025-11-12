@@ -8,13 +8,25 @@
  * @module
  */
 
+import type * as clerk from "../clerk.js";
+import type * as http from "../http.js";
+import type * as messages from "../messages.js";
+import type * as playback from "../playback.js";
+import type * as users from "../users.js";
+
 import type {
   ApiFromModules,
   FilterApi,
   FunctionReference,
 } from "convex/server";
 
-declare const fullApi: ApiFromModules<{}>;
+declare const fullApi: ApiFromModules<{
+  clerk: typeof clerk;
+  http: typeof http;
+  messages: typeof messages;
+  playback: typeof playback;
+  users: typeof users;
+}>;
 
 /**
  * A utility for referencing Convex functions in your app's public API.

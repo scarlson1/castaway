@@ -13,7 +13,6 @@ import {
   Link,
   Rating,
   Stack,
-  TextField,
   Tooltip,
   Typography,
 } from '@mui/material';
@@ -32,10 +31,6 @@ import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
 import { fetchEpisodesByPodGuid, fetchPodDetails } from '~/serverFn/podcast';
 import { getRootDomain } from '~/utils/getDomain';
 
-// function getDomain(str: string) {
-//   return str.match(/^(?:https?:\/\/)?(?:www\.)?([^\/:]+)/);
-// }
-
 export const podDetailsQueryOptions = (id: number) =>
   queryOptions({
     queryKey: ['podcast', id],
@@ -43,12 +38,21 @@ export const podDetailsQueryOptions = (id: number) =>
     staleTime: Infinity, // Or a suitable value for your use case
   });
 
+export const episodesQueryOptions = (
+  id: string,
+  options: { max?: number } = {}
+) =>
+  queryOptions({
+    queryKey: ['podcast', id, 'episodes', options],
+    queryFn: () => fetchEpisodesByPodGuid({ data: { id, ...options } }),
+    staleTime: Infinity, // Or a suitable value for your use case
+  });
+
 export const Route = createFileRoute('/podcast/$podId')({
   component: RouteComponent,
-  loader: ({ context, params }) => {
-    context.queryClient.prefetchQuery(
-      podDetailsQueryOptions(parseInt(params.podId))
-    );
+  loader: ({ context: { queryClient }, params }) => {
+    queryClient.prefetchQuery(podDetailsQueryOptions(parseInt(params.podId)));
+    queryClient.prefetchQuery(episodesQueryOptions(params.podId, { max: 100 }));
   },
 });
 
@@ -145,16 +149,6 @@ export function PodDetails({ feed }: { feed: PodcastFeed }) {
   );
 }
 
-export const episodesQueryOptions = (
-  id: string,
-  options: { max?: number } = {}
-) =>
-  queryOptions({
-    queryKey: ['podcast', id, 'episodes', options],
-    queryFn: () => fetchEpisodesByPodGuid({ data: { id, ...options } }),
-    staleTime: Infinity, // Or a suitable value for your use case
-  });
-
 export function EpisodesList({
   podId,
   podTitle,
@@ -170,8 +164,8 @@ export function EpisodesList({
   const setPlaying = useQueue((state) => state.setPlaying);
 
   return (
-    <Box>
-      <TextField placeholder='search episodes' label='TODO: episode search' />
+    <>
+      {/* <TextField placeholder='search episodes' label='TODO: episode search' /> */}
       {data?.items?.map((e) => (
         <Box key={e.id}>
           <EpisodeRow
@@ -183,7 +177,7 @@ export function EpisodesList({
           <Divider />
         </Box>
       ))}
-    </Box>
+    </>
   );
 }
 

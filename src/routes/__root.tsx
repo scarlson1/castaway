@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
-import { ClerkProvider } from '@clerk/tanstack-react-start';
+import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
 import { auth } from '@clerk/tanstack-react-start/server';
+import type { ConvexQueryClient } from '@convex-dev/react-query';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
@@ -15,6 +16,8 @@ import {
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { createServerFn } from '@tanstack/react-start';
+import type { ConvexReactClient } from 'convex/react';
+import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { format } from 'date-fns';
 import { Suspense, type ReactNode } from 'react';
 import castawayLogo from '~/assets/castaway-light.png';
@@ -25,27 +28,35 @@ import { theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
 const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(async () => {
-  const { userId, orgId, isAuthenticated } = await auth();
+  const a = await auth();
+  const { userId, orgId, isAuthenticated } = a;
+  const token = await a.getToken({ template: 'convex' });
 
   return {
     userId,
     orgId,
     // sessionClaims,
     isAuthenticated,
+    token,
   };
 });
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
+  convexClient: ConvexReactClient;
+  convexQueryClient: ConvexQueryClient;
   // user: User | null;
 }>()({
-  beforeLoad: async () => {
-    const { userId } = await fetchClerkAuth();
+  beforeLoad: async ({ context }) => {
+    const { userId, token } = await fetchClerkAuth();
 
-    console.log('userId: ', userId);
+    // During SSR only (the only time serverHttpClient exists),
+    // set the Clerk auth token to make HTTP queries with.
+    if (token) context.convexQueryClient.serverHttpClient?.setAuth(token);
 
     return {
       userId,
+      token,
     };
   },
   head: () => ({
@@ -75,6 +86,8 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
+  const context = Route.useRouteContext(); // useRouteContext({ from: Route.id })
+
   return (
     <ClerkProvider
       publishableKey={env.VITE_CLERK_PUBLISHABLE_KEY}
@@ -107,9 +120,11 @@ function RootComponent() {
         },
       }}
     >
-      <RootDocument>
-        <Outlet />
-      </RootDocument>
+      <ConvexProviderWithClerk client={context.convexClient} useAuth={useAuth}>
+        <RootDocument>
+          <Outlet />
+        </RootDocument>
+      </ConvexProviderWithClerk>
     </ClerkProvider>
   );
 }
@@ -154,10 +169,6 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                 zIndex: (theme) => theme.zIndex.drawer,
                 borderTopLeftRadius: 1,
                 borderTopRightRadius: 1,
-                // p: 3,
-                // bgcolor: 'grey.900',
-                // color: 'white',
-                // borderRadius: 3,
               }}
             >
               <WrappedPlayer />

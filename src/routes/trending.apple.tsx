@@ -12,10 +12,8 @@ export const Route = createFileRoute('/trending/apple')({
   validateSearch: zodValidator(trendingSearchOptions),
   // Define which search params your loader depends on
   loaderDeps: ({ search: { limit } }) => ({ limit }),
-  loader: ({ context, deps }) => {
-    context.queryClient.prefetchQuery(
-      appleChartsQueryOptions({ limit: deps.limit })
-    );
+  loader: ({ context: { queryClient }, deps }) => {
+    queryClient.prefetchQuery(appleChartsQueryOptions({ limit: deps.limit }));
   },
 });
 

@@ -20,6 +20,8 @@ import { PlayPauseButton } from '~/components/PlayPauseButton';
 import { useHover } from '~/hooks/useHover';
 import { useHowler } from '~/hooks/useHowler';
 
+// https://docs.convex.dev/client/tanstack/tanstack-start/
+
 const Widget = styled('div')(({ theme }) => ({
   padding: 16,
   // width: 343,
@@ -27,11 +29,11 @@ const Widget = styled('div')(({ theme }) => ({
   margin: 'auto',
   zIndex: theme.zIndex.appBar, // theme.zIndex.drawer,
   borderTop: `1px solid ${(theme.vars || theme).palette.divider}`,
-  backgroundColor: 'rgba(255,255,255,0.6)',
-  backdropFilter: 'blur(10px)',
+  backgroundColor: 'rgba(255,255,255,0.7)',
+  backdropFilter: 'blur(16px)',
   ...theme.applyStyles('dark', {
     // backgroundColor: 'rgba(0,0,0,0.6)',
-    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.6)`,
+    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.7)`,
   }),
 }));
 
@@ -65,6 +67,8 @@ interface AudioPlayerProps {
   coverArt: string;
   podName: string;
   releaseDate: string;
+  durationSeconds?: number;
+  savedPosition?: number;
 }
 
 export default function AudioPlayer({
@@ -74,6 +78,8 @@ export default function AudioPlayer({
   coverArt,
   podName,
   releaseDate,
+  durationSeconds,
+  savedPosition = 0,
 }: AudioPlayerProps) {
   const {
     play,
@@ -87,7 +93,11 @@ export default function AudioPlayer({
     position,
     volume,
     rate,
-  } = useHowler(src);
+  } = useHowler(
+    { audioUrl: src, id, title, durationSeconds },
+    {},
+    savedPosition
+  );
 
   return (
     <Widget
@@ -108,6 +118,7 @@ export default function AudioPlayer({
       />
 
       <Box sx={{ flex: '1 1 auto', mx: 2 }}>
+        {/* TODO: if overflowing container --> animate in loop */}
         <Typography
           variant='h6'
           sx={{
@@ -133,7 +144,7 @@ export default function AudioPlayer({
         <ProgressSlider position={position} duration={duration} seek={seek} />
       </Box>
       <Box>
-        <RateButtons rate={rate()} setRate={setRate} />
+        <RateButtons rate={rate} setRate={setRate} />
       </Box>
       <Box
         sx={{

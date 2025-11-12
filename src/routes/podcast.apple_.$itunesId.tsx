@@ -18,8 +18,8 @@ export const podDetailsITunesQueryOptions = (id: number) =>
 export const Route = createFileRoute('/podcast/apple_/$itunesId')({
   component: RouteComponent,
   validateSearch: zodValidator(trendingSearchOptions),
-  loader: ({ context, params }) => {
-    context.queryClient.prefetchQuery(
+  loader: ({ context: { queryClient }, params }) => {
+    queryClient.prefetchQuery(
       podDetailsITunesQueryOptions(parseInt(params.itunesId))
     );
   },

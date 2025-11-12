@@ -37,9 +37,9 @@ export const trendingQueryOptions = (options: FetchTrendingOptions) =>
 export const Route = createFileRoute('/trending/')({
   component: RouteComponent,
   validateSearch: zodValidator(fetchTrendingOptions),
-  loader: ({ context, params }) => {
-    // Access the queryClient from the context
-    context.queryClient.prefetchQuery(trendingQueryOptions(params));
+  loader: ({ context: { queryClient }, params }) => {
+    // fetch but don't block/await
+    queryClient.prefetchQuery(trendingQueryOptions(params));
   },
 });
 

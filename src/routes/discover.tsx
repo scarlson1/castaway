@@ -6,20 +6,21 @@ import {
   Divider,
   Grid,
   IconButton,
+  Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
 import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute } from '@tanstack/react-router';
-import { Suspense, useCallback, useRef, type RefObject } from 'react';
+import { createFileRoute, type LinkProps } from '@tanstack/react-router';
+import { Suspense, useCallback, useId, useRef, type RefObject } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiStackLink } from '~/components/MuiStackLink';
 import { useHover } from '~/hooks/useHover';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
+import { trendingQueryOptions } from '~/routes/trending.index';
 import {
   fetchAppleCharts,
-  fetchTrending,
   type FetchAppleChartsOptions,
 } from '~/serverFn/trending';
 
@@ -27,12 +28,14 @@ import {
 
 export const Route = createFileRoute('/discover')({
   component: RouteComponent,
-  loader: () => fetchTrending({ data: { max: 8 } }),
+  loader: ({ context: { queryClient } }) => {
+    // seed cache, but don't block
+    queryClient.prefetchQuery(trendingQueryOptions({ max: 8 }));
+    queryClient.prefetchQuery(appleChartsQueryOptions({ limit: 10 }));
+  },
 });
 
 function RouteComponent() {
-  const { feeds } = Route.useLoaderData();
-
   return (
     <>
       <Typography variant='h4' component='h2' gutterBottom>
@@ -61,32 +64,12 @@ function RouteComponent() {
         </MuiButtonLink>
       </Stack>
       {/* <Grid container spacing={3} sx={{ display: 'grid', gridTemplateRows: 'repeat(3, 1fr)'}}> */}
-      <Grid
-        container
-        rowSpacing={1}
-        columnSpacing={3}
-        sx={{
-          display: 'grid',
-          gridTemplateRows: 'repeat(4, 1fr)',
-          gridTemplateColumns: {
-            xs: 'repeat(1, minmax(0px, 1fr))',
-            sm: 'repeat(2, minmax(0px, 1fr))',
-          },
-          gridAutoRows: 0,
-          overflow: 'hidden',
-          rowGap: 0, // add margin bottom to child grid container
-        }}
-      >
-        {feeds.map((p) => (
-          <Grid
-            size={{ xs: 12, sm: 6 }}
-            sx={{ width: 'unset !important', mb: 1 }}
-            key={p.id}
-          >
-            <TrendingCard feed={p} />
-          </Grid>
-        ))}
-      </Grid>
+      <ErrorBoundary fallback={<div>Something went wrong</div>}>
+        <Suspense fallback={<TrendingSectionSkeleton />}>
+          <Trending />
+        </Suspense>
+      </ErrorBoundary>
+
       <Divider sx={{ my: 3 }} />
       <Alert severity='warning' sx={{ maxWidth: 600, my: 2 }}>
         <AlertTitle>TODO: suggested pods</AlertTitle>
@@ -112,13 +95,48 @@ function RouteComponent() {
         </Stack>
         <Box>
           <ErrorBoundary fallback={<div>Something went wrong</div>}>
-            <Suspense>
+            <Suspense fallback={<TrendingSectionSkeleton />}>
               <AppleCharts />
             </Suspense>
           </ErrorBoundary>
         </Box>
       </Box>
     </>
+  );
+}
+
+function Trending() {
+  const {
+    data: { feeds },
+  } = useSuspenseQuery(trendingQueryOptions({ max: 8 }));
+
+  return (
+    <Grid
+      container
+      rowSpacing={1}
+      columnSpacing={3}
+      sx={{
+        display: 'grid',
+        gridTemplateRows: 'repeat(4, 1fr)',
+        gridTemplateColumns: {
+          xs: 'repeat(1, minmax(0px, 1fr))',
+          sm: 'repeat(2, minmax(0px, 1fr))',
+        },
+        gridAutoRows: 0,
+        overflow: 'hidden',
+        rowGap: 0, // add margin bottom to child grid container
+      }}
+    >
+      {feeds.map((p) => (
+        <Grid
+          size={{ xs: 12, sm: 6 }}
+          sx={{ width: 'unset !important', mb: 1 }}
+          key={p.id}
+        >
+          <TrendingCard feed={p} />
+        </Grid>
+      ))}
+    </Grid>
   );
 }
 
@@ -133,7 +151,7 @@ export const appleChartsQueryOptions = (
 
 function AppleCharts() {
   const { data } = useSuspenseQuery(appleChartsQueryOptions({ limit: 10 }));
-  console.log('APPLE CHART DATA: ', data);
+  // console.log('APPLE CHART DATA: ', data);
 
   return (
     <Box>
@@ -168,6 +186,10 @@ function AppleCharts() {
                   author: p.artistName,
                 } as unknown as PodcastFeed
               }
+              linkProps={{
+                to: '/podcast/apple/$itunesId',
+                params: { itunesId: `${p.id || ''}` },
+              }}
             />
           </Grid>
         ))}
@@ -179,11 +201,12 @@ function AppleCharts() {
 interface TrendingCardProps {
   feed: PodcastFeed;
   orientation?: 'vertical' | 'horizontal';
+  linkProps?: LinkProps;
 }
 
 // use clsx for orientation styling ??
 
-function TrendingCard({ feed }: TrendingCardProps) {
+function TrendingCard({ feed, linkProps }: TrendingCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovering] = useHover<HTMLDivElement>(
     ref as RefObject<HTMLDivElement>
@@ -209,6 +232,7 @@ function TrendingCard({ feed }: TrendingCardProps) {
           '&:visited': { color: 'textPrimary' },
           '&:hover': { color: 'textPrimary' },
         }}
+        {...linkProps}
       >
         <Box
           component='img'
@@ -272,5 +296,46 @@ function TrendingCard({ feed }: TrendingCardProps) {
         </Box>
       </MuiStackLink>
     </div>
+  );
+}
+
+function SkeletonTrendingCard() {
+  return (
+    <>
+      <Skeleton variant='rounded' width={'100%'} height={60} />
+    </>
+  );
+}
+
+function TrendingSectionSkeleton() {
+  const id = useId();
+
+  return (
+    <Grid
+      container
+      rowSpacing={1}
+      columnSpacing={3}
+      sx={{
+        display: 'grid',
+        gridTemplateRows: 'repeat(4, 1fr)',
+        gridTemplateColumns: {
+          xs: 'repeat(1, minmax(0px, 1fr))',
+          sm: 'repeat(2, minmax(0px, 1fr))',
+        },
+        gridAutoRows: 0,
+        overflow: 'hidden',
+        rowGap: 0, // add margin bottom to child grid container
+      }}
+    >
+      {Array(8).map((_, i) => (
+        <Grid
+          size={{ xs: 12, sm: 6 }}
+          sx={{ width: 'unset !important', mb: 1 }}
+          key={`${id}-${i}`}
+        >
+          <SkeletonTrendingCard />
+        </Grid>
+      ))}
+    </Grid>
   );
 }
