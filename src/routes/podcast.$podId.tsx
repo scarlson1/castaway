@@ -5,6 +5,7 @@ import {
 } from '@convex-dev/react-query';
 import {
   AddRounded,
+  CheckRounded,
   ExplicitRounded,
   LinkRounded,
   MicRounded,
@@ -26,7 +27,6 @@ import {
 import {
   queryOptions,
   useMutation,
-  useQuery,
   useSuspenseQuery,
 } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
@@ -37,9 +37,10 @@ import {
   formatDistanceToNow,
   intervalToDuration,
 } from 'date-fns';
-import { Suspense } from 'react';
+import { Suspense, useCallback, useRef, type RefObject } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useQueue, type QueueItem } from '~/hooks/useQueue';
+import { useHover } from '~/hooks/useHover';
+import { useQueue } from '~/hooks/useQueue';
 import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
 import { fetchEpisodesByPodGuid, fetchPodDetails } from '~/serverFn/podcast';
 import { getRootDomain } from '~/utils/getDomain';
@@ -96,18 +97,6 @@ function RouteComponent() {
 
 // TODO: unsubscribe button if following
 export function PodDetails({ feed }: { feed: PodcastFeed }) {
-  const { mutate: subscribe, isPending } = useMutation({
-    mutationFn: useConvexAction(api.actions.subscribe),
-  });
-
-  const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
-    mutationFn: useConvexMutation(api.subscribe.remove),
-  });
-
-  const { data: isFollowing, isLoading } = useQuery(
-    convexQuery(api.subscribe.isFollowing, { podId: feed.podcastGuid })
-  );
-
   return (
     <Stack direction='row' spacing={2}>
       <Box
@@ -128,23 +117,11 @@ export function PodDetails({ feed }: { feed: PodcastFeed }) {
           sx={{ justifyContent: 'space-between', alignItems: 'center' }}
         >
           <Typography variant='h5'>{feed?.title}</Typography>
-          {!isFollowing ? (
-            <Button
-              loading={isPending || isLoading}
-              onClick={() => subscribe({ podcastId: feed.podcastGuid })}
-              startIcon={<AddRounded fontSize='inherit' />}
-            >
-              Follow
-            </Button>
-          ) : (
-            <Button
-              loading={unsubPending || isLoading}
-              onClick={() => unsubscribe({ podId: feed.podcastGuid })}
-              startIcon={<RemoveRounded fontSize='inherit' />}
-            >
-              Unfollow
-            </Button>
-          )}
+          <ErrorBoundary fallback={<div />}>
+            <Suspense>
+              <FollowingButtons podId={feed.podcastGuid} />
+            </Suspense>
+          </ErrorBoundary>
         </Stack>
         <Rating name='rating' value={5} readOnly size='small' />
         <Divider sx={{ my: 1 }} />
@@ -189,6 +166,49 @@ export function PodDetails({ feed }: { feed: PodcastFeed }) {
   );
 }
 
+function FollowingButtons({ podId }: { podId: string }) {
+  const ref = useRef<HTMLButtonElement>(null);
+  const [isHovering] = useHover(ref as RefObject<HTMLButtonElement>);
+  const { mutate: subscribe, isPending } = useMutation({
+    mutationFn: useConvexAction(api.actions.subscribe),
+  });
+
+  const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
+    mutationFn: useConvexMutation(api.subscribe.remove),
+  });
+
+  const { data: isFollowing } = useSuspenseQuery(
+    convexQuery(api.subscribe.isFollowing, { podId })
+  );
+
+  return !isFollowing ? (
+    <Button
+      loading={isPending}
+      onClick={() => subscribe({ podcastId: podId })}
+      startIcon={<AddRounded fontSize='inherit' />}
+    >
+      Follow
+    </Button>
+  ) : (
+    <Button
+      component='button'
+      ref={ref}
+      loading={unsubPending}
+      onClick={() => unsubscribe({ podId })}
+      startIcon={
+        isHovering ? (
+          <RemoveRounded fontSize='inherit' />
+        ) : (
+          <CheckRounded fontSize='inherit' />
+        )
+      }
+      sx={{ minWidth: 80 }}
+    >
+      {`${isHovering ? 'Unfollow' : 'Following'}`}
+    </Button>
+  );
+}
+
 export function EpisodesList({
   podId,
   podTitle,
@@ -203,6 +223,20 @@ export function EpisodesList({
   );
   const setPlaying = useQueue((state) => state.setPlaying);
 
+  const handleSetPlaying = useCallback(
+    (ep: EpisodeItem) => {
+      setPlaying({
+        image: ep.feedImage || ep.image || '',
+        episodeId: ep.guid,
+        title: ep.title,
+        audioUrl: ep.enclosureUrl,
+        releaseDateMs: ep.datePublished * 1000,
+        podName: podTitle,
+      });
+    },
+    [setPlaying]
+  );
+
   return (
     <>
       {/* <TextField placeholder='search episodes' label='TODO: episode search' /> */}
@@ -212,7 +246,7 @@ export function EpisodesList({
             episode={e}
             podId={podId}
             podTitle={podTitle}
-            setPlaying={setPlaying}
+            setPlaying={handleSetPlaying}
           />
           <Divider />
         </Box>
@@ -230,7 +264,7 @@ function EpisodeRow({
   podTitle,
 }: {
   episode: EpisodeItem;
-  setPlaying: (id: QueueItem) => void;
+  setPlaying: (ep: EpisodeItem) => void;
   podId: string;
   podTitle: string;
 }) {
@@ -280,10 +314,7 @@ function EpisodeRow({
         }}
       >
         {/* TODO: show pause icon and progress circle  */}
-        <IconButton
-          size='small'
-          onClick={() => setPlaying({ ...episode, podId, podTitle })}
-        >
+        <IconButton size='small' onClick={() => setPlaying(episode)}>
           <PlayArrowRounded fontSize='inherit' color='primary' />
         </IconButton>
       </Box>

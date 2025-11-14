@@ -6,9 +6,7 @@ import { api } from 'convex/_generated/api';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 import { TrendingCard } from '~/routes/trending.index';
 
-// TODO: authenticated route protection
-
-export const Route = createFileRoute('/podcasts')({
+export const Route = createFileRoute('/_authed/podcasts/')({
   component: RouteComponent,
 });
 
@@ -39,20 +37,15 @@ function RouteComponent() {
                 } as PodcastFeed
               }
               orientation='vertical'
-              // rank={i + 1}
               // TODO: switch to using guid ?? or add podIndexId
               linkProps={{
-                to: '/podcast/apple/$itunesId',
-                params: { itunesId: `${pod.itunesId || ''}` },
+                to: '/podcasts/$podId',
+                params: { podId: pod.podcastId },
               }}
             />
           </Grid>
         ))}
       </Grid>
-
-      {/* <Typography component='div' variant='body2'>
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      </Typography> */}
     </Box>
   );
 }

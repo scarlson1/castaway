@@ -1,5 +1,5 @@
 import { v } from 'convex/values';
-import { mutation } from './_generated/server';
+import { mutation, query } from './_generated/server';
 
 export const update = mutation({
   args: {
@@ -61,6 +61,29 @@ export const update = mutation({
     //   positionSeconds,
     //   lastUpdatedAt: Date.now(),
     // });
+  },
+});
+
+export const getAllForUser = query({
+  handler: async ({ db, auth }) => {
+    const identity = await auth.getUserIdentity();
+    let clerkId = identity?.subject;
+    if (!clerkId) return [];
+
+    let playback = await db
+      .query('user_playback')
+      .withIndex('by_clerk_id')
+      .collect();
+    return playback;
+  },
+});
+
+export const getById = query({
+  args: { id: v.id('user_playback') },
+  handler: async ({ db }, { id }) => {
+    // const identity = await auth.getUserIdentity();
+    // let clerkId = identity?.subject;
+    return await db.get(id);
   },
 });
 

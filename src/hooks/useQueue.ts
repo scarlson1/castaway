@@ -1,27 +1,42 @@
 import { create } from 'zustand';
-import type { EpisodeItem } from '~/lib/podcastIndexTypes';
 
 // TODO: move queue to db
 
 // TODO: queued episode interface
 
-export interface QueueItem extends EpisodeItem {
-  podId: string;
-  podTitle: string;
+interface Temp {
+  image: string;
+  episodeId: string;
+  title: string;
+  audioUrl: string;
+  releaseDateMs: number;
+  podName: string;
 }
 
+// export interface QueueItem extends EpisodeItem {
+//   podId: string;
+//   podTitle: string;
+// }
+
+// export interface QueueItemAlt extends Doc<'episodes'> {
+//   podId: string;
+//   podTitle: string;
+// }
+
+// type QueueItemCombined = QueueItem & QueueItemAlt
+
 interface QueueState {
-  queue: QueueItem[];
-  nowPlaying: QueueItem | null;
-  setPlaying: (ep: QueueItem) => void;
-  addToQueue: (ep: QueueItem) => void;
+  queue: Temp[];
+  nowPlaying: Temp | null;
+  setPlaying: (ep: Temp) => void;
+  addToQueue: (ep: Temp) => void;
 }
 
 export const useQueue = create<QueueState>()((set) => ({
   queue: [],
   nowPlaying: null,
-  setPlaying: (ep: QueueItem) => set((state) => ({ nowPlaying: ep })),
-  addToQueue: (ep: QueueItem) =>
+  setPlaying: (ep: Temp) => set((state) => ({ nowPlaying: ep })),
+  addToQueue: (ep: Temp) =>
     set(({ queue, nowPlaying }) => ({ nowPlaying, queue: [...queue, ep] })),
 }));
 

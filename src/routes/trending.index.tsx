@@ -138,7 +138,6 @@ interface TrendingCardProps {
   rank?: number;
   linkProps?: LinkProps;
   following?: boolean;
-  numbered?: boolean;
 }
 
 // use clsx for orientation styling ??
@@ -150,7 +149,6 @@ export function TrendingCard({
   rank,
   linkProps,
   following,
-  numbered = true,
 }: TrendingCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovering] = useHover<HTMLDivElement>(

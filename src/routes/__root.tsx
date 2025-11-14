@@ -27,19 +27,21 @@ import { useQueue } from '~/hooks/useQueue';
 import { theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
-const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(async () => {
-  const a = await auth();
-  const { userId, orgId, isAuthenticated } = a;
-  const token = await a.getToken({ template: 'convex' });
+export const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const a = await auth();
+    const { userId, orgId, isAuthenticated } = a;
+    const token = await a.getToken({ template: 'convex' });
 
-  return {
-    userId,
-    orgId,
-    // sessionClaims,
-    isAuthenticated,
-    token,
-  };
-});
+    return {
+      userId,
+      orgId,
+      // sessionClaims,
+      isAuthenticated,
+      token,
+    };
+  }
+);
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;
@@ -192,16 +194,16 @@ function WrappedPlayer() {
 
   return (
     <AudioPlayer
-      coverArt={episode.image || episode.feedImage}
-      id={episode.guid}
+      coverArt={episode.image}
+      id={episode.episodeId}
       title={episode.title}
-      src={episode.enclosureUrl}
+      src={episode.audioUrl}
       releaseDate={
-        episode.datePublished
-          ? format(new Date(episode.datePublished * 1000), 'MMM d')
+        episode.releaseDateMs
+          ? format(new Date(episode.releaseDateMs), 'MMM d')
           : ''
       }
-      podName={episode.podTitle}
+      podName={episode.podName}
     />
   );
 }

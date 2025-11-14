@@ -4,14 +4,34 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
+  query,
 } from 'convex/_generated/server';
 import { api } from 'convex/actions';
 import { getTimestamp } from 'convex/playback';
-import type { WithoutSystemFields } from 'convex/server';
+import {
+  paginationOptsValidator,
+  type WithoutSystemFields,
+} from 'convex/server';
+import { v } from 'convex/values';
 import type {
   EpisodeItem,
   EpisodesByPodGuidResult,
 } from '~/lib/podcastIndexTypes';
+
+// TODO: pagination
+export const getByPodcast = query({
+  args: { podId: v.string(), paginationOpts: paginationOptsValidator },
+  handler: async ({ db }, { podId, paginationOpts }) => {
+    // require auth ??
+    const results = db
+      .query('episodes')
+      .withIndex('by_podId_pub', (q) => q.eq('podcastId', podId))
+      .order('desc')
+      .paginate(paginationOpts);
+
+    return results;
+  },
+});
 
 export const saveEpisodesToDb = internalMutation({
   // args: { episodes: Doc<"episodes"> },
@@ -21,7 +41,7 @@ export const saveEpisodesToDb = internalMutation({
       episodes,
       podcastTitle, // not required in case episodes are from multiple podcasts
     }: {
-      episodes: (EpisodeItem & { podcastTitle: string })[];
+      episodes: (EpisodeItem & { podcastTitle?: string })[];
       podcastTitle?: string;
     }
   ) => {
