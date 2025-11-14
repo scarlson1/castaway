@@ -20,6 +20,7 @@ export function getRouter() {
       queries: {
         queryKeyHashFn: convexQueryClient.hashFn(),
         queryFn: convexQueryClient.queryFn(),
+        placeholderData: (prev) => prev,
       },
     },
   });

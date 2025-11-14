@@ -48,9 +48,25 @@ export const SearchByTermResult = z.object({
 });
 export type SearchByTermResult = z.infer<typeof SearchByTermResult>;
 
+const trendingFeed = z.object({
+  id: z.number(),
+  url: z.string(),
+  title: z.string(),
+  description: z.string(),
+  author: z.string(),
+  image: z.string(),
+  artwork: z.string(),
+  newestItemPublishTime: z.string(),
+  itunesId: z.string(),
+  trendScore: z.string(),
+  language: z.string(),
+  categories: z.record(z.string(), z.string()),
+});
+export type TrendingFeed = z.infer<typeof trendingFeed>;
+
 export const TrendingResult = z.object({
   status: z.enum(['true', 'false']),
-  feeds: z.array(PodcastFeed),
+  feeds: z.array(trendingFeed),
   count: z.int(),
   max: z.int().nullable(),
   since: z.int().nullable(),
@@ -82,15 +98,32 @@ export const PodcastsByFeedIdResult = z.object({
   query: z.object({ id: z.string() }),
   feed: PodcastFeed.extend({
     value: FeedValue.optional(),
-    function: z
+    funding: z
       .object({
         url: z.string().optional(),
         message: z.string().optional(),
       })
       .optional(),
   }),
+  description: z.string().optional(),
 });
 export type PodcastsByFeedIdResult = z.infer<typeof PodcastsByFeedIdResult>;
+
+export const PodcastByGuidResult = z.object({
+  status: z.enum(['true', 'false']),
+  query: z.object({ id: z.string(), guid: z.string() }),
+  feed: PodcastFeed.extend({
+    value: FeedValue.optional(),
+    funding: z
+      .object({
+        url: z.string().optional(),
+        message: z.string().optional(),
+      })
+      .optional(),
+  }),
+  description: z.string().optional(),
+});
+export type PodcastByGuidResult = z.infer<typeof PodcastByGuidResult>;
 
 const episodeLiveItem = z.object({
   id: z.int(),

@@ -8,7 +8,8 @@
   "scripts": {
     "dev": "npx convex dev --once && npm-run-all --parallel dev:web dev:db",
     "dev:web": "vite dev",
-    "dev:db": "convex dev --run board:seed",
+    "dev:db": "convex dev",
+    "dev:db:old": "convex dev --run board:seed",
     "build": "vite build && tsc --noEmit",
     "start": "vite start",
     "dev:webhook": "ngrok http 3211 --url wondrous-opossum-sensible.ngrok-free.app"

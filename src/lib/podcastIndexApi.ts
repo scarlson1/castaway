@@ -6,6 +6,7 @@ import z from 'zod';
 import type {
   EpisodesByFeedId,
   EpisodesByPodGuidResult,
+  PodcastByGuidResult,
   PodcastsByFeedIdResult,
   SearchByTermResult,
   TrendingResult,
@@ -69,6 +70,7 @@ const PodIndexPath = z.enum([
   'value/byfeedurl',
   'categories/list',
   'hub/pubnotify',
+  'static/stats/v4vmusic.json',
 ]);
 type PodIndexPath = z.infer<typeof PodIndexPath>;
 
@@ -189,8 +191,8 @@ export default (
         id: itunesId,
       });
     },
-    podcastsByGUID: async (guid: number) => {
-      return custom(PATH_PODCASTS_BY_GUID, { guid: guid });
+    podcastsByGUID: async (guid: string) => {
+      return custom<PodcastByGuidResult>(PATH_PODCASTS_BY_GUID, { guid });
     },
     podcastsByTag: async () => {
       return custom(PATH_PODCASTS_BY_TAG, { 'podcast-value': '' });

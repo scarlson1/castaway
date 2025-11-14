@@ -1,6 +1,5 @@
-import { mutation } from './_generated/server';
-
 import { v } from 'convex/values';
+import { mutation } from './_generated/server';
 
 export const update = mutation({
   args: {
@@ -72,6 +71,6 @@ export const update = mutation({
 //   });
 // });
 
-function getTimestamp() {
+export function getTimestamp() {
   return new Date().getTime();
 }

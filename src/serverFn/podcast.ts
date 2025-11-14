@@ -53,3 +53,15 @@ export const fetchEpisodesByPodGuid = createServerFn()
     const results = await podClient.episodesByPodGuid(id, since, max, fullText);
     return results;
   });
+
+// export const addPodToDb = createServerFn()
+// .inputValidator(z.object({podId: z.string()}))
+// .handler(async ({ data: { podId } }) => {
+//   const exists = convex
+
+//   const podClient = getPodClient();
+
+//   const results = await podClient.podcastsByGUID(podId);
+
+//   return { podId, convexId }
+// }

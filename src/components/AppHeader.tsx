@@ -132,6 +132,9 @@ export function AppHeader() {
               <li>
                 <MuiLink to='/trending'>Trending</MuiLink>
               </li>
+              <li>
+                <MuiLink to='/podcasts'>Podcasts</MuiLink>
+              </li>
             </ul>
           </Navigation>
         </Box>

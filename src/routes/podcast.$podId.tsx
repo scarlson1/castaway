@@ -1,9 +1,16 @@
 import {
+  convexQuery,
+  useConvexAction,
+  useConvexMutation,
+} from '@convex-dev/react-query';
+import {
+  AddRounded,
   ExplicitRounded,
   LinkRounded,
   MicRounded,
   PlayArrowRounded,
   RadioRounded,
+  RemoveRounded,
 } from '@mui/icons-material';
 import {
   Box,
@@ -16,8 +23,14 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  queryOptions,
+  useMutation,
+  useQuery,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
+import { api } from 'convex/_generated/api';
 import {
   differenceInDays,
   format,
@@ -81,7 +94,20 @@ function RouteComponent() {
   );
 }
 
+// TODO: unsubscribe button if following
 export function PodDetails({ feed }: { feed: PodcastFeed }) {
+  const { mutate: subscribe, isPending } = useMutation({
+    mutationFn: useConvexAction(api.actions.subscribe),
+  });
+
+  const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
+    mutationFn: useConvexMutation(api.subscribe.remove),
+  });
+
+  const { data: isFollowing, isLoading } = useQuery(
+    convexQuery(api.subscribe.isFollowing, { podId: feed.podcastGuid })
+  );
+
   return (
     <Stack direction='row' spacing={2}>
       <Box
@@ -102,9 +128,23 @@ export function PodDetails({ feed }: { feed: PodcastFeed }) {
           sx={{ justifyContent: 'space-between', alignItems: 'center' }}
         >
           <Typography variant='h5'>{feed?.title}</Typography>
-          <Button onClick={() => alert('TODO: implement subscribe to pod')}>
-            Follow
-          </Button>
+          {!isFollowing ? (
+            <Button
+              loading={isPending || isLoading}
+              onClick={() => subscribe({ podcastId: feed.podcastGuid })}
+              startIcon={<AddRounded fontSize='inherit' />}
+            >
+              Follow
+            </Button>
+          ) : (
+            <Button
+              loading={unsubPending || isLoading}
+              onClick={() => unsubscribe({ podId: feed.podcastGuid })}
+              startIcon={<RemoveRounded fontSize='inherit' />}
+            >
+              Unfollow
+            </Button>
+          )}
         </Stack>
         <Rating name='rating' value={5} readOnly size='small' />
         <Divider sx={{ my: 1 }} />

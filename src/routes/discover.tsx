@@ -147,6 +147,7 @@ export const appleChartsQueryOptions = (
     queryKey: ['trending', 'apple', options],
     queryFn: () => fetchAppleCharts({ data: options }),
     staleTime: Infinity, // Or a suitable value for your use case
+    gcTime: 1000 * 1000,
   });
 
 function AppleCharts() {

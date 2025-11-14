@@ -75,3 +75,30 @@ export const fetchAppleCharts = createServerFn()
       .json();
     return result;
   });
+
+interface MusicChartStatsResults {
+  title: string;
+  description: string;
+  timestamp: number;
+  items: {
+    rank: number;
+    boosts: string;
+    title: string;
+    image: string;
+    feedId: number;
+    feedUrl: string;
+    feedGuid: string;
+    itemGuid: string;
+  };
+}
+
+// export const fetchMusicChartsStats = createServerFn()
+//   // .inputValidator(fetchTrendingOptions)
+//   .handler(async ({ data }) => {
+//     const podClient = getPodClient();
+
+//     const results = await podClient.custom<MusicChartStatsResults>(
+//       'static/stats/v4vmusic.json'
+//     );
+//     return results;
+//   });

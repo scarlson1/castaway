@@ -1,4 +1,9 @@
-import { AddRounded } from '@mui/icons-material';
+import {
+  convexQuery,
+  useConvexAction,
+  useConvexMutation,
+} from '@convex-dev/react-query';
+import { AddRounded, RemoveRounded } from '@mui/icons-material';
 import {
   alpha,
   Box,
@@ -13,14 +18,19 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  queryOptions,
+  useMutation,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { createFileRoute, type LinkProps } from '@tanstack/react-router';
 import { zodValidator } from '@tanstack/zod-adapter';
+import { api } from 'convex/_generated/api';
 import { startOfDay, sub } from 'date-fns';
 import { useCallback, useMemo, useRef, useState, type RefObject } from 'react';
 import { MuiStackLink } from '~/components/MuiStackLink';
 import { useHover } from '~/hooks/useHover';
-import type { PodcastFeed } from '~/lib/podcastIndexTypes';
+import type { PodcastFeed, TrendingFeed } from '~/lib/podcastIndexTypes';
 import {
   fetchTrending,
   fetchTrendingOptions,
@@ -73,6 +83,15 @@ function RouteComponent() {
     trendingQueryOptions({ max, lang, cat, notcat, since })
   );
 
+  const { data: subscribed } = useSuspenseQuery(
+    convexQuery(api.subscribe.all, {})
+  );
+
+  const subscribedPodIds = useMemo(
+    () => subscribed.map((s) => s.podcastId),
+    [subscribed]
+  );
+
   const handleSinceChange = useCallback((event: SelectChangeEvent) => {
     setWeeks(event.target.value);
   }, []);
@@ -100,7 +119,12 @@ function RouteComponent() {
       >
         {data.feeds.map((f, i) => (
           <Grid key={f.id} size={{ xs: 6, sm: 3, md: 2 }}>
-            <TrendingCard feed={f} orientation='vertical' rank={i + 1} />
+            <TrendingCard
+              feed={f}
+              orientation='vertical'
+              rank={i + 1}
+              // following={subscribedPodIds.includes(f.podcastGuid)}
+            />
           </Grid>
         ))}
       </Grid>
@@ -109,10 +133,12 @@ function RouteComponent() {
 }
 
 interface TrendingCardProps {
-  feed: PodcastFeed;
+  feed: PodcastFeed | TrendingFeed;
   orientation?: 'vertical' | 'horizontal';
-  rank: number;
+  rank?: number;
   linkProps?: LinkProps;
+  following?: boolean;
+  numbered?: boolean;
 }
 
 // use clsx for orientation styling ??
@@ -123,21 +149,78 @@ export function TrendingCard({
   orientation = 'horizontal',
   rank,
   linkProps,
+  following,
+  numbered = true,
 }: TrendingCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovering] = useHover<HTMLDivElement>(
     ref as RefObject<HTMLDivElement>
   );
 
-  const handleSubscribePod = useCallback((e) => {
-    e.preventDefault();
-    // TODO: useMutation ==> add to user's subscription & invalidate cache
-    alert('not implemented yet');
-  }, []);
+  const { mutate: subscribe, isPending } = useMutation({
+    mutationFn: useConvexAction(api.actions.subscribe),
+  });
 
-  // TODO: subscribe icon button show subscription status & unfollow if subscribed
+  const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
+    mutationFn: useConvexMutation(api.subscribe.remove),
+  });
+  // TODO: optimistic update instead of isPending
+  // TODO:  unfollow if subscribed
 
   let isRow = orientation === 'horizontal';
+
+  // console.log('POD ID: ', feed.podcastGuid);
+
+  function renderActions() {
+    if (!(feed as PodcastFeed).podcastGuid) return null;
+    return (
+      <>
+        {!following ? (
+          <IconButton
+            size='small'
+            loading={isPending}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              subscribe({ podcastId: (feed as PodcastFeed).podcastGuid });
+            }}
+            disableRipple
+            sx={{
+              color: '#fff',
+              bgcolor: alpha('#363D49', 0.5),
+              '&:hover': {
+                color: 'grey.500',
+                bgcolor: '#fff',
+              },
+            }}
+          >
+            <AddRounded fontSize='inherit' />
+          </IconButton>
+        ) : (
+          <IconButton
+            size='small'
+            loading={unsubPending}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              unsubscribe({ podId: (feed as PodcastFeed).podcastGuid });
+            }}
+            disableRipple
+            sx={{
+              color: '#fff',
+              bgcolor: alpha('#363D49', 0.5),
+              '&:hover': {
+                color: 'error.main',
+                bgcolor: '#fff',
+              },
+            }}
+          >
+            <RemoveRounded fontSize='inherit' />
+          </IconButton>
+        )}
+      </>
+    );
+  }
 
   return (
     <div ref={ref}>
@@ -153,13 +236,16 @@ export function TrendingCard({
         }}
         {...linkProps}
       >
-        <Typography
-          variant='overline'
-          color='textSecondary'
-          sx={{ lineHeight: '1.4', textAlign: 'center' }}
-        >
-          {rank || ''}
-        </Typography>
+        {rank !== undefined ? (
+          <Typography
+            variant='overline'
+            color='textSecondary'
+            sx={{ lineHeight: '1.4', textAlign: 'center' }}
+          >
+            {rank || ''}
+          </Typography>
+        ) : null}
+
         <Box sx={{ position: 'relative' }}>
           <Box
             component='img'
@@ -179,21 +265,7 @@ export function TrendingCard({
                 right: 4,
               }}
             >
-              <IconButton
-                size='small'
-                onClick={handleSubscribePod}
-                disableRipple
-                sx={{
-                  color: '#fff',
-                  bgcolor: alpha('#363D49', 0.5),
-                  '&:hover': {
-                    color: 'grey.500',
-                    bgcolor: '#fff',
-                  },
-                }}
-              >
-                <AddRounded fontSize='inherit' />
-              </IconButton>
+              {renderActions()}
             </Box>
           ) : null}
         </Box>
@@ -213,9 +285,14 @@ export function TrendingCard({
               transition: 'opacity 0.3s ease-in-out',
             }}
           >
-            <IconButton size='small' onClick={handleSubscribePod}>
+            {renderActions()}
+            {/* <IconButton
+              size='small'
+              loading={isPending}
+              onClick={() => subscribe({ podId: feed.podcastGuid })}
+            >
               <AddRounded fontSize='inherit' />
-            </IconButton>
+            </IconButton> */}
           </Box>
         ) : null}
       </MuiStackLink>

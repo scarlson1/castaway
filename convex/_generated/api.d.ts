@@ -8,10 +8,15 @@
  * @module
  */
 
+import type * as actions from "../actions.js";
 import type * as clerk from "../clerk.js";
+import type * as crons from "../crons.js";
+import type * as episodes from "../episodes.js";
 import type * as http from "../http.js";
 import type * as messages from "../messages.js";
 import type * as playback from "../playback.js";
+import type * as podcasts from "../podcasts.js";
+import type * as subscribe from "../subscribe.js";
 import type * as users from "../users.js";
 
 import type {
@@ -21,10 +26,15 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  actions: typeof actions;
   clerk: typeof clerk;
+  crons: typeof crons;
+  episodes: typeof episodes;
   http: typeof http;
   messages: typeof messages;
   playback: typeof playback;
+  podcasts: typeof podcasts;
+  subscribe: typeof subscribe;
   users: typeof users;
 }>;
 
