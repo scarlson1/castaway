@@ -2,7 +2,7 @@ import { useConvexMutation } from '@convex-dev/react-query';
 import { useMutation } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { Howl } from 'howler';
-import { debounce } from 'lodash-es';
+import { throttle } from 'lodash-es';
 import { useCallback, useEffect, useRef, useState } from 'react';
 // import { debounce } from "lodash";
 
@@ -24,6 +24,7 @@ interface UseHowlerOptions {
   onEnd?: () => void;
   onPlay?: () => void;
   onPause?: () => void;
+  onLoad?: () => void;
   onPlayError?: (err: Error) => void;
   onLoadError?: (err: Error) => void;
 }
@@ -33,7 +34,14 @@ interface UseHowlerOptions {
 
 export const useHowler = (
   { id, audioUrl, durationSeconds = 0, title }: Episode,
-  { onEnd, onPlay, onPause, onPlayError, onLoadError }: UseHowlerOptions = {},
+  {
+    onEnd,
+    onPlay,
+    onPause,
+    onLoad,
+    onPlayError,
+    onLoadError,
+  }: UseHowlerOptions = {},
   savedPosition = 0
 ) => {
   const howlRef = useRef<Howl>(null);
@@ -44,38 +52,35 @@ export const useHowler = (
   const [rate, setRate] = useState(1);
 
   // convex optimistic update: https://tanstack.com/start/latest/docs/framework/react/examples/start-convex-trellaux?path=examples%2Freact%2Fstart-convex-trellaux%2Fsrc%2Fqueries.ts
-  // // Example Convex mutation wrapper (via TanStack Query)
   // disable if not authenticated ?? anonymous auth ??
-  const { mutate: updatePlayback, isPending } = useMutation({
+  const { mutate: updatePlayback } = useMutation({
     mutationFn: useConvexMutation(api.playback.update),
   });
 
-  useEffect(() => {
-    console.log(`mutation pending: ${isPending}`);
-  }, [isPending]);
-
-  // const updatePlayback = useMutation({
-  //   mutationFn: async ({ position }) => {
-  //     await fetch("/api/updatePlayback", {
-  //       method: "POST",
-  //       body: JSON.stringify({
-  //         episodeId: id,
-  //         positionSeconds: position,
-  //       }),
-  //     });
-  //   },
-  // });
-
-  // // TODO: use useDebounce hook (useLayoutEffect ??)
   // https://usehooks-ts.com/react-hook/use-debounce-callback
   // https://usehooks-ts.com/react-hook/use-debounce-value
   // https://github.com/uidotdev/usehooks/blob/945436df0037bc21133379a5e13f1bd73f1ffc36/index.js#L239
-  // Debounced persist
-  const persistProgress = useRef(
-    debounce((pos) => {
+  // const persistProgress = useRef(
+  //   throttle((pos) => {
+  //     updatePlayback({ positionSeconds: pos, episodeId: id });
+  //   }, 5000)
+  // ).current;
+  const persistProgressRef = useRef<ReturnType<typeof throttle> | null>(null);
+
+  useEffect(() => {
+    // cancel previous if exists
+    persistProgressRef.current?.cancel();
+
+    // create new debounced function that closes over current id/updatePlayback
+    persistProgressRef.current = throttle((pos: number) => {
+      // console.log(`update playback: ${title} [epId: ${id}]`);
       updatePlayback({ positionSeconds: pos, episodeId: id });
-    }, 5000)
-  ).current;
+    }, 5000);
+
+    return () => {
+      persistProgressRef.current?.cancel();
+    };
+  }, [id, updatePlayback]);
 
   // Initialize Howler sound
   useEffect(() => {
@@ -89,9 +94,11 @@ export const useHowler = (
       volume,
       onload: () => {
         setDuration(sound.duration());
+        onLoad?.();
         // setLoaded(true) // TODO: add loaded state ?? useful for enabling play button, etc.
       },
       onplay: () => {
+        console.log('onplay');
         setIsPlaying(true);
         onPlay?.();
       },
@@ -132,37 +139,30 @@ export const useHowler = (
         sound.seek(savedPosition);
       }
     });
+    sound.on;
 
     return () => {
       sound.unload();
-      persistProgress.cancel();
+      // persistProgressRef.current.cancel();
     };
   }, [audioUrl]);
 
-  // Track position (updates every 500ms while playing)
-  // useInterval(() => {
-  //   if (isPlaying) {
-  //     const sound = howlRef.current;
-  //     if (sound) setPosition(sound.seek());
-  //   }
-  // }, 500);
-
   // Poll for current seek position while playing
   useEffect(() => {
-    let raf;
+    let raf; // create hook ?? or use framer motion's hook ??
     const update = () => {
       const sound = howlRef.current;
       if (sound && sound.playing()) {
         const current = sound.seek() as number;
         setPosition(current);
-        persistProgress(current);
+        persistProgressRef.current(current);
       }
       raf = requestAnimationFrame(update);
     };
     raf = requestAnimationFrame(update);
 
     return () => cancelAnimationFrame(raf);
-  }, [persistProgress]);
+  }, []);
 
   // Playback controls
   const play = useCallback(() => howlRef.current?.play(), []);
@@ -177,17 +177,14 @@ export const useHowler = (
 
   const mute = useCallback(() => howlRef.current?.mute(), []);
 
-  const seek = useCallback(
-    (pos: number) => {
-      const sound = howlRef.current;
-      if (sound && typeof pos === 'number') {
-        sound.seek(pos);
-        setPosition(pos);
-        persistProgress(pos);
-      }
-    },
-    [persistProgress]
-  );
+  const seek = useCallback((pos: number) => {
+    const sound = howlRef.current;
+    if (sound && typeof pos === 'number') {
+      sound.seek(pos);
+      setPosition(pos);
+      persistProgressRef.current(pos);
+    }
+  }, []);
 
   const setVol = useCallback((v) => {
     const sound = howlRef.current;

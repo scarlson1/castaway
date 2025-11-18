@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
 import { auth } from '@clerk/tanstack-react-start/server';
-import type { ConvexQueryClient } from '@convex-dev/react-query';
+import { convexQuery, type ConvexQueryClient } from '@convex-dev/react-query';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
 import { Box, Container, CssBaseline, ThemeProvider } from '@mui/material';
-import type { QueryClient } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import {
   createRootRouteWithContext,
@@ -16,13 +16,15 @@ import {
 } from '@tanstack/react-router';
 import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
 import { createServerFn } from '@tanstack/react-start';
+import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { format } from 'date-fns';
-import { Suspense, type ReactNode } from 'react';
+import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
 import castawayLogo from '~/assets/castaway-light.png';
 import { AppHeader } from '~/components/AppHeader';
 import AudioPlayer from '~/components/AudioPlayer';
+import { Toaster } from '~/components/Toaster';
 import { useQueue } from '~/hooks/useQueue';
 import { theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
@@ -138,6 +140,7 @@ function Providers({ children }: { children: ReactNode }) {
     <CacheProvider value={emotionCache}>
       <ThemeProvider theme={theme} defaultMode='system'>
         <CssBaseline enableColorScheme />
+        <Toaster />
         {children}
         {/* <FirebaseAppContext>
           <FirebaseServicesContext>{children}</FirebaseServicesContext>
@@ -188,7 +191,28 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 
 // temp for testing zustand
 function WrappedPlayer() {
+  const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
   const episode = useQueue((state) => state.nowPlaying);
+
+  // TODO: better cache refresh solution (not needed ?? convex should pick up new records)
+  // need to refresh cache when new item is played (only syncs initially returned?)
+  useEffect(() => {
+    let t = setTimeout(() => {
+      console.log('REFRESHING userPlayback getAllForUser');
+      userPlayback.refetch();
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [episode]);
+
+  const savedPosition = useMemo(() => {
+    const playbackIndex = userPlayback?.data?.findIndex(
+      (pb) => pb.episodeId === episode?.episodeId
+    );
+    if (playbackIndex !== undefined) {
+      const playback = userPlayback.data?.[playbackIndex];
+      return playback?.positionSeconds || 0;
+    }
+  }, [episode, userPlayback]);
 
   if (!episode) return null;
 
@@ -204,6 +228,7 @@ function WrappedPlayer() {
           : ''
       }
       podName={episode.podName}
+      savedPosition={savedPosition || 0}
     />
   );
 }

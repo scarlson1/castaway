@@ -9,6 +9,7 @@ import { alpha, Button, GlobalStyles, Stack, styled } from '@mui/material';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import { useLocation } from '@tanstack/react-router';
+import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
 import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 // import { HeaderNavBar } from '~/components/HeaderNavBar';
 // import HeaderNavDropdown from '~/components/HeaderNavDropdown';
@@ -121,7 +122,16 @@ export function AppHeader() {
         sx={{ display: 'flex', alignItems: 'center', minHeight: HEIGHT }}
       >
         {/* <LogoWithCopyMenu /> */}
-        <CastawayLogo sx={{ fontSize: 32, mr: 1 }} />
+        <MuiLink
+          to='/'
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          }}
+        >
+          <CastawayLogo sx={{ fontSize: 32, mr: 1 }} />
+        </MuiLink>
         <Box sx={{ display: { xs: 'none', md: 'initial' } }}>
           {/* <HeaderNavBar /> */}
           <Navigation>
@@ -138,7 +148,9 @@ export function AppHeader() {
             </ul>
           </Navigation>
         </Box>
-        <Box sx={{ ml: 'auto' }} />
+        <Box sx={{ ml: 'auto' }}>
+          <AutoCompleteSearch />
+        </Box>
         <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
           {/* <DeferredAppSearch /> */}
 

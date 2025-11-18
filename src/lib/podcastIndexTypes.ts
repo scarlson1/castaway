@@ -1,6 +1,19 @@
 import z from 'zod';
 
-const PodcastFeed = z.object({
+export const searchByTermSchema = z.object({
+  query: z.string(),
+  cat: z.string().optional(),
+  max: z.number().min(1).max(1000).optional(),
+  appleOnly: z.boolean().optional(),
+  clean: z.boolean().optional(),
+  similar: z.boolean().optional(),
+  fullText: z.boolean().optional(),
+  pretty: z.boolean().optional(),
+});
+
+export type SearchByTermSchema = z.infer<typeof searchByTermSchema>;
+
+const podcastFeed = z.object({
   id: z.int(),
   podcastGuid: z.string(),
   title: z.string(),
@@ -36,12 +49,12 @@ const PodcastFeed = z.object({
   // See https://github.com/Podcastindex-org/api/issues/3 to track when the property name is updated.
   newestItemPublishTime: z.int().optional(),
 });
-export type PodcastFeed = z.infer<typeof PodcastFeed>;
+export type PodcastFeed = z.infer<typeof podcastFeed>;
 
 // https://podcastindex-org.github.io/docs-api/#get-/search/bytitle
 export const SearchByTermResult = z.object({
   status: z.enum(['true', 'false']),
-  feeds: z.array(PodcastFeed),
+  feeds: z.array(podcastFeed),
   count: z.number(),
   query: z.string(),
   description: z.string().optional(),
@@ -96,7 +109,7 @@ const FeedValue = z.object({
 export const PodcastsByFeedIdResult = z.object({
   status: z.enum(['true', 'false']),
   query: z.object({ id: z.string() }),
-  feed: PodcastFeed.extend({
+  feed: podcastFeed.extend({
     value: FeedValue.optional(),
     funding: z
       .object({
@@ -112,7 +125,7 @@ export type PodcastsByFeedIdResult = z.infer<typeof PodcastsByFeedIdResult>;
 export const PodcastByGuidResult = z.object({
   status: z.enum(['true', 'false']),
   query: z.object({ id: z.string(), guid: z.string() }),
-  feed: PodcastFeed.extend({
+  feed: podcastFeed.extend({
     value: FeedValue.optional(),
     funding: z
       .object({

@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { json } from '@tanstack/react-start';
 import { getPodClient } from '~/lib/podcastIndexClient';
 
+// can delete - not using (created to test http server fn)
 export const Route = createFileRoute('/api/search')({
   server: {
     // middleware: [authMiddleware], // Runs first for all handlers
@@ -9,7 +10,9 @@ export const Route = createFileRoute('/api/search')({
       createHandlers({
         GET: async ({ request }) => {
           const podClient = getPodClient();
-          const results = await podClient.searchByTerm('Pod Save America'); // Experience
+          const results = await podClient.searchByTerm({
+            query: 'Pod Save America',
+          }); // Experience
 
           return json({ ...results });
         },

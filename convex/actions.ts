@@ -47,6 +47,7 @@ export const subscribe = action({
         mostRecentEpisode: feed.mostRecentEpisode || 0,
         categories: feed.categories || {},
         categoryArray: Object.values(feed.categories || {}) as string[],
+        explicit: feed.explicit ?? null,
       });
       console.log(`Added podcast to DB ${podcastId} ${newId}`);
       id = newId as Id<'podcasts'>;
@@ -162,24 +163,17 @@ export async function fetchPodIndex(
   }
 }
 
-// export const fetchPodIndex = internalAction({
-//   args: { podcastId: v.string() },
-//   handler: async (ctx, { podcastId }) => {
-//     try {
-//       // const params = new URLSearchParams();
-//       // params.append('guid', podcastId);
-//       const params = new URLSearchParams({ guid: podcastId });
-//       const res = await api<{ feed: Record<string, any> }>(
-//         `podcasts/byguid?${params}`
-//       );
-//       console.log('res: ', JSON.stringify(res, null, 2));
-
-//       if (typeof res.body === 'string' || !res.body.feed)
-//         throw new Error(`podcast not found with ID ${podcastId}`);
-//       return res.body.feed;
-//     } catch (err) {
-//       console.log(err);
-//       throw err;
-//     }
+// TODO: wrap function so it can be called using api.actions.transcribeAndClassify
+// export const transcribeAndClassify = action({
+//   args: {
+//     audioUrl: v.string(),
+//     episodeId: v.string(),
+//     convexEpId: v.id('episodes'),
+//     podcastId: v.string(),
 //   },
-// });
+//   handler: async (
+//     ctx,
+//     { audioUrl, episodeId, convexEpId, podcastId }
+//   ): Promise<{ resultId: Id<'adSegments'>; ads: WindowTime[] }> => {
+//     return
+//   })

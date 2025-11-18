@@ -42,13 +42,16 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { useHover } from '~/hooks/useHover';
 import { useQueue } from '~/hooks/useQueue';
 import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
-import { fetchEpisodesByPodGuid, fetchPodDetails } from '~/serverFn/podcast';
+import {
+  fetchEpisodesByPodGuid,
+  fetchPodDetailsByPodIndexId,
+} from '~/serverFn/podcast';
 import { getRootDomain } from '~/utils/getDomain';
 
 export const podDetailsQueryOptions = (id: number) =>
   queryOptions({
     queryKey: ['podcast', id],
-    queryFn: () => fetchPodDetails({ data: { id } }),
+    queryFn: () => fetchPodDetailsByPodIndexId({ data: { id } }),
     staleTime: Infinity, // Or a suitable value for your use case
   });
 
@@ -95,22 +98,34 @@ function RouteComponent() {
   );
 }
 
-// TODO: unsubscribe button if following
 export function PodDetails({ feed }: { feed: PodcastFeed }) {
   return (
     <Stack direction='row' spacing={2}>
       <Box
-        component='img'
-        src={feed?.artwork}
-        alt={`${feed.title} cover art`}
+        // component='img'
+        // src={feed?.artwork}
+        // alt={`${feed.title} cover art`}
         sx={{
-          height: { xs: 100, sm: 160, md: 200 },
-          width: { xs: 100, sm: 160, md: 200 },
+          // height: { xs: 100, sm: 160, md: 200 },
+          // width: { xs: 100, sm: 160, md: 200 },
           objectFit: 'contain',
           borderRadius: 1,
-          // flex:
+          overflow: 'hidden',
+          '& > img': {
+            width: '100%',
+            borderRadius: 1,
+          },
+          // flex: '1 0 auto',
+          flex: {
+            xs: '0 0 120px',
+            sm: '0 0 160px',
+            md: '0 0 180px',
+            lg: '0 0 220px',
+          },
         }}
-      />
+      >
+        <img src={feed?.artwork} alt={`${feed.title} cover art`} />
+      </Box>
       <Box sx={{ flex: '1 1 auto' }}>
         <Stack
           direction='row'
@@ -166,7 +181,7 @@ export function PodDetails({ feed }: { feed: PodcastFeed }) {
   );
 }
 
-function FollowingButtons({ podId }: { podId: string }) {
+export function FollowingButtons({ podId }: { podId: string }) {
   const ref = useRef<HTMLButtonElement>(null);
   const [isHovering] = useHover(ref as RefObject<HTMLButtonElement>);
   const { mutate: subscribe, isPending } = useMutation({

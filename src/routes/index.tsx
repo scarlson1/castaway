@@ -1,43 +1,36 @@
-import { Stack, Typography } from '@mui/material';
+import { Container, Stack, Typography } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
-// const filePath = 'count.txt';
-
-// async function readCount() {
-//   return parseInt(
-//     await fs.promises.readFile(filePath, 'utf-8').catch(() => '0')
-//   );
-// }
-
-// const getCount = createServerFn({
-//   method: 'GET',
-// }).handler(() => {
-//   return readCount();
-// });
-
-// // const updateCount = createServerFn({ method: 'POST' })
-// //   .inputValidator((d: number) => d)
-// //   .handler(async ({ data }) => {
-// //     const count = await readCount();
-// //     await fs.promises.writeFile(filePath, `${count + data}`);
-// //   });
-
-// const indexSearchSchema = z.object({
-//   count: z.number().optional(), // .default(0),
-// });
+import { useCallback } from 'react';
+import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
+import { PodcastIndexSearch } from '~/components/PodcastIndexSearch';
+import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 export const Route = createFileRoute('/')({
   component: Home,
-  // loader: async () => await getCount(),
-  // validateSearch: (search) => indexSearchSchema.parse(search),
 });
 
 function Home() {
+  const navigate = Route.useNavigate();
+
+  const handleSelect = useCallback(
+    (pod: PodcastFeed) => {
+      navigate({ to: '/podcast/$podId', params: { podId: pod.id.toString() } });
+    },
+    [navigate]
+  );
+
   return (
     <Stack alignItems='center'>
       <Typography variant='h1' marginBlockEnd={4}>
-        Hello world!
+        Castaway
       </Typography>
-      <button
+
+      <Container maxWidth='sm'>
+        <PodcastIndexSearch />
+        <AutoCompleteSearch onSelect={handleSelect} />
+      </Container>
+
+      {/* <button
         onClick={() => {
           fetch('/api/search', {
             method: 'GET',
@@ -51,25 +44,7 @@ function Home() {
         }}
       >
         Say Hello
-      </button>
+      </button> */}
     </Stack>
   );
 }
-
-// function Home() {
-//   const router = useRouter();
-//   const state = Route.useLoaderData();
-
-//   return (
-//     <Button
-//       variant='contained'
-//       onClick={() => {
-//         updateCount({ data: 1 }).then(() => {
-//           router.invalidate();
-//         });
-//       }}
-//     >
-//       Add 1 to {state}?
-//     </Button>
-//   );
-// }

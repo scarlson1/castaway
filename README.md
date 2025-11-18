@@ -23,6 +23,8 @@ Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the
 - optimized caching
 - subscription notifications
 - auto-skip ads
+- search
+- vector search to find similar podcasts (combine with metadata (category, people, etc.) to produce score) ??
 
 ## Subscription flow
 

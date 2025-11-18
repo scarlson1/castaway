@@ -7,6 +7,8 @@ import { appleChartsQueryOptions } from '~/routes/discover';
 import { trendingSearchOptions } from '~/routes/trending';
 import { TrendingCard } from '~/routes/trending.index';
 
+// TODO: fetch apple top charts once a day --> save to DB
+
 export const Route = createFileRoute('/trending/apple')({
   component: TopApple,
   validateSearch: zodValidator(trendingSearchOptions),

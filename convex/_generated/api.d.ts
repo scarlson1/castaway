@@ -9,14 +9,25 @@
  */
 
 import type * as actions from "../actions.js";
+import type * as adSegments from "../adSegments.js";
 import type * as clerk from "../clerk.js";
 import type * as crons from "../crons.js";
 import type * as episodes from "../episodes.js";
 import type * as http from "../http.js";
+import type * as node from "../node.js";
 import type * as playback from "../playback.js";
 import type * as podcasts from "../podcasts.js";
 import type * as subscribe from "../subscribe.js";
+import type * as transcribeAndClassify from "../transcribeAndClassify.js";
 import type * as users from "../users.js";
+import type * as utils_buildWindows from "../utils/buildWindows.js";
+import type * as utils_embeddings from "../utils/embeddings.js";
+import type * as utils_llmBatchClassifier from "../utils/llmBatchClassifier.js";
+import type * as utils_llmClassifier from "../utils/llmClassifier.js";
+import type * as utils_mergeWindows from "../utils/mergeWindows.js";
+import type * as utils_processPodcast from "../utils/processPodcast.js";
+import type * as utils_transcribe from "../utils/transcribe.js";
+import type * as utils_transcribeUrl from "../utils/transcribeUrl.js";
 
 import type {
   ApiFromModules,
@@ -26,14 +37,25 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
+  adSegments: typeof adSegments;
   clerk: typeof clerk;
   crons: typeof crons;
   episodes: typeof episodes;
   http: typeof http;
+  node: typeof node;
   playback: typeof playback;
   podcasts: typeof podcasts;
   subscribe: typeof subscribe;
+  transcribeAndClassify: typeof transcribeAndClassify;
   users: typeof users;
+  "utils/buildWindows": typeof utils_buildWindows;
+  "utils/embeddings": typeof utils_embeddings;
+  "utils/llmBatchClassifier": typeof utils_llmBatchClassifier;
+  "utils/llmClassifier": typeof utils_llmClassifier;
+  "utils/mergeWindows": typeof utils_mergeWindows;
+  "utils/processPodcast": typeof utils_processPodcast;
+  "utils/transcribe": typeof utils_transcribe;
+  "utils/transcribeUrl": typeof utils_transcribeUrl;
 }>;
 
 /**

@@ -9,6 +9,7 @@ import type {
   PodcastByGuidResult,
   PodcastsByFeedIdResult,
   SearchByTermResult,
+  SearchByTermSchema,
   TrendingResult,
 } from '~/lib/podcastIndexTypes';
 
@@ -142,19 +143,40 @@ export default (
     api,
     custom,
 
-    searchByTerm: async (
-      q: string,
-      val: 'any' | 'lightning' | 'hive' | 'webmonetization' | null = null,
-      clean = false,
-      fullText = false
-    ) => {
-      let queries = {
-        q: q,
-      };
-      if (val !== null) queries['val'] = val;
-      if (clean) queries['clean'] = '';
-      if (fullText) queries['fullText'] = '';
-      return custom<SearchByTermResult>(PATH_SEARCH_BY_TERM, queries);
+    // searchByTerm: async (
+    //   q: string,
+    //   val: 'any' | 'lightning' | 'hive' | 'webmonetization' | null = null,
+    //   clean = false,
+    //   fullText = false
+    // ) => {
+    //   let queries = {
+    //     q: q,
+    //   };
+    //   if (val !== null) queries['val'] = val;
+    //   if (clean) queries['clean'] = '';
+    //   if (fullText) queries['fullText'] = '';
+    //   return custom<SearchByTermResult>(PATH_SEARCH_BY_TERM, queries);
+    // },
+    searchByTerm: async ({
+      query,
+      cat,
+      max,
+      appleOnly,
+      clean,
+      similar,
+      fullText,
+      pretty,
+    }: SearchByTermSchema) => {
+      return custom<SearchByTermResult>(PATH_SEARCH_BY_TERM, {
+        q: query,
+        cat,
+        max,
+        aponly: appleOnly,
+        clean,
+        similar,
+        fullText,
+        pretty,
+      });
     },
     searchByTitle: async (
       q: string,
@@ -276,7 +298,7 @@ export default (
       itunesId,
       since = null,
       max = 10,
-      fullText = false
+      fullText = true
     ) => {
       let queries = {
         id: itunesId,
@@ -286,7 +308,7 @@ export default (
       if (fullText) queries['fullText'] = '';
       return custom(PATH_EPISODES_BY_ITUNES_ID, queries);
     },
-    episodesById: async (id, fullText = false) => {
+    episodesById: async (id, fullText = true) => {
       let queries = {
         id: id,
       };
@@ -298,7 +320,7 @@ export default (
       lang = null,
       cat = null,
       notcat = null,
-      fullText = false
+      fullText = true
     ) => {
       let queries = {
         max: max,
@@ -329,7 +351,7 @@ export default (
       max = 10,
       excludeString = null,
       before = null,
-      fullText = false
+      fullText = true
     ) => {
       let queries = {
         max: max,

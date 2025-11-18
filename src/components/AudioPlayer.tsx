@@ -15,7 +15,8 @@ import {
   styled,
   Typography,
 } from '@mui/material';
-import { useCallback, useRef, type RefObject } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { PlayPauseButton } from '~/components/PlayPauseButton';
 import { useHover } from '~/hooks/useHover';
 import { useHowler } from '~/hooks/useHowler';
@@ -81,6 +82,7 @@ export default function AudioPlayer({
   durationSeconds,
   savedPosition = 0,
 }: AudioPlayerProps) {
+  const queryClient = useQueryClient();
   const {
     play,
     pause,
@@ -95,9 +97,21 @@ export default function AudioPlayer({
     rate,
   } = useHowler(
     { audioUrl: src, id, title, durationSeconds },
-    {},
+    {
+      onLoad: () => {
+        setTimeout(() => {
+          queryClient.refetchQueries({
+            queryKey: ['convexQuery', 'playback:getAllForUser', {}],
+          });
+        }, 500);
+      },
+    },
     savedPosition
   );
+
+  useEffect(() => {
+    console.log(`playing: ${title} - ${id}`);
+  }, [id, title]);
 
   return (
     <Widget
@@ -140,7 +154,7 @@ export default function AudioPlayer({
             textAlign: 'center',
           }}
         >{`${podName} - ${releaseDate}`}</Typography>
-
+        {/* TODO: debug delay resetting position when src is changed */}
         <ProgressSlider position={position} duration={duration} seek={seek} />
       </Box>
       <Box>

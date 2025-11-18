@@ -88,9 +88,22 @@ export default defineSchema({
     episodeCount: v.optional(v.union(v.number(), v.null())), // aggregate count from db query ??
     categories: v.optional(v.any()),
     categoryArray: v.optional(v.array(v.string())),
+    explicit: v.optional(v.union(v.boolean(), v.null())),
+    funding: v.optional(
+      v.object({ url: v.union(v.string(), v.null()), message: v.string() })
+    ),
+    embedding: v.optional(v.array(v.number())),
   })
     .index('by_podId', ['podcastId'])
-    .index('by_itunesId', ['itunesId']),
+    .index('by_itunesId', ['itunesId'])
+    .index('by_podId_lastFetched', ['podcastId', 'lastFetchedAt'])
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 1536,
+      // filterFields: ['categoryArray']
+    }),
+
+  // fetch to get embedding: https://stack.convex.dev/the-magic-of-embeddings
 
   subscriptions: defineTable({
     clerkId: v.string(),
@@ -133,7 +146,7 @@ export default defineSchema({
       v.array(
         v.object({
           id: v.union(v.number(), v.string()),
-          name: v.string(),
+          name: v.optional(v.string()),
           role: v.optional(v.string()),
           group: v.optional(v.string()),
           href: v.optional(v.string()),
@@ -145,6 +158,7 @@ export default defineSchema({
       v.array(
         v.object({
           url: v.optional(v.string()),
+          uri: v.optional(v.string()),
           protocol: v.optional(v.string()),
           accountId: v.optional(v.string()),
           accountUrl: v.optional(v.string()),
@@ -154,18 +168,61 @@ export default defineSchema({
     ),
   })
     .index('by_podId', ['podcastId'])
+    .index('by_episodeId', ['episodeId'])
     .index('by_podId_pub', ['podcastId', 'publishedAt'])
-    .index('by_podId_episode', ['podcastId', 'episode']),
+    .index('by_podId_episode', ['podcastId', 'episode'])
+    .searchIndex('search_body', {
+      searchField: 'title',
+      filterFields: ['podcastId'],
+      // staged: false,
+    }),
+  // TODO: add vector search for description to find similar podcasts ??
 
   user_playback: defineTable({
     // id: v.string(), // "play:user:abc:episode:yyyy", // or fields userId + episodeId as keys
     clerkId: v.string(), // v.id('users'),
     episodeId: v.string(), // TODO: make userId:episodeId unique
     positionSeconds: v.float64(),
+    duration: v.optional(v.number()),
     completed: v.boolean(),
     lastUpdatedAt: v.float64(), // v.int64(),
     playedPercentage: v.optional(v.float64()),
+    episodeTitle: v.optional(v.string()),
+    podcastTitle: v.optional(v.string()),
   })
     .index('by_clerk_id', ['clerkId'])
     .index('by_clerk_episode', ['clerkId', 'episodeId']),
+
+  adSegmentsOld: defineTable({
+    podcastId: v.string(),
+    episodeId: v.string(),
+    convexEpId: v.id('episodes'),
+    audioUrl: v.string(),
+    ads: v.array(
+      v.object({
+        start: v.number(),
+        end: v.number(),
+      })
+    ),
+    createdAt: v.number(),
+  }).index('by_episodeId', ['episodeId']),
+
+  ads: defineTable({
+    podcastId: v.string(),
+    episodeId: v.string(),
+    convexEpId: v.id('episodes'),
+    audioUrl: v.string(),
+    start: v.number(),
+    end: v.number(),
+    duration: v.number(),
+    transcript: v.string(),
+    confidence: v.number(),
+    embedding: v.array(v.number()),
+    createdAt: v.number(),
+  })
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 1536, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
+    })
+    .index('by_episodeId', ['episodeId']),
 });

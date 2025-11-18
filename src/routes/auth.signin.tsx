@@ -32,7 +32,6 @@ function useClerkAppearance(): ComponentProps<typeof SignIn>['appearance'] {
 function RouteComponent() {
   const search = Route.useSearch(); // ({ select: (s) => s.redirect })
   const appearance = useClerkAppearance();
-  console.log('SIGNIN', search);
 
   return (
     <Box

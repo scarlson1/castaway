@@ -8,7 +8,10 @@ export default defineConfig({
     port: 3000,
   },
   ssr: {
-    noExternal: ['@mui/*'],
+    noExternal: ['@mui/*', '@emotion/*'],
+  },
+  optimizeDeps: {
+    include: ['@emotion/styled'],
   },
   plugins: [tsConfigPaths(), tanstackStart(), viteReact()],
   envPrefix: ['CLERK_SIGN_IN_', 'CLERK_SIGN_UP_', 'VITE_'],

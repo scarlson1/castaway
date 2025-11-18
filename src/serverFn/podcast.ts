@@ -8,7 +8,7 @@ export const fetchPodDetailsOptions = z.object({
 export type FetchPodDetailsOptions = z.infer<typeof fetchPodDetailsOptions>;
 
 // RPC pattern - server execution; client callable
-export const fetchPodDetails = createServerFn()
+export const fetchPodDetailsByPodIndexId = createServerFn()
   .inputValidator(fetchPodDetailsOptions)
   .handler(async ({ data }) => {
     const podClient = getPodClient();

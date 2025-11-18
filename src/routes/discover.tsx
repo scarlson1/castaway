@@ -133,7 +133,16 @@ function Trending() {
           sx={{ width: 'unset !important', mb: 1 }}
           key={p.id}
         >
-          <TrendingCard feed={p} />
+          <TrendingCard
+            feed={
+              {
+                id: p.id,
+                artwork: p.artwork,
+                title: p.title,
+                author: p.author,
+              } as PodcastFeed
+            }
+          />
         </Grid>
       ))}
     </Grid>
@@ -200,13 +209,13 @@ function AppleCharts() {
 }
 
 interface TrendingCardProps {
-  feed: PodcastFeed;
+  feed: PodcastFeed; // | TrendingResult
   orientation?: 'vertical' | 'horizontal';
   linkProps?: LinkProps;
 }
 
 // use clsx for orientation styling ??
-
+// TODO: fix - pass props individually (title, etc.) so it can be used for trending data and podcast data (podcast index ID vs guid)
 function TrendingCard({ feed, linkProps }: TrendingCardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovering] = useHover<HTMLDivElement>(
@@ -226,7 +235,7 @@ function TrendingCard({ feed, linkProps }: TrendingCardProps) {
       <MuiStackLink
         direction='row'
         spacing={2}
-        to={'/podcast/$podId'}
+        to={'/podcast/$podId'} // podcast index ID
         params={{ podId: `${feed.id || ''}` }}
         sx={{
           textDecoration: 'none',

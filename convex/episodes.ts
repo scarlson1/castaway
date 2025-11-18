@@ -1,6 +1,7 @@
 import { internal } from 'convex/_generated/api';
-import { Doc } from 'convex/_generated/dataModel';
+import { Doc, type Id } from 'convex/_generated/dataModel';
 import {
+  action,
   internalAction,
   internalMutation,
   internalQuery,
@@ -18,7 +19,6 @@ import type {
   EpisodesByPodGuidResult,
 } from '~/lib/podcastIndexTypes';
 
-// TODO: pagination
 export const getByPodcast = query({
   args: { podId: v.string(), paginationOpts: paginationOptsValidator },
   handler: async ({ db }, { podId, paginationOpts }) => {
@@ -30,6 +30,23 @@ export const getByPodcast = query({
       .paginate(paginationOpts);
 
     return results;
+  },
+});
+
+export const getById = internalQuery({
+  args: { convexId: v.id('episodes') },
+  handler: async ({ db }, { convexId }) => {
+    return db.get(convexId);
+  },
+});
+
+export const getByGuid = query({
+  args: { id: v.string() },
+  handler: async ({ db }, { id }) => {
+    return db
+      .query('episodes')
+      .withIndex('by_episodeId', (q) => q.eq('episodeId', id))
+      .unique();
   },
 });
 
@@ -59,6 +76,39 @@ export const saveEpisodesToDb = internalMutation({
   },
 });
 
+export const refreshByPodId = action({
+  args: { podId: v.string() },
+  handler: async (ctx, { podId }) => {
+    // TODO: REFACTOR INTO HELPER FUNCTION - SAME AS fetchNewEpisodes
+    let mostRecentEpisode = await ctx.runQuery(
+      internal.episodes.getMostRecentEpisode,
+      { podcastId: podId }
+    );
+    // TODO: handle no recent episode (for title)
+    if (!mostRecentEpisode) return { newEpisodes: 0 };
+
+    let queryOptions = {};
+    let since = (mostRecentEpisode?.publishedAt || 0) / 1000;
+    if (since) queryOptions = { since: String(since) };
+    let newEpisodes = await fetchPodEpisodesFromIndex(podId, queryOptions);
+
+    console.log(
+      `${newEpisodes.length} new episodes found (${mostRecentEpisode?.podcastTitle})`
+    );
+
+    let eps = newEpisodes.map((e) => ({
+      ...e,
+      podcastTitle: mostRecentEpisode?.podcastTitle,
+    }));
+
+    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+      episodes: eps,
+    });
+
+    return { newEpisodes: newEpisodes.length };
+  },
+});
+
 const POLL_INTERVAL = 1000 * 60 * 30; // 30 minutes
 
 // run by cron job every X amount of time
@@ -68,6 +118,12 @@ export const fetchNewEpisodes = internalAction({
     const pods = await ctx.runQuery(internal.episodes.fetchPodcastForRefresh);
 
     let newEpisodesQueue: (EpisodeItem & { podcastTitle: string })[] = [];
+
+    let podLastUpdated: {
+      podId: Id<'podcasts'>;
+      lastUpdatedAt: number;
+      mostRecentEpisode?: number;
+    }[] = [];
 
     // loop through their feeds & fetch updates
     // get most recent from db and add since ??
@@ -90,6 +146,23 @@ export const fetchNewEpisodes = internalAction({
       for (let episode of newEpisodes) {
         newEpisodesQueue.push({ ...episode, podcastTitle: pod.title });
       }
+
+      if (newEpisodes.length) {
+        let update = {
+          podId: pod._id,
+          lastUpdatedAt: new Date().getTime(),
+        };
+        let mostRecentEpisode = newEpisodes[0].datePublished;
+        if (mostRecentEpisode)
+          update['mostRecentEpisode'] = mostRecentEpisode * 1000;
+        podLastUpdated.push(update);
+      }
+    }
+
+    if (podLastUpdated.length) {
+      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+        episodes: newEpisodesQueue,
+      });
     }
 
     if (newEpisodesQueue.length) {
@@ -128,8 +201,11 @@ export const fetchPodcastForRefresh = internalQuery({
     //   .filter(p => subscriberCount > 0)
     // TODO: remove limit ?? or set interval to be shorter than cron
     return await db
-      .query('podcasts') // @ts-ignore
-      .filter((q) => Date.now() - q.lastFetchedAt > POLL_INTERVAL)
+      .query('podcasts')
+      .filter((q) =>
+        q.gt(q.sub(Date.now(), q.field('lastFetchedAt')), POLL_INTERVAL)
+      )
+      // .filter((q) => Date.now() - (q.lastFetchedAt || 0) > POLL_INTERVAL)
       .take(50);
     // .collect();
   },

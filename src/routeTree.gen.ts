@@ -21,7 +21,8 @@ import { Route as AuthSigninRouteImport } from './routes/auth.signin'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as AuthedPodcastsIndexRouteImport } from './routes/_authed.podcasts.index'
 import { Route as PodcastAppleItunesIdRouteImport } from './routes/podcast.apple_.$itunesId'
-import { Route as AuthedPodcastsPodIdRouteImport } from './routes/_authed.podcasts.$podId'
+import { Route as AuthedPodcastsPodIdRouteImport } from './routes/_authed.podcasts_.$podId'
+import { Route as AuthedPodcastsPodIdEpisodesEpisodeIdRouteImport } from './routes/_authed.podcasts_.$podId_.episodes_.$episodeId'
 
 const TrendingRoute = TrendingRouteImport.update({
   id: '/trending',
@@ -83,10 +84,16 @@ const PodcastAppleItunesIdRoute = PodcastAppleItunesIdRouteImport.update({
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthedPodcastsPodIdRoute = AuthedPodcastsPodIdRouteImport.update({
-  id: '/podcasts/$podId',
+  id: '/podcasts_/$podId',
   path: '/podcasts/$podId',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedPodcastsPodIdEpisodesEpisodeIdRoute =
+  AuthedPodcastsPodIdEpisodesEpisodeIdRouteImport.update({
+    id: '/podcasts_/$podId_/episodes_/$episodeId',
+    path: '/podcasts/$podId/episodes/$episodeId',
+    getParentRoute: () => AuthedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -101,6 +108,7 @@ export interface FileRoutesByFullPath {
   '/podcasts/$podId': typeof AuthedPodcastsPodIdRoute
   '/podcast/apple/$itunesId': typeof PodcastAppleItunesIdRoute
   '/podcasts': typeof AuthedPodcastsIndexRoute
+  '/podcasts/$podId/episodes/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -114,6 +122,7 @@ export interface FileRoutesByTo {
   '/podcasts/$podId': typeof AuthedPodcastsPodIdRoute
   '/podcast/apple/$itunesId': typeof PodcastAppleItunesIdRoute
   '/podcasts': typeof AuthedPodcastsIndexRoute
+  '/podcasts/$podId/episodes/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -127,9 +136,10 @@ export interface FileRoutesById {
   '/podcast/$podId': typeof PodcastPodIdRoute
   '/trending/apple': typeof TrendingAppleRoute
   '/trending/': typeof TrendingIndexRoute
-  '/_authed/podcasts/$podId': typeof AuthedPodcastsPodIdRoute
+  '/_authed/podcasts_/$podId': typeof AuthedPodcastsPodIdRoute
   '/podcast/apple_/$itunesId': typeof PodcastAppleItunesIdRoute
   '/_authed/podcasts/': typeof AuthedPodcastsIndexRoute
+  '/_authed/podcasts_/$podId_/episodes_/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/podcasts/$podId'
     | '/podcast/apple/$itunesId'
     | '/podcasts'
+    | '/podcasts/$podId/episodes/$episodeId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -159,6 +170,7 @@ export interface FileRouteTypes {
     | '/podcasts/$podId'
     | '/podcast/apple/$itunesId'
     | '/podcasts'
+    | '/podcasts/$podId/episodes/$episodeId'
   id:
     | '__root__'
     | '/'
@@ -171,9 +183,10 @@ export interface FileRouteTypes {
     | '/podcast/$podId'
     | '/trending/apple'
     | '/trending/'
-    | '/_authed/podcasts/$podId'
+    | '/_authed/podcasts_/$podId'
     | '/podcast/apple_/$itunesId'
     | '/_authed/podcasts/'
+    | '/_authed/podcasts_/$podId_/episodes_/$episodeId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -274,11 +287,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PodcastAppleItunesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/_authed/podcasts/$podId': {
-      id: '/_authed/podcasts/$podId'
+    '/_authed/podcasts_/$podId': {
+      id: '/_authed/podcasts_/$podId'
       path: '/podcasts/$podId'
       fullPath: '/podcasts/$podId'
       preLoaderRoute: typeof AuthedPodcastsPodIdRouteImport
+      parentRoute: typeof AuthedRoute
+    }
+    '/_authed/podcasts_/$podId_/episodes_/$episodeId': {
+      id: '/_authed/podcasts_/$podId_/episodes_/$episodeId'
+      path: '/podcasts/$podId/episodes/$episodeId'
+      fullPath: '/podcasts/$podId/episodes/$episodeId'
+      preLoaderRoute: typeof AuthedPodcastsPodIdEpisodesEpisodeIdRouteImport
       parentRoute: typeof AuthedRoute
     }
   }
@@ -287,11 +307,14 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedPodcastsPodIdRoute: typeof AuthedPodcastsPodIdRoute
   AuthedPodcastsIndexRoute: typeof AuthedPodcastsIndexRoute
+  AuthedPodcastsPodIdEpisodesEpisodeIdRoute: typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPodcastsPodIdRoute: AuthedPodcastsPodIdRoute,
   AuthedPodcastsIndexRoute: AuthedPodcastsIndexRoute,
+  AuthedPodcastsPodIdEpisodesEpisodeIdRoute:
+    AuthedPodcastsPodIdEpisodesEpisodeIdRoute,
 }
 
 const AuthedRouteWithChildren =

@@ -14,55 +14,76 @@ export const update = mutation({
     // const user = await mustGetCurrentUser(ctx);
     // await ctx.db.patch(user._id, { color });
     const identity = await auth.getUserIdentity();
-    console.log('PLAYBACK.UPDATE CALLED', identity?.subject);
-    if (identity === null) {
+    const clerkId = identity?.subject;
+    if (!clerkId) {
       console.log('user not authenticated');
       return;
-      // throw new Error("Not authenticated");
     }
 
     // add convex ID as external ID in clerk and add to session ??
     // const userId: Id<'users'> = identity.subject as Id<'users'>;
-    const clerkId = identity.subject;
-    // alternatively create a getUserById function and call db
-    if (clerkId) {
-      let doc = await db
-        .query('user_playback')
-        .withIndex('by_clerk_episode', (q) =>
-          q.eq('clerkId', clerkId).eq('episodeId', episodeId)
-        )
-        .first();
-      // let doc = await db.query('user_playback').filter(q => q.eq(q.field('userId'), identity.subject).eq(q.field('episodeId'), episodeId)).first()
 
-      if (!doc) {
-        console.log(
-          `CREATING PLAYBACK DOC ${episodeId} [${identity.subject}]...`
+    // alternatively create a getUserById function and call db
+
+    let doc = await db
+      .query('user_playback')
+      .withIndex('by_clerk_episode', (q) =>
+        q.eq('clerkId', clerkId).eq('episodeId', episodeId)
+      )
+      .first();
+
+    if (!doc) {
+      console.log(
+        `CREATING PLAYBACK DOC ${episodeId} [${identity.subject}]...`
+      );
+
+      let ep = await db
+        .query('episodes')
+        .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+        .unique();
+
+      let values = {
+        clerkId,
+        episodeId,
+        positionSeconds,
+        completed: false,
+        lastUpdatedAt: getTimestamp(),
+        episodeTitle: ep?.title,
+        podcastTitle: ep?.podcastTitle,
+      };
+
+      if (ep?.durationSeconds && ep.durationSeconds > 0) {
+        values['duration'] = ep.durationSeconds;
+        values['playedPercentage'] = getPlayedPct(
+          positionSeconds,
+          ep.durationSeconds
+        );
+      }
+
+      await db.insert('user_playback', values);
+    } else {
+      console.log(`UPDATING PLAYBACK ${episodeId}`);
+
+      let values = {
+        positionSeconds,
+        completed,
+        lastUpdatedAt: getTimestamp(),
+      };
+
+      if (doc.duration)
+        values['playedPercentage'] = getPlayedPct(
+          positionSeconds,
+          doc.duration
         );
 
-        await db.insert('user_playback', {
-          clerkId,
-          episodeId,
-          positionSeconds,
-          completed: false,
-          lastUpdatedAt: getTimestamp(),
-        });
-      } else {
-        console.log(`UPDATING PLAYBACK ${episodeId}`);
-
-        await db.patch(doc._id, {
-          positionSeconds,
-          completed,
-          lastUpdatedAt: getTimestamp(),
-        });
-      }
+      await db.patch(doc._id, values);
     }
-
-    // await db.patch("user_playback", { userId: user._id, episodeId }, {
-    //   positionSeconds,
-    //   lastUpdatedAt: Date.now(),
-    // });
   },
 });
+
+function getPlayedPct(pos: number, duration: number) {
+  return Math.round((1 - (duration - pos) / duration) * 100) / 100;
+}
 
 export const getAllForUser = query({
   handler: async ({ db, auth }) => {
@@ -79,10 +100,13 @@ export const getAllForUser = query({
 });
 
 export const getById = query({
-  args: { id: v.id('user_playback') },
+  args: { id: v.optional(v.id('user_playback')) },
   handler: async ({ db }, { id }) => {
     // const identity = await auth.getUserIdentity();
     // let clerkId = identity?.subject;
+    if (!id) {
+      return null;
+    }
     return await db.get(id);
   },
 });
