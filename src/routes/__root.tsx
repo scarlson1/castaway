@@ -20,10 +20,11 @@ import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { format } from 'date-fns';
-import { Suspense, useEffect, useMemo, type ReactNode } from 'react';
+import { Suspense, useMemo, type ReactNode } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import castawayLogo from '~/assets/castaway-light.png';
 import { AppHeader } from '~/components/AppHeader';
-import AudioPlayer from '~/components/AudioPlayer';
+import AudioPlayer from '~/components/AudioPlayerGPT';
 import { Toaster } from '~/components/Toaster';
 import { useQueue } from '~/hooks/useQueue';
 import { theme } from '~/theme/theme';
@@ -52,6 +53,7 @@ export const Route = createRootRouteWithContext<{
   // user: User | null;
 }>()({
   beforeLoad: async ({ context }) => {
+    // TODO: move to _authed ??
     const { userId, token } = await fetchClerkAuth();
 
     // During SSR only (the only time serverHttpClient exists),
@@ -164,21 +166,23 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           <Container component='main' sx={{ paddingBlock: 4 }}>
             {children}
           </Container>
-          <Suspense>
-            <Box
-              sx={{
-                position: 'fixed',
-                bottom: 0,
-                left: 0,
-                right: 0,
-                zIndex: (theme) => theme.zIndex.drawer,
-                borderTopLeftRadius: 1,
-                borderTopRightRadius: 1,
-              }}
-            >
-              <WrappedPlayer />
-            </Box>
-          </Suspense>
+          <ErrorBoundary fallback={<div />} onError={console.log}>
+            <Suspense>
+              <Box
+                sx={{
+                  position: 'fixed',
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  zIndex: (theme) => theme.zIndex.drawer,
+                  borderTopLeftRadius: 1,
+                  borderTopRightRadius: 1,
+                }}
+              >
+                <WrappedPlayer />
+              </Box>
+            </Suspense>
+          </ErrorBoundary>
         </Providers>
 
         <TanStackRouterDevtools position='bottom-left' />
@@ -194,15 +198,17 @@ function WrappedPlayer() {
   const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
   const episode = useQueue((state) => state.nowPlaying);
 
+  console.log(episode);
+
   // TODO: better cache refresh solution (not needed ?? convex should pick up new records)
   // need to refresh cache when new item is played (only syncs initially returned?)
-  useEffect(() => {
-    let t = setTimeout(() => {
-      console.log('REFRESHING userPlayback getAllForUser');
-      userPlayback.refetch();
-    }, 1000);
-    return () => clearTimeout(t);
-  }, [episode]);
+  // useEffect(() => {
+  //   let t = setTimeout(() => {
+  //     console.log('REFRESHING userPlayback getAllForUser');
+  //     userPlayback.refetch();
+  //   }, 1000);
+  //   return () => clearTimeout(t);
+  // }, [episode]);
 
   const savedPosition = useMemo(() => {
     const playbackIndex = userPlayback?.data?.findIndex(
@@ -231,4 +237,20 @@ function WrappedPlayer() {
       savedPosition={savedPosition || 0}
     />
   );
+
+  // return (
+  //   <AudioPlayerPersist
+  //     coverArt={episode.image}
+  //     id={episode.episodeId}
+  //     title={episode.title}
+  //     src={episode.audioUrl}
+  //     releaseDate={
+  //       episode.releaseDateMs
+  //         ? format(new Date(episode.releaseDateMs), 'MMM d')
+  //         : ''
+  //     }
+  //     podName={episode.podName}
+  //     savedPosition={savedPosition || 0}
+  //   />
+  // );
 }

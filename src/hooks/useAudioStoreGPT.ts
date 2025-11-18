@@ -1,0 +1,119 @@
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+
+export interface AudioState {
+  episodeId: string | null;
+  audioUrl: string | null;
+  isPlaying: boolean;
+  position: number; // seconds
+  volume: number;
+  rate: number;
+  duration: number;
+
+  // actions
+  loadAudio: (
+    episodeId: string,
+    audioUrl: string,
+    incomingState?: Partial<AudioState>
+  ) => void;
+  setPlaying: (playing: boolean) => void;
+  setPosition: (seconds: number) => void;
+  setDuration: (duration: number) => void;
+  setVolume: (volume: number) => void;
+  setRate: (rate: number) => void;
+
+  reset: () => void;
+}
+
+// Generates a unique store key per episode
+const storageKey = (episodeId: string) => `audio-player-${episodeId}`;
+
+// TODO: rate and support db
+
+export const useAudioStore = create<AudioState>()(
+  persist(
+    (set, get) => ({
+      episodeId: null,
+      audioUrl: null,
+      isPlaying: false,
+      position: 0,
+      duration: 0,
+      volume: 1,
+      rate: 1,
+
+      loadAudio: (episodeId: string, audioUrl, incomingState = {}) => {
+        useAudioStore.persist.setOptions({
+          name: storageKey(episodeId),
+        });
+        let localState = JSON.parse(
+          localStorage.getItem(storageKey(episodeId)) || '{}'
+        );
+        console.log('LOCAL STATE: ', localState);
+        // let localState = {};
+
+        // merge server-side & local state (server wins)
+        const merged = {
+          ...(localState?.state || {}),
+          ...incomingState,
+        };
+
+        set({
+          episodeId,
+          audioUrl,
+          isPlaying: false,
+          position: merged.position ?? 0,
+          volume: merged.volume ?? 1,
+        });
+      },
+
+      setPlaying: (isPlaying) => set({ isPlaying }),
+      setPosition: (position) => set({ position }),
+      setDuration: (duration) => set({ duration }),
+      setVolume: (volume) => set({ volume }),
+      setRate: (rate) => set({ rate }),
+
+      reset: () =>
+        set({
+          episodeId: null,
+          audioUrl: null,
+          isPlaying: false,
+          position: 0,
+          volume: 1,
+        }),
+    }),
+
+    // dynamic storage key per audio
+    {
+      name: 'audio-player-global', // ignored but required by API
+      storage: {
+        getItem: (key) => {
+          const state = useAudioStore.getState();
+          if (!state.episodeId) return null;
+          let val = localStorage.getItem(storageKey(state.episodeId));
+          let parse = val ? JSON.parse(val) : {};
+          return parse?.state || {};
+        },
+        setItem: (_key, value) => {
+          const state = useAudioStore.getState();
+          if (!state.episodeId || !value) return;
+          console.log('SET ITEM: ', value);
+          localStorage.setItem(
+            storageKey(state.episodeId),
+            JSON.stringify(value)
+          );
+        },
+        removeItem: (_key) => {
+          const state = useAudioStore.getState();
+          if (!state.episodeId) return;
+          localStorage.removeItem(storageKey(state.episodeId));
+        },
+      } as any,
+      partialize: (state) => ({
+        position: state.position,
+        volume: state.volume,
+        episodeId: state.episodeId,
+        isPlaying: state.isPlaying,
+      }),
+    }
+  )
+);

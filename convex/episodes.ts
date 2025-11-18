@@ -64,7 +64,9 @@ export const saveEpisodesToDb = internalMutation({
   ) => {
     // Insert in a loop. This is efficient because Convex queues all the changes
     // to be executed in a single transaction when the mutation ends.
-    console.log(`adding ${episodes.length} episodes to the database`);
+    console.log(
+      `adding ${episodes.length} episodes to the database [${podcastTitle}]`
+    );
     for (const episode of episodes) {
       const id = await db.insert('episodes', {
         ...podIndexEpToConvexEp(episode, podcastTitle),
@@ -228,7 +230,7 @@ export async function fetchPodEpisodesFromIndex(
   const params = new URLSearchParams({
     guid: podcastId,
     max: '1000',
-    fullText: 'true',
+    fullText: '',
     ...options,
   });
   const res = await api<EpisodesByPodGuidResult>(
@@ -247,7 +249,7 @@ function podIndexEpToConvexEp(
   return {
     episodeId: ep.guid,
     podcastId: ep.podcastGuid,
-    title: ep.title, // @ts-ignore
+    title: ep.title, // @ts-ignore podcastName is returned from episodes api
     podcastTitle: ep.podcastName || podcastTitle || '',
     audioUrl: ep.enclosureUrl,
     image: ep.image || null,

@@ -31,6 +31,7 @@ import {
 } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
+import type { Doc } from 'convex/_generated/dataModel';
 import {
   differenceInDays,
   format,
@@ -289,11 +290,7 @@ function EpisodeRow({
       sx={{ alignItems: 'center', my: { xs: 0.5, sm: 1 } }}
     >
       <Typography color='textSecondary' sx={{ width: 80, overflow: 'hidden' }}>
-        {episode.episode
-          ? `E${episode.episode}`
-          : episode.episodeType === 'bonus'
-          ? 'bonus'
-          : ''}
+        {getEpisodeLabel(episode)}
       </Typography>
       <Typography
         sx={{
@@ -309,7 +306,7 @@ function EpisodeRow({
         variant='body2'
         color='textSecondary'
         sx={{
-          width: 80,
+          width: 100,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -369,4 +366,13 @@ function getDuration(seconds: number) {
   if (hours) formatted += `${hours}h`;
   if (minutes) formatted += ` ${minutes}m`;
   return formatted;
+}
+
+export function getEpisodeLabel(ep: EpisodeItem | Doc<'episodes'>) {
+  if (ep.episodeType === 'bonus') return 'bonus';
+  let label = '';
+  if (ep.season) label += `S${ep.season} `;
+  if (ep.episode) label += `E${ep.episode}`;
+
+  return label;
 }

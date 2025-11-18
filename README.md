@@ -234,3 +234,36 @@ call Convex mutation `moveQueueItem(userId, itemId, newPositionIndex)` which is 
 - _Testing_: simulate multi-device races (two clients writing playback/queue at same time) to validate your conflict rules.
 
 - _Monitoring_: track worker failures (feed fetch errors), and surface admin dashboard to retry failed jobs.
+
+## Ad Detection Implementation
+
+### Transcribe
+
+- Use model (openAI/) to transcribe audio from url into transcript
+  - break audio into chunks to abide by 25MB transcription limit (`convex/utils/transcribe.ts`)
+  - merge transcripts and return as segments (`{ id: string;, start: number; end: number; text: string }[]`)
+- Build windows
+  - prep data for LLM by breaking into slightly overlapping windows of 10-20s
+- Classify windows (`convex/utils/llmBatchClassifier.ts`)
+  - call LLM with batches of windows (batch to save tokens / reduce cost)
+  - prompt LLM to classify each window with the format: `{ id_ad: boolean, confidence: 0-1, reason: string }`
+  - return array of combined windows with LLM classification response
+- Merge windows (`convex/utils/mergeWindows.ts`)
+  - use classification and confidence to identify ad segments
+- Run convex action to save each ad to the ads table
+  - calc embedding from ad segment transcript
+  - format:
+  ```json
+  {
+    "podcastId": "podcastGUID",
+    "episodeId": "episodeGUID",
+    "convexEpId": "Id<'episodes'>",
+    "audioUrl": "https://somepod.com/episode/123/audio.mp3",
+    "start": 800, // time seconds
+    "end": 845, // time seconds
+    "duration": 45, // seconds
+    "transcript": "text",
+    "confidence": 0.89,
+    "embedding": [0.23, 0.2839]
+  }
+  ```

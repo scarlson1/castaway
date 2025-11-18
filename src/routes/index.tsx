@@ -13,6 +13,7 @@ function Home() {
 
   const handleSelect = useCallback(
     (pod: PodcastFeed) => {
+      console.log('NAV', pod);
       navigate({ to: '/podcast/$podId', params: { podId: pod.id.toString() } });
     },
     [navigate]

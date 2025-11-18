@@ -45,7 +45,14 @@ export const Route = createFileRoute('/trending/')({
   validateSearch: zodValidator(fetchTrendingOptions),
   loader: ({ context: { queryClient }, params }) => {
     // fetch but don't block/await
-    queryClient.prefetchQuery(trendingQueryOptions(params));
+    queryClient.prefetchQuery(
+      trendingQueryOptions({
+        max: 100,
+        lang: 'en',
+        since: weekToSeconds(4),
+        ...params,
+      })
+    );
   },
 });
 

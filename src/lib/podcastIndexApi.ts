@@ -15,6 +15,8 @@ import type {
 
 // API docs: https://podcastindex-org.github.io/docs-api/#get-/search/byterm
 
+// TODO: redo query options as object
+
 const BASE_API_URL = 'https://api.podcastindex.org/api/1.0/';
 
 const PATH_SEARCH_BY_TERM = 'search/byterm';

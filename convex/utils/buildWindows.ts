@@ -1,5 +1,5 @@
 import type { Window } from 'convex/adSegments';
-import type { TranscriptSegment } from 'convex/utils/transcribe';
+import type { TranscriptSegment } from 'convex/utils/transcribeUrl';
 
 export function buildWindows(
   segments: TranscriptSegment[],

@@ -26,6 +26,7 @@ import { AdsTimeline } from '~/components/AdsTimeline';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 import { useQueue } from '~/hooks/useQueue';
+import { getEpisodeLabel } from '~/routes/podcast.$podId';
 
 export const Route = createFileRoute(
   '/_authed/podcasts_/$podId_/episodes_/$episodeId'
@@ -49,9 +50,11 @@ export const Route = createFileRoute(
 function RouteComponent() {
   const { podId, episodeId } = Route.useParams();
   const toast = useAsyncToast();
+
   const { data } = useSuspenseQuery(
     convexQuery(api.episodes.getByGuid, { id: episodeId })
   );
+
   const { mutate, isPending } = useMutation<
     { status: string },
     Error,
@@ -61,7 +64,7 @@ function RouteComponent() {
     onSuccess: (data, vars) => {
       console.log(data, vars);
       toast.info(`Ad detection process initiated`);
-      toast.success('test');
+      // toast.success('test');
     },
     onError: (err, vars) => {
       console.log(err, vars);
@@ -125,7 +128,7 @@ function RouteComponent() {
               {data?.podcastTitle}
             </Typography>
             <Typography variant='overline' color='textSecondary'>
-              {data?.episode || ''}
+              {getEpisodeLabel(data)}
             </Typography>
           </Stack>
           <Typography variant='h5' gutterBottom>
