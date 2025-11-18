@@ -2,7 +2,6 @@ import { Container, Stack, Typography } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback } from 'react';
 import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
-import { PodcastIndexSearch } from '~/components/PodcastIndexSearch';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 export const Route = createFileRoute('/')({
@@ -26,7 +25,7 @@ function Home() {
       </Typography>
 
       <Container maxWidth='sm'>
-        <PodcastIndexSearch />
+        {/* <PodcastIndexSearch /> */}
         <AutoCompleteSearch onSelect={handleSelect} />
       </Container>
 

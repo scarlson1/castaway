@@ -148,7 +148,7 @@ export function AppHeader() {
             </ul>
           </Navigation>
         </Box>
-        <Box sx={{ ml: 'auto' }}>
+        <Box sx={{ ml: 'auto', mr: 1 }}>
           <AutoCompleteSearch />
         </Box>
         <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
