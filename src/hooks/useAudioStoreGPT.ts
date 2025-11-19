@@ -60,7 +60,7 @@ export const useAudioStore = create<AudioState>()(
         set({
           episodeId,
           audioUrl,
-          isPlaying: false,
+          isPlaying: false, // TODO: how should isPlaying state be handled ??
           position: merged.position ?? 0,
           volume: merged.volume ?? 1,
         });
@@ -81,8 +81,6 @@ export const useAudioStore = create<AudioState>()(
           volume: 1,
         }),
     }),
-
-    // dynamic storage key per audio
     {
       name: 'audio-player-global', // ignored but required by API
       storage: {
@@ -96,7 +94,7 @@ export const useAudioStore = create<AudioState>()(
         setItem: (_key, value) => {
           const state = useAudioStore.getState();
           if (!state.episodeId || !value) return;
-          console.log('SET ITEM: ', value);
+          // console.log('SET ITEM: ', value);
           localStorage.setItem(
             storageKey(state.episodeId),
             JSON.stringify(value)

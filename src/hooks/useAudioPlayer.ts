@@ -11,7 +11,6 @@ export function useAudioPlayer() {
     volume,
     rate,
     duration,
-
     setPlaying,
     setPosition,
     setVolume,
@@ -27,6 +26,7 @@ export function useAudioPlayer() {
 
     // Destroy existing instance
     if (howlRef.current) {
+      if (howlRef.current.src === audioUrl) return;
       howlRef.current.unload();
     }
 
@@ -39,6 +39,7 @@ export function useAudioPlayer() {
       onpause: () => setPlaying(false),
       onstop: () => setPlaying(false),
       onend: () => setPlaying(false),
+      onload: (v) => console.log('LOAD', v),
     });
 
     howlRef.current = howl;
@@ -48,6 +49,7 @@ export function useAudioPlayer() {
       if (position > 0) {
         howl.seek(position);
       }
+      setPlaying(true);
       setDuration(howl.duration());
     });
 
@@ -75,6 +77,13 @@ export function useAudioPlayer() {
       howlRef.current.volume(volume);
     }
   }, [volume]);
+
+  // Sync rate → Howler
+  useEffect(() => {
+    if (howlRef.current) {
+      howlRef.current.rate(rate);
+    }
+  }, [rate]);
 
   // Track position while playing
   useEffect(() => {
@@ -107,11 +116,13 @@ export function useAudioPlayer() {
       setPosition(seconds);
     },
 
+    rate,
+    setRate,
     setVolume,
     position,
     volume,
     isPlaying,
 
-    duration: howlRef.current?.duration() ?? 0,
+    duration: duration ?? 0, // howlRef.current?.duration() ?? 0,
   };
 }

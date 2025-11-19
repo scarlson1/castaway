@@ -91,6 +91,8 @@ export default function AudioPlayer({
     toggle,
     seek,
     setVolume,
+    setRate,
+    rate,
     volume,
     position,
     duration,
@@ -155,9 +157,9 @@ export default function AudioPlayer({
         {/* TODO: debug delay resetting position when src is changed */}
         <ProgressSlider position={position} duration={duration} seek={seek} />
       </Box>
-      {/* <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+      <Box sx={{ display: { xs: 'none', md: 'block' } }}>
         <RateButtons rate={rate} setRate={setRate} />
-      </Box> */}
+      </Box>
       <Box
         sx={{
           flex: {

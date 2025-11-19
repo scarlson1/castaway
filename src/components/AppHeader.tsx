@@ -14,7 +14,6 @@ import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 // import { HeaderNavBar } from '~/components/HeaderNavBar';
 // import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 import CastawayLogo from '~/components/icons/CastawayLogo';
-// import MuiSvgLogo from '~/components/icons/MuiSvgLogo';
 import { ModeToggle } from '~/components/ModeToggle';
 import { MuiLink } from '~/components/MuiLink';
 
@@ -101,12 +100,7 @@ const Navigation = styled('nav')(({ theme }) => [
 
 const HEIGHT = 60; // TODO: use theme.mixins.toolbar.minHeight ??
 
-// interface AppHeaderProps {
-//   githubRepository?: string;
-// }
-
 export function AppHeader() {
-  // props: AppHeaderProps
   const location = useLocation();
 
   return (

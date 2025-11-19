@@ -21,11 +21,11 @@ import { getRootDomain } from '~/utils/getDomain';
 
 export const Route = createFileRoute('/_authed/podcasts_/$podId')({
   component: RouteComponent,
-  loader: ({ context: { queryClient }, params }) => {
-    queryClient.prefetchQuery(
-      convexQuery(api.podcasts.getPodByGuid, { id: params.podId })
-    );
-  },
+  // loader: ({ context: { queryClient }, params }) => {
+  //   queryClient.prefetchQuery(
+  //     convexQuery(api.podcasts.getPodByGuid, { id: params.podId })
+  //   );
+  // },
 });
 
 function RouteComponent() {
