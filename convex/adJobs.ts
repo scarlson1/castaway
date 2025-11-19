@@ -13,6 +13,16 @@ export const getById = query({
   },
 });
 
+export const getByEpisodeId = query({
+  args: { episodeId: v.string() },
+  handler: async ({ db }, { episodeId }) => {
+    return await db
+      .query('adJobs')
+      .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+      .collect();
+  },
+});
+
 export const patch = internalMutation({
   // args: { id: v.id('adJobs'), updates: v. },
   handler: async (
@@ -24,14 +34,18 @@ export const patch = internalMutation({
 });
 
 export const getWindows = internalQuery({
-  args: { jobId: v.id('adJobs') },
-  handler: async ({ db }, { jobId }) => {
+  args: {
+    jobId: v.id('adJobs'),
+    classified: v.boolean(),
+    count: v.optional(v.number()),
+  },
+  handler: async ({ db }, { jobId, classified, count = 10 }) => {
     return await db
       .query('adJobWindows')
       .withIndex('by_jobId_classified', (q) =>
-        q.eq('jobId', jobId).eq('classified', false)
+        q.eq('jobId', jobId).eq('classified', classified)
       )
-      .take(5);
+      .take(count);
   },
 });
 

@@ -18,7 +18,7 @@ import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiStackLink } from '~/components/MuiStackLink';
 import { useHover } from '~/hooks/useHover';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
-import { trendingQueryOptions } from '~/routes/trending.index';
+import { trendingQueryOptions } from '~/queries';
 import {
   fetchAppleCharts,
   type FetchAppleChartsOptions,

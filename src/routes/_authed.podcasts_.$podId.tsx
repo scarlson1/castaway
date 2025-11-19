@@ -16,16 +16,16 @@ import type { Id } from 'convex/_generated/dataModel';
 import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesList } from '~/components/EpisodesList';
-import { FollowingButtons } from '~/routes/podcast.$podId';
+import { FollowingButtons } from '~/components/FollowingButtons';
 import { getRootDomain } from '~/utils/getDomain';
 
 export const Route = createFileRoute('/_authed/podcasts_/$podId')({
   component: RouteComponent,
-  // loader: ({ context: { queryClient }, params }) => {
-  //   queryClient.prefetchQuery(
-  //     convexQuery(api.podcasts.getPodByGuid, { id: params.podId })
-  //   );
-  // },
+  loader: ({ context: { queryClient }, params }) => {
+    queryClient.prefetchQuery(
+      convexQuery(api.podcasts.getPodByGuid, { id: params.podId })
+    );
+  },
 });
 
 function RouteComponent() {
@@ -48,6 +48,8 @@ function RouteComponent() {
     </>
   );
 }
+
+// TODO: move to components/
 
 function PodDetails({ podId }: { podId: string }) {
   const { data } = useSuspenseQuery(

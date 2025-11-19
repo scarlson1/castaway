@@ -66,7 +66,7 @@ export const AutoCompleteSearch = ({
         console.log('ON CHANGE: ', newValue);
         // setOptions(newValue ? [newValue, ...options] : options);
         setValue(newValue);
-        // if (newValue && onSelect) onSelect(newValue);
+        if (newValue && onSelect) onSelect(newValue);
       }}
       onInputChange={(event, newInputValue) => {
         console.log('SET INPUT VALUE:', newInputValue);
@@ -129,7 +129,7 @@ export const AutoCompleteSearch = ({
             onClick={(e) => {
               if ((e.target as HTMLElement).closest('button')) return;
               props.onClick?.(e);
-              if (onSelect) onSelect(option);
+              // if (onSelect) onSelect(option);
             }}
           >
             <AutoCompleteOption option={option} />

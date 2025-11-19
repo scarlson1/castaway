@@ -10,7 +10,7 @@ import {
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, type LinkProps } from '@tanstack/react-router';
 import { zodValidator } from '@tanstack/zod-adapter';
 import { startOfDay, sub } from 'date-fns';
@@ -27,30 +27,31 @@ import { MuiStackLink } from '~/components/MuiStackLink';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 import { useHover } from '~/hooks/useHover';
 import type { PodcastFeed, TrendingFeed } from '~/lib/podcastIndexTypes';
+import { trendingQueryOptions } from '~/queries';
 import {
-  fetchTrending,
   fetchTrendingOptions,
   type FetchTrendingOptions,
 } from '~/serverFn/trending';
 
-export const trendingQueryOptions = (options: FetchTrendingOptions) =>
-  queryOptions({
-    queryKey: ['trending', options],
-    queryFn: () => fetchTrending({ data: options }),
-    staleTime: Infinity, // Or a suitable value for your use case
-  });
-
 export const Route = createFileRoute('/trending/')({
   component: RouteComponent,
   validateSearch: zodValidator(fetchTrendingOptions),
-  loader: ({ context: { queryClient }, params }) => {
+  loaderDeps: ({ search: { max, lang, cat, notcat } }) => ({
+    max,
+    lang,
+    cat,
+    notcat,
+  }),
+  loader: ({ context: { queryClient }, params, deps }) => {
     // fetch but don't block/await
     queryClient.prefetchQuery(
       trendingQueryOptions({
-        max: 100,
-        lang: 'en',
+        // ...params,
+        max: deps.max || 100,
+        lang: deps.lang || 'en',
         since: weekToSeconds(4),
-        ...params,
+        cat: deps.cat,
+        notcat: deps.notcat,
       })
     );
   },

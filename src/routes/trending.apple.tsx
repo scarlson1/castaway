@@ -2,12 +2,16 @@ import { Grid } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { zodValidator } from '@tanstack/zod-adapter';
+import z from 'zod';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 import { appleChartsQueryOptions } from '~/routes/discover';
-import { trendingSearchOptions } from '~/routes/trending';
 import { TrendingCard } from '~/routes/trending.index';
 
 // TODO: fetch apple top charts once a day --> save to DB
+
+export const trendingSearchOptions = z.object({
+  limit: z.number().optional().default(100),
+});
 
 export const Route = createFileRoute('/trending/apple')({
   component: TopApple,

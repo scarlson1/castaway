@@ -1,6 +1,5 @@
 /// <reference types="vite/client" />
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
-import { auth } from '@clerk/tanstack-react-start/server';
 import { convexQuery, type ConvexQueryClient } from '@convex-dev/react-query';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
@@ -16,7 +15,6 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { createServerFn } from '@tanstack/react-start';
 import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
@@ -25,47 +23,45 @@ import { Suspense, useMemo, type ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import castawayLogo from '~/assets/castaway-light.png';
 import { AppHeader } from '~/components/AppHeader';
-import AudioPlayer from '~/components/AudioPlayerGPT';
+import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
 import { useQueue } from '~/hooks/useQueue';
 import { theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
-export const fetchClerkAuth = createServerFn({ method: 'GET' }).handler(
-  async () => {
-    const a = await auth();
-    const { userId, orgId, isAuthenticated } = a;
-    const token = await a.getToken({ template: 'convex' });
-
-    return {
-      userId,
-      orgId,
-      // sessionClaims,
-      isAuthenticated,
-      token,
-    };
-  }
-);
-
-export const Route = createRootRouteWithContext<{
+export interface RouterContext {
   queryClient: QueryClient;
   convexClient: ConvexReactClient;
   convexQueryClient: ConvexQueryClient;
+  userId: string | null;
+  token: string | null;
   // user: User | null;
-}>()({
-  beforeLoad: async ({ context }) => {
-    // TODO: move to _authed ??
-    const { userId, token } = await fetchClerkAuth();
+}
 
-    // During SSR only (the only time serverHttpClient exists),
-    // set the Clerk auth token to make HTTP queries with.
-    if (token) context.convexQueryClient.serverHttpClient?.setAuth(token);
+export const Route = createRootRouteWithContext<RouterContext>()({
+  // beforeLoad: async ({ context }) => {
+  //   const { token, userId } = await ensureConvexToken(context);
+  //   return { token, userId };
+  // },
+  // https://docs.convex.dev/client/tanstack/tanstack-start/clerk
+  // beforeLoad: async ({ context }) => {
+  //   // only call if not context.userId or context.token ??
 
-    return {
-      userId,
-      token,
-    };
-  },
+  //   const { userId, token } = await fetchClerkAuth({
+  //     data: { token: context.token, userId: context.userId },
+  //   });
+
+  //   // During SSR only (the only time serverHttpClient exists),
+  //   // set the Clerk auth token to make HTTP queries with.
+  //   if (token) context.convexQueryClient.serverHttpClient?.setAuth(token);
+
+  //   return { userId, token };
+  // },
+  // loader: async () => {
+  //   const { userId, orgId, isAuthenticated } = await auth();
+
+  //   return { userId, orgId, isAuthenticated };
+  // },
   head: () => ({
     meta: [
       {
@@ -93,7 +89,7 @@ export const Route = createRootRouteWithContext<{
 });
 
 function RootComponent() {
-  const context = Route.useRouteContext(); // useRouteContext({ from: Route.id })
+  const context = Route.useRouteContext();
 
   return (
     <ClerkProvider
@@ -161,7 +157,6 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       </head>
       <body>
         <Providers>
-          {/* <Header /> */}
           <AppHeader />
 
           <Container component='main' sx={{ paddingBlock: 4 }}>
@@ -182,13 +177,13 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
               >
                 <WrappedPlayer />
               </Box>
+              <AudioPlayerBottomSpacer />
             </Suspense>
           </ErrorBoundary>
         </Providers>
 
         {/* <TanStackRouterDevtools position='bottom-left' /> */}
-        {/* <ReactQueryDevtools initialIsOpen={false} />
-         */}
+        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         <TanStackDevtools
           plugins={[
             {
@@ -209,12 +204,9 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
-// temp for testing zustand
 function WrappedPlayer() {
   const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
-  const episode = useQueue((state) => state.nowPlaying);
-
-  console.log(episode);
+  const episode = useQueue((state) => state.nowPlaying); // TODO: use audio store instead ?? add queue to audio store ??
 
   // TODO: better cache refresh solution (not needed ?? convex should pick up new records)
   // need to refresh cache when new item is played (only syncs initially returned?)
@@ -269,4 +261,14 @@ function WrappedPlayer() {
   //     savedPosition={savedPosition || 0}
   //   />
   // );
+}
+
+function AudioPlayerBottomSpacer() {
+  const episode = useQueue((state) => state.nowPlaying);
+  const show = Boolean(episode);
+  return (
+    <Box
+      sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
+    />
+  );
 }

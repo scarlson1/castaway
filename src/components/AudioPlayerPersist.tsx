@@ -20,6 +20,7 @@ import { useCallback, useEffect, useRef, type RefObject } from 'react';
 import { PlayPauseButton } from '~/components/PlayPauseButton';
 import { useAudio } from '~/hooks/useAudio';
 import { useHover } from '~/hooks/useHover';
+import { formatDuration } from '~/utils/format';
 
 // TODO: controls can use zustand hook directly instead of passing through useAudio ??
 
@@ -258,12 +259,6 @@ function PlaybackControls({ seek, position, isPlaying, pause, play }) {
       </IconButton>
     </Box>
   );
-}
-
-function formatDuration(value: number) {
-  const minute = Math.floor(value / 60);
-  const secondLeft = Math.floor(value - minute * 60);
-  return `${minute}:${secondLeft < 10 ? `0${secondLeft}` : secondLeft}`;
 }
 
 interface ProgressSliderProps {

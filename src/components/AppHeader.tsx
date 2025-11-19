@@ -8,7 +8,8 @@ import { PersonRounded } from '@mui/icons-material';
 import { alpha, Button, GlobalStyles, Stack, styled } from '@mui/material';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
-import { useLocation } from '@tanstack/react-router';
+import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useCallback } from 'react';
 import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
 import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 // import { HeaderNavBar } from '~/components/HeaderNavBar';
@@ -16,6 +17,7 @@ import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 import CastawayLogo from '~/components/icons/CastawayLogo';
 import { ModeToggle } from '~/components/ModeToggle';
 import { MuiLink } from '~/components/MuiLink';
+import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 const Header = styled('header')(({ theme }) => [
   {
@@ -101,7 +103,15 @@ const Navigation = styled('nav')(({ theme }) => [
 const HEIGHT = 60; // TODO: use theme.mixins.toolbar.minHeight ??
 
 export function AppHeader() {
+  const navigate = useNavigate();
   const location = useLocation();
+
+  const goToPod = useCallback(
+    (pod: PodcastFeed) => {
+      navigate({ to: '/podcast/$podId', params: { podId: pod.id.toString() } });
+    },
+    [navigate]
+  );
 
   return (
     <Header>
@@ -115,7 +125,6 @@ export function AppHeader() {
       <Container
         sx={{ display: 'flex', alignItems: 'center', minHeight: HEIGHT }}
       >
-        {/* <LogoWithCopyMenu /> */}
         <MuiLink
           to='/'
           sx={{
@@ -142,12 +151,16 @@ export function AppHeader() {
             </ul>
           </Navigation>
         </Box>
-        <Box sx={{ ml: 'auto', mr: 1 }}>
-          <AutoCompleteSearch />
-        </Box>
-        <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
-          {/* <DeferredAppSearch /> */}
 
+        <Stack
+          direction='row'
+          spacing={1}
+          sx={{ alignItems: 'center', ml: 'auto' }}
+        >
+          <Box sx={{ ml: 'auto', mr: 1 }}>
+            <AutoCompleteSearch onSelect={goToPod} />
+          </Box>
+          {/* <DeferredAppSearch /> */}
           <ModeToggle />
           <SignedIn>
             <UserButton />

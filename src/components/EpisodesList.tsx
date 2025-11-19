@@ -58,6 +58,7 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
     { podId },
     { initialNumItems: pageSize }
   );
+  // console.log('results: ', results);
 
   const handleSetPlaying = useCallback(
     (ep: Doc<'episodes'>) => {

@@ -21,10 +21,10 @@ import { Paper, Popper, Typography } from '@mui/material';
 import type { Doc } from 'convex/_generated/dataModel';
 import { useRef, type RefObject } from 'react';
 import { useHover } from '~/hooks/useHover';
-import { formatTime } from '~/routes/_authed.podcasts_.$podId_.episodes_.$episodeId';
+import { formatTime } from '~/utils/format';
 
 interface AdsTimelineProps {
-  adSegments: Doc<'ads'>[];
+  adSegments: Omit<Doc<'ads'>, 'embedding'>[];
 }
 
 export const AdsTimeline = ({ adSegments }: AdsTimelineProps) => {
@@ -38,7 +38,7 @@ export const AdsTimeline = ({ adSegments }: AdsTimelineProps) => {
             variant='body2'
             color='text.secondary'
           >
-            {`${s.duration}s`}
+            {`${s.duration.toFixed()}s`}
           </TimelineOppositeContent>
           <TimelineSeparator>
             <HoverSnippetTimelineDot

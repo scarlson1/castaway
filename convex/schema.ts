@@ -219,6 +219,7 @@ export default defineSchema({
     confidence: v.number(),
     embedding: v.array(v.number()),
     createdAt: v.number(),
+    // TODO: add feedback score
   })
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
@@ -231,6 +232,7 @@ export default defineSchema({
     audioUrl: v.string(),
     status: v.string(),
     createdAt: v.number(),
+    completedAt: v.optional(v.number()),
     audioStorageId: v.optional(v.string()),
     transcript: v.optional(v.any()), // TODO: type
     segments: v.optional(
@@ -244,7 +246,7 @@ export default defineSchema({
         })
       )
     ),
-  }),
+  }).index('by_episodeId', ['episodeId']),
 
   adJobWindows: defineTable({
     jobId: v.id('adJobs'),

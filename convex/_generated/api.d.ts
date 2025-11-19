@@ -14,6 +14,7 @@ import type * as adPipeline_chunkTranscript from "../adPipeline/chunkTranscript.
 import type * as adPipeline_classifyWindows from "../adPipeline/classifyWindows.js";
 import type * as adPipeline_fetchAudio from "../adPipeline/fetchAudio.js";
 import type * as adPipeline_mergeSegments from "../adPipeline/mergeSegments.js";
+import type * as adPipeline_saveToAds from "../adPipeline/saveToAds.js";
 import type * as adPipeline_start from "../adPipeline/start.js";
 import type * as adPipeline_transcribe from "../adPipeline/transcribe.js";
 import type * as adSegments from "../adSegments.js";
@@ -49,6 +50,7 @@ declare const fullApi: ApiFromModules<{
   "adPipeline/classifyWindows": typeof adPipeline_classifyWindows;
   "adPipeline/fetchAudio": typeof adPipeline_fetchAudio;
   "adPipeline/mergeSegments": typeof adPipeline_mergeSegments;
+  "adPipeline/saveToAds": typeof adPipeline_saveToAds;
   "adPipeline/start": typeof adPipeline_start;
   "adPipeline/transcribe": typeof adPipeline_transcribe;
   adSegments: typeof adSegments;

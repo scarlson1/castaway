@@ -10,7 +10,6 @@ export const fn = internalMutation({
     const job = await ctx.db.get(jobId);
     if (!job) throw new Error('job not found');
 
-    // const windows = createSlidingWindows(job.transcript.segments);
     const windows = buildWindows(job.transcript.segments);
 
     // store windows in DB
@@ -19,7 +18,6 @@ export const fn = internalMutation({
         jobId,
         ...w,
         classified: false,
-        // label: null,
       });
     }
 

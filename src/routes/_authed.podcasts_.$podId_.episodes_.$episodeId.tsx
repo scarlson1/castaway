@@ -5,10 +5,10 @@ import {
 } from '@convex-dev/react-query';
 import {
   DownloadRounded,
+  IosShareRounded,
   PauseCircleFilledRounded,
   PlayCircleFilledRounded,
-  QueueMusicRounded,
-  ShareRounded,
+  PlaylistAddRounded,
 } from '@mui/icons-material';
 import {
   Box,
@@ -184,7 +184,7 @@ function RouteComponent() {
           spacing={2}
           sx={{ width: '100%', justifyContent: 'space-between' }}
         >
-          <Stack direction='row' spacing={2}>
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <Typography variant='subtitle2' color='textSecondary'>
               {formatDate(new Date(data.publishedAt), 'MMM d')}
             </Typography>
@@ -239,12 +239,24 @@ function RouteComponent() {
           </Button>
         </Stack>
 
+        <Typography variant='h6' gutterBottom>
+          Ads Timeline
+        </Typography>
         <ErrorBoundary fallback={<div>an error occurred</div>}>
           <Suspense>
             <AdSegments
               // ads={[]} audioUrl={data.audioUrl}
               episodeId={episodeId}
             />
+          </Suspense>
+        </ErrorBoundary>
+
+        <Typography variant='h6' gutterBottom>
+          Ad Jobs
+        </Typography>
+        <ErrorBoundary fallback={<div>an error occurred</div>}>
+          <Suspense>
+            <AdJobs episodeId={episodeId} />
           </Suspense>
         </ErrorBoundary>
       </Box>
@@ -267,19 +279,9 @@ function AdSegments({
 
   return (
     <Box sx={{ mx: 'auto' }}>
-      <Typography variant='h6' gutterBottom>
-        Ads Timeline
-      </Typography>
       <AdsTimeline adSegments={data} />
 
-      <p className='text-sm text-gray-600 mb-4'>
-        Audio:{' '}
-        <a className='text-blue-500' href={data[0]?.audioUrl}>
-          {data[0]?.audioUrl || ''}
-        </a>
-      </p>
-
-      {data?.map(({ confidence, duration, start, end, transcript, _id }) => (
+      {/* {data?.map(({ confidence, duration, start, end, transcript, _id }) => (
         <Typography variant='body2' component='div' key={_id}>
           <pre>
             {JSON.stringify(
@@ -289,19 +291,7 @@ function AdSegments({
             )}
           </pre>
         </Typography>
-      ))}
-
-      {/* {data?.ads?.length === 0 ? (
-        <p>No ads detected 🎉</p>
-      ) : (
-        <ul className='list-disc pl-6 space-y-2'>
-          {data?.ads.map((a, i) => (
-            <li key={i}>
-              {format(a.start)} → {format(a.end)}
-            </li>
-          ))}
-        </ul>
-      )} */}
+      ))} */}
     </Box>
   );
 }
@@ -311,7 +301,7 @@ function EpisodeActions() {
     <Stack direction='row' spacing={1}>
       <Tooltip title='share'>
         <IconButton size='small' onClick={() => alert('TODO: episode actions')}>
-          <ShareRounded fontSize='inherit' />
+          <IosShareRounded fontSize='inherit' />
         </IconButton>
       </Tooltip>
       <Tooltip title='download'>
@@ -321,17 +311,33 @@ function EpisodeActions() {
       </Tooltip>
       <Tooltip title='add to queue'>
         <IconButton size='small' onClick={() => alert('TODO: episode actions')}>
-          <QueueMusicRounded fontSize='inherit' />
+          <PlaylistAddRounded fontSize='inherit' />
         </IconButton>
       </Tooltip>
     </Stack>
   );
 }
 
-export function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+function AdJobs({ episodeId }: { episodeId: string }) {
+  const { data } = useSuspenseQuery({
+    ...convexQuery(api.adJobs.getByEpisodeId, { episodeId }),
+    // throwOnError: false
+  });
+
+  if (!data?.length) return <Typography>No jobs</Typography>;
+
+  return (
+    <>
+      {data.map((j) => {
+        const { transcript, ...job } = j;
+        return (
+          <Typography component='div' variant='body2'>
+            <pre>{JSON.stringify(job, null, 2)}</pre>
+          </Typography>
+        );
+      })}
+    </>
+  );
 }
 
 function toFormattedDuration(s: number): Duration {

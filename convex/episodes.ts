@@ -46,7 +46,8 @@ export const getByGuid = query({
     return db
       .query('episodes')
       .withIndex('by_episodeId', (q) => q.eq('episodeId', id))
-      .unique();
+      .first();
+    //.unique(); // TODO: uncomment once the duplication problem is fixed
   },
 });
 
@@ -78,6 +79,7 @@ export const saveEpisodesToDb = internalMutation({
   },
 });
 
+// TODO: appears to be duplicating episodes ??
 export const refreshByPodId = action({
   args: { podId: v.string() },
   handler: async (ctx, { podId }) => {
@@ -90,7 +92,7 @@ export const refreshByPodId = action({
     if (!mostRecentEpisode) return { newEpisodes: 0 };
 
     let queryOptions = {};
-    let since = (mostRecentEpisode?.publishedAt || 0) / 1000;
+    let since = (mostRecentEpisode?.publishedAt || 0) / 1000 + 1;
     if (since) queryOptions = { since: String(since) };
     let newEpisodes = await fetchPodEpisodesFromIndex(podId, queryOptions);
 
@@ -136,7 +138,7 @@ export const fetchNewEpisodes = internalAction({
       );
 
       let queryOptions = {};
-      let since = (mostRecentEpisode?.publishedAt || 0) / 1000;
+      let since = (mostRecentEpisode?.publishedAt || 0) / 1000 + 1;
       if (since) queryOptions = { since: String(since) };
       let newEpisodes = await fetchPodEpisodesFromIndex(
         pod.podcastId,
@@ -162,12 +164,6 @@ export const fetchNewEpisodes = internalAction({
     }
 
     if (podLastUpdated.length) {
-      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
-        episodes: newEpisodesQueue,
-      });
-    }
-
-    if (newEpisodesQueue.length) {
       await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
         episodes: newEpisodesQueue,
       });
@@ -250,7 +246,7 @@ function podIndexEpToConvexEp(
     episodeId: ep.guid,
     podcastId: ep.podcastGuid,
     title: ep.title, // @ts-ignore podcastName is returned from episodes api
-    podcastTitle: ep.podcastName || podcastTitle || '',
+    podcastTitle: ep.podcastName || ep.podcastTitle || podcastTitle || '',
     audioUrl: ep.enclosureUrl,
     image: ep.image || null,
     enclosureType: ep.enclosureType,

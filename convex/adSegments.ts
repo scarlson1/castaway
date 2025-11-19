@@ -59,6 +59,7 @@ export interface MergedAdSegment {
   confidence: number;
 }
 
+// DELETE ?? use pipeline
 export const transcribeAndClassify = action({
   args: {
     // audioUrl: v.string(),
@@ -83,14 +84,6 @@ export const transcribeAndClassify = action({
       convexEpId: episode._id,
     });
 
-    // const ads = await processPodcast(ctx, {
-    //   audioUrl: episode.audioUrl,
-    //   episodeId: episode.episodeId,
-    //   podcastId: episode.podcastId,
-    //   convexEpId: episode._id,
-    // });
-
-    // return { ads };
     return { status: 'initiated' };
   },
 });
@@ -136,10 +129,12 @@ export const searchAds = query({
 export const getByEpisodeId = query({
   args: { id: v.string() },
   handler: async ({ db }, { id }) => {
-    return db
+    let ads = await db
       .query('ads')
       .withIndex('by_episodeId', (q) => q.eq('episodeId', id))
       .collect();
+
+    return ads.map(({ embedding, ...a }) => ({ ...a }));
   },
 });
 

@@ -1,21 +1,12 @@
 import {
-  convexQuery,
-  useConvexAction,
-  useConvexMutation,
-} from '@convex-dev/react-query';
-import {
-  AddRounded,
-  CheckRounded,
   ExplicitRounded,
   LinkRounded,
   MicRounded,
   PlayArrowRounded,
   RadioRounded,
-  RemoveRounded,
 } from '@mui/icons-material';
 import {
   Box,
-  Button,
   Divider,
   IconButton,
   Link,
@@ -24,13 +15,8 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import {
-  queryOptions,
-  useMutation,
-  useSuspenseQuery,
-} from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
-import { api } from 'convex/_generated/api';
 import type { Doc } from 'convex/_generated/dataModel';
 import {
   differenceInDays,
@@ -38,33 +24,13 @@ import {
   formatDistanceToNow,
   intervalToDuration,
 } from 'date-fns';
-import { Suspense, useCallback, useRef, type RefObject } from 'react';
+import { Suspense, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { useHover } from '~/hooks/useHover';
+import { FollowingButtons } from '~/components/FollowingButtons';
 import { useQueue } from '~/hooks/useQueue';
 import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
-import {
-  fetchEpisodesByPodGuid,
-  fetchPodDetailsByPodIndexId,
-} from '~/serverFn/podcast';
+import { episodesQueryOptions, podDetailsQueryOptions } from '~/queries';
 import { getRootDomain } from '~/utils/getDomain';
-
-export const podDetailsQueryOptions = (id: number) =>
-  queryOptions({
-    queryKey: ['podcast', id],
-    queryFn: () => fetchPodDetailsByPodIndexId({ data: { id } }),
-    staleTime: Infinity, // Or a suitable value for your use case
-  });
-
-export const episodesQueryOptions = (
-  id: string,
-  options: { max?: number } = {}
-) =>
-  queryOptions({
-    queryKey: ['podcast', id, 'episodes', options],
-    queryFn: () => fetchEpisodesByPodGuid({ data: { id, ...options } }),
-    staleTime: Infinity, // Or a suitable value for your use case
-  });
 
 export const Route = createFileRoute('/podcast/$podId')({
   component: RouteComponent,
@@ -99,7 +65,7 @@ function RouteComponent() {
   );
 }
 
-export function PodDetails({ feed }: { feed: PodcastFeed }) {
+function PodDetails({ feed }: { feed: PodcastFeed }) {
   return (
     <Stack direction='row' spacing={2}>
       <Box
@@ -182,50 +148,7 @@ export function PodDetails({ feed }: { feed: PodcastFeed }) {
   );
 }
 
-export function FollowingButtons({ podId }: { podId: string }) {
-  const ref = useRef<HTMLButtonElement>(null);
-  const [isHovering] = useHover(ref as RefObject<HTMLButtonElement>);
-  const { mutate: subscribe, isPending } = useMutation({
-    mutationFn: useConvexAction(api.actions.subscribe),
-  });
-
-  const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
-    mutationFn: useConvexMutation(api.subscribe.remove),
-  });
-
-  const { data: isFollowing } = useSuspenseQuery(
-    convexQuery(api.subscribe.isFollowing, { podId })
-  );
-
-  return !isFollowing ? (
-    <Button
-      loading={isPending}
-      onClick={() => subscribe({ podcastId: podId })}
-      startIcon={<AddRounded fontSize='inherit' />}
-    >
-      Follow
-    </Button>
-  ) : (
-    <Button
-      component='button'
-      ref={ref}
-      loading={unsubPending}
-      onClick={() => unsubscribe({ podId })}
-      startIcon={
-        isHovering ? (
-          <RemoveRounded fontSize='inherit' />
-        ) : (
-          <CheckRounded fontSize='inherit' />
-        )
-      }
-      sx={{ minWidth: 80 }}
-    >
-      {`${isHovering ? 'Unfollow' : 'Following'}`}
-    </Button>
-  );
-}
-
-export function EpisodesList({
+function EpisodesList({
   podId,
   podTitle,
   limit = 100,

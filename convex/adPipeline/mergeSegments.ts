@@ -1,3 +1,4 @@
+import { internal } from 'convex/_generated/api';
 import { internalMutation } from 'convex/_generated/server';
 import type { ClassifiedWindow } from 'convex/adSegments';
 import { mergeAdWindows } from 'convex/utils/mergeWindows';
@@ -11,12 +12,15 @@ export const fn = internalMutation({
       .withIndex('by_jobId', (q) => q.eq('jobId', jobId))
       .collect();
 
-    // const segments = mergeAdjacentAds(windows);
     const segments = mergeAdWindows(windows as ClassifiedWindow[]);
 
     await ctx.db.patch(jobId, {
       segments,
-      status: 'complete',
+      status: 'classified',
+    });
+
+    await ctx.scheduler.runAfter(0, internal.adPipeline.saveToAds.fn, {
+      jobId,
     });
   },
 });

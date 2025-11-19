@@ -1,9 +1,12 @@
+import { auth } from '@clerk/tanstack-react-start/server';
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { ensureConvexToken } from '~/utils/ensureConvexToken';
 // import { getCurrentUserFn } from '../server/auth'
 
 export const Route = createFileRoute('/_authed')({
-  beforeLoad: async ({ context: { userId }, location }) => {
-    // const user = await getCurrentUserFn()
+  beforeLoad: async ({ context, location }) => {
+    // const { userId: userId2 } = await fetchClerkAuthOnly();
+    const { userId } = await auth();
 
     if (!userId) {
       throw redirect({
@@ -15,7 +18,22 @@ export const Route = createFileRoute('/_authed')({
     // Pass user to child routes
     // return { user }
   },
+  loader: async ({ context }) => {
+    // required for SSR convex request (useSuspenseQuery will run on server)
+    await ensureConvexToken(context);
+  },
 });
+
+// OR REUSABLE GUARD:
+// export function requireAuth() {
+//   return auth().then(({ userId }) => {
+//     if (!userId) {
+//       throw redirect({ to: '/sign-in' })
+//     }
+//     return userId
+//   })
+// }
+// USAGE: loader: () => requireAuth()
 
 // alternatively with a layout:
 

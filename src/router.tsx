@@ -3,7 +3,7 @@ import { ConvexQueryClient } from '@convex-dev/react-query';
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
-import { ConvexProvider, ConvexReactClient } from 'convex/react';
+import { ConvexReactClient } from 'convex/react';
 import { env } from '~/utils/env.validation';
 import { routeTree } from './routeTree.gen';
 
@@ -34,19 +34,60 @@ export function getRouter() {
       queryClient,
       convexClient: convex,
       convexQueryClient,
-      // user: null,
+      userId: null,
+      token: null,
     },
     scrollRestoration: true,
     defaultPreload: 'intent',
+    defaultPreloadDelay: 100,
     defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
     // defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <p>not found</p>,
-    Wrap: ({ children }) => (
-      <ConvexProvider client={convexQueryClient.convexClient}>
-        {children}
-      </ConvexProvider>
-    ),
+    // USED IN DOCS BUT DUPLICATES <ConvexProviderWithClerk>
+    // Wrap: ({ children }) => (
+    //   <ConvexProvider client={convexQueryClient.convexClient}>
+    //     {children}
+    //   </ConvexProvider>
+    // ),
+    // Wrap: ({ children }) => (
+    //   <ClerkProvider
+    //     publishableKey={env.VITE_CLERK_PUBLISHABLE_KEY}
+    //     appearance={{
+    //       variables: {
+    //         colorPrimary: `var(--palette-primary-main)`,
+    //         colorPrimaryForeground: `var(--palette-text-primary)`,
+    //         colorForeground: `var(--palette-text-primary)`, // default text
+    //         colorMuted: `var(--palette-background-default)`,
+    //         colorMutedForeground: `var(--palette-text-secondary)`, // secondary text
+    //         colorNeutral: `var(--palette-text-secondary)`,
+    //         colorBackground: `var(--palette-background-paper)`,
+    //         colorBorder: `var(--palette-grey-500)`, // clerk adds additional opacity
+    //         colorDanger: `var(--palette-error-main)`,
+    //         colorSuccess: `var(--palette-success-main)`,
+    //         colorWarning: `var(--palette-warning-main)`,
+    //         colorInputForeground: `var(--palette-text-primary)`,
+    //         colorInput: `var(--palette-background-default)`, // input background
+    //         // fontFamily:
+    //         spacing: '0.875rem',
+    //       },
+    //       layout: {
+    //         logoImageUrl: castawayLogo,
+    //       },
+    //       elements: {
+    //         socialButtonsIconButton: {
+    //           border: `1px solid var(--palette-divider) !important`,
+    //           background: `var(--palette-grey-100)`,
+    //         },
+    //       },
+    //     }}
+    //   >
+    //     <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+    //       {children}
+    //     </ConvexProviderWithClerk>
+    //   </ClerkProvider>
+    // ),
   });
+  // TANSTACK DOCKS IMPLEMENTATION: https://tanstack.com/start/latest/docs/framework/react/examples/start-convex-trellaux
   setupRouterSsrQueryIntegration({
     router,
     queryClient,
@@ -56,6 +97,10 @@ export function getRouter() {
   });
 
   return router;
+
+  // CONVEX DOCS IMPLEMENTATION: https://docs.convex.dev/client/tanstack/tanstack-start/clerk
+  // older integration helper from TanStack Router v1 for client-only apps using React Query.
+  // let routerWithConvex = routerWithQueryClient(router,queryClient)
 }
 
 declare module '@tanstack/react-router' {
