@@ -1,4 +1,8 @@
-import { convexQuery, useConvexAction } from '@convex-dev/react-query';
+import {
+  convexQuery,
+  useConvexAction,
+  useConvexMutation,
+} from '@convex-dev/react-query';
 import {
   DownloadRounded,
   PauseCircleFilledRounded,
@@ -64,6 +68,23 @@ function RouteComponent() {
     onSuccess: (data, vars) => {
       console.log(data, vars);
       toast.info(`Ad detection process initiated`);
+      // toast.success('test');
+    },
+    onError: (err, vars) => {
+      console.log(err, vars);
+      toast.error(`something went wrong`);
+    },
+  });
+
+  const { mutate: startJob, isPending: jobPending } = useMutation<
+    { jobId: string },
+    Error,
+    { episodeId: string; audioUrl: string }
+  >({
+    mutationFn: useConvexMutation(api.adPipeline.start.startAdDetection),
+    onSuccess: (data, vars) => {
+      console.log(data, vars);
+      toast.info(`Ad detection job initiated`);
       // toast.success('test');
     },
     onError: (err, vars) => {
@@ -188,22 +209,35 @@ function RouteComponent() {
         <Typography component='div' variant='body2'>
           <div dangerouslySetInnerHTML={{ __html: data.summary }} />
         </Typography>
-        <MuiButtonLink to='/podcasts/$podId' params={{ podId }}>
-          See all episodes
-        </MuiButtonLink>
-        <Button
-          loading={isPending}
-          onClick={() =>
-            mutate({
-              // podcastId: podId,
-              episodeId,
-              // convexEpId: data._id,
-              // audioUrl: data.audioUrl,
-            })
-          }
-        >
-          Transcribe & classify ads
-        </Button>
+        <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
+          <MuiButtonLink to='/podcasts/$podId' params={{ podId }}>
+            See all episodes
+          </MuiButtonLink>
+          <Button
+            loading={isPending}
+            onClick={() =>
+              mutate({
+                // podcastId: podId,
+                episodeId,
+                // convexEpId: data._id,
+                // audioUrl: data.audioUrl,
+              })
+            }
+          >
+            Transcribe & classify ads
+          </Button>
+          <Button
+            loading={jobPending}
+            onClick={() =>
+              startJob({
+                audioUrl: data.audioUrl,
+                episodeId,
+              })
+            }
+          >
+            Transcribe & classify job
+          </Button>
+        </Stack>
 
         <ErrorBoundary fallback={<div>an error occurred</div>}>
           <Suspense>

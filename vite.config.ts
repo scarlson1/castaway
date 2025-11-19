@@ -1,3 +1,4 @@
+import { devtools } from '@tanstack/devtools-vite';
 import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
@@ -13,6 +14,6 @@ export default defineConfig({
   optimizeDeps: {
     include: ['@emotion/styled'],
   },
-  plugins: [tsConfigPaths(), tanstackStart(), viteReact()],
+  plugins: [tsConfigPaths(), devtools(), tanstackStart(), viteReact()],
   envPrefix: ['CLERK_SIGN_IN_', 'CLERK_SIGN_UP_', 'VITE_'],
 });

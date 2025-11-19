@@ -239,7 +239,7 @@ call Convex mutation `moveQueueItem(userId, itemId, newPositionIndex)` which is 
 
 ### Transcribe
 
-- Use model (openAI/) to transcribe audio from url into transcript
+- Use model (openAI/AssemblyAI/Deepgram) to transcribe audio from url into transcript
   - break audio into chunks to abide by 25MB transcription limit (`convex/utils/transcribe.ts`)
   - merge transcripts and return as segments (`{ id: string;, start: number; end: number; text: string }[]`)
 - Build windows
@@ -267,3 +267,219 @@ call Convex mutation `moveQueueItem(userId, itemId, newPositionIndex)` which is 
     "embedding": [0.23, 0.2839]
   }
   ```
+
+### Broken into multi-step flow to accommodate Convex limits
+
+1. mutation -> create `adJobs` doc (audioUrl, podId, episodeId, status, createdAt)
+
+- trigger process to process audio
+- await ctx.scheduler.runAfter(0, "adPipeline.fetchAudio", { jobId });
+
+```typescript
+// convex/adPipeline/start.ts
+import { mutation } from 'convex/server';
+import { v } from 'convex/values';
+
+export const startAdDetection = mutation({
+  args: {
+    audioUrl: v.string(),
+  },
+  handler: async (ctx, { audioUrl }) => {
+    const jobId = await ctx.db.insert('adJobs', {
+      audioUrl,
+      status: 'pending',
+      createdAt: Date.now(),
+    });
+
+    // schedule next step
+    await ctx.scheduler.runAfter(0, 'adPipeline.fetchAudio', { jobId });
+
+    return jobId;
+  },
+});
+```
+
+2. process audio
+
+- update `adJobs` with audio storage ID
+  - await ctx.db.patch(jobId, { audioStorageId: storageId });
+- trigger transcription
+  - await ctx.scheduler.runAfter(0, "adPipeline.transcribe", { jobId });
+
+```typescript
+// convex/adPipeline/fetchAudio.ts
+import { action } from 'convex/server';
+import { v } from 'convex/values';
+
+export const fetchAudio = action({
+  args: { jobId: v.id('adJobs') },
+  handler: async (ctx, { jobId }) => {
+    const job = await ctx.db.get(jobId);
+    const resp = await fetch(job.audioUrl);
+
+    const arrayBuffer = await resp.arrayBuffer();
+    const storageId = await ctx.storage.store(arrayBuffer);
+
+    await ctx.db.patch(jobId, { audioStorageId: storageId });
+
+    // continue pipeline
+    await ctx.scheduler.runAfter(0, 'adPipeline.transcribe', { jobId });
+  },
+});
+```
+
+3. transcibe audio
+
+```typescript
+// convex/adPipeline/transcribe.ts
+import { job } from 'convex/server';
+import { v } from 'convex/values';
+
+export const transcribe = job({
+  args: { jobId: v.id('adJobs') },
+  handler: async (ctx, { jobId }) => {
+    const jobRow = await ctx.db.get(jobId);
+
+    const audio = await ctx.storage.get(jobRow.audioStorageId);
+    if (!audio) throw new Error('Audio missing');
+
+    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+      },
+      body: (() => {
+        const fd = new FormData();
+        fd.append('model', 'gpt-4o-audio-transcribe');
+        fd.append(
+          'file',
+          new Blob([audio], { type: 'audio/mpeg' }),
+          'audio.mp3'
+        );
+        fd.append('response_format', 'verbose_json');
+        return fd;
+      })(),
+    });
+
+    const transcript = await resp.json();
+
+    await ctx.db.patch(jobId, {
+      transcript,
+      status: 'transcribed',
+    });
+
+    // next step
+    await ctx.scheduler.runAfter(0, 'adPipeline.chunkTranscript', { jobId });
+  },
+});
+```
+
+4. Chunk transcript
+
+```typescript
+// convex/adPipeline/chunkTranscript.ts
+import { mutation } from 'convex/server';
+import { v } from 'convex/values';
+
+export const chunkTranscript = mutation({
+  args: { jobId: v.id('adJobs') },
+  handler: async (ctx, { jobId }) => {
+    const job = await ctx.db.get(jobId);
+
+    const windows = createSlidingWindows(job.transcript.segments);
+
+    // store windows in DB
+    for (const w of windows) {
+      await ctx.db.insert('windows', {
+        jobId,
+        ...w,
+        classified: false,
+        label: null,
+      });
+    }
+
+    // schedule classification batches
+    await ctx.scheduler.runAfter(0, 'adPipeline.classifyWindows', { jobId });
+  },
+});
+```
+
+5. Batch LLM classification (Convex Job)
+
+- most likely to timeout ==> classify maybe 5 windows at a time:
+
+```typescript
+// convex/adPipeline/classifyWindows.ts
+import { job } from 'convex/server';
+import { v } from 'convex/values';
+
+export const classifyWindows = job({
+  args: { jobId: v.id('adJobs') },
+  handler: async (ctx, { jobId }) => {
+    const windows = await ctx.db
+      .query('windows')
+      .withIndex('by_jobId_classified', (q) =>
+        q.eq('jobId', jobId).eq('classified', false)
+      )
+      .take(5);
+
+    if (windows.length === 0) {
+      await ctx.scheduler.runAfter(0, 'adPipeline.mergeSegments', { jobId });
+      return;
+    }
+
+    // LLM call for the batch
+    const prompt = windows.map((w) => w.text).join('\n---\n');
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [{ role: 'user', content: `Classify each:\n${prompt}` }],
+      }),
+    });
+
+    const result = await resp.json();
+    const labels = parseClassificationOutput(result);
+
+    // write results
+    for (let i = 0; i < windows.length; i++) {
+      await ctx.db.patch(windows[i]._id, {
+        classified: true,
+        label: labels[i],
+      });
+    }
+
+    // schedule next batch
+    await ctx.scheduler.runAfter(0, 'adPipeline.classifyWindows', { jobId });
+  },
+});
+```
+
+6. Merge classified windows into ad segments
+
+```typescript
+// convex/adPipeline/mergeSegments.ts
+import { mutation } from 'convex/server';
+import { v } from 'convex/values';
+
+export const mergeSegments = mutation({
+  args: { jobId: v.id('adJobs') },
+  handler: async (ctx, { jobId }) => {
+    const windows = await ctx.db
+      .query('windows')
+      .withIndex('by_jobId', (q) => q.eq('jobId', jobId))
+      .collect();
+
+    const segments = mergeAdjacentAds(windows);
+
+    await ctx.db.patch(jobId, {
+      segments,
+      status: 'complete',
+    });
+  },
+});
+```

@@ -3,9 +3,9 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-export async function classifyWindowsBatch(
-  windows: Window[]
-): Promise<ClassifiedWindow[]> {
+export async function classifyWindowsBatch<T extends Record<string, any>>(
+  windows: (Window & T)[]
+): Promise<(ClassifiedWindow & T)[]> {
   const windowCount = windows.length;
 
   const system =

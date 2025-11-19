@@ -225,4 +225,38 @@ export default defineSchema({
       dimensions: 1536, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
     })
     .index('by_episodeId', ['episodeId']),
+
+  adJobs: defineTable({
+    episodeId: v.string(),
+    audioUrl: v.string(),
+    status: v.string(),
+    createdAt: v.number(),
+    audioStorageId: v.optional(v.string()),
+    transcript: v.optional(v.any()), // TODO: type
+    segments: v.optional(
+      v.array(
+        v.object({
+          start: v.number(),
+          end: v.number(),
+          duration: v.number(),
+          transcript: v.string(),
+          confidence: v.number(),
+        })
+      )
+    ),
+  }),
+
+  adJobWindows: defineTable({
+    jobId: v.id('adJobs'),
+    classified: v.boolean(),
+    // label: v.union(v.null(), v.string()), // use is_ad instead
+    text: v.string(),
+    start: v.number(),
+    end: v.number(),
+    is_ad: v.optional(v.boolean()),
+    confidence: v.optional(v.number()),
+    reason: v.optional(v.string()),
+  })
+    .index('by_jobId_classified', ['jobId', 'classified'])
+    .index('by_jobId', ['jobId']),
 });

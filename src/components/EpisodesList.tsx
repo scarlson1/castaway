@@ -186,8 +186,12 @@ function EpisodeRow({
     <Stack
       direction='row'
       sx={{ alignItems: 'center', my: { xs: 0.5, sm: 1 } }}
+      spacing={2}
     >
-      <Typography color='textSecondary' sx={{ width: 80, overflow: 'hidden' }}>
+      <Typography
+        color='textSecondary'
+        sx={{ width: 80, flex: '0 0 80px', overflow: 'hidden' }}
+      >
         {episode.episode
           ? `E${episode.episode}`
           : episode.episodeType === 'bonus'
@@ -198,7 +202,7 @@ function EpisodeRow({
         to='/podcasts/$podId/episodes/$episodeId'
         params={{ podId: episode.podcastId, episodeId: episode.episodeId }}
         underline='hover'
-        sx={{ flex: '1 1 auto', color: 'inherit' }}
+        sx={{ flex: '1 1 auto', color: 'inherit', minWidth: 0 }}
       >
         <Typography
           sx={{
@@ -216,6 +220,7 @@ function EpisodeRow({
         color='textSecondary'
         sx={{
           width: 80,
+          flex: '0 0 80px',
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -223,7 +228,11 @@ function EpisodeRow({
       >
         {formatTimestamp(episode.publishedAt)}
       </Typography>
-      <Typography variant='body2' color='textSecondary' sx={{ width: 80 }}>
+      <Typography
+        variant='body2'
+        color='textSecondary'
+        sx={{ width: 80, flex: '0 0 80px' }}
+      >
         {episode.durationSeconds ? getDuration(episode.durationSeconds) : ''}
       </Typography>
       <Box sx={{ position: 'relative', ml: 2, height: 28, width: 28 }}>

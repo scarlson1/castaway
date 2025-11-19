@@ -6,15 +6,16 @@ import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
 import { Box, Container, CssBaseline, ThemeProvider } from '@mui/material';
+import { TanStackDevtools } from '@tanstack/react-devtools';
 import { useQuery, type QueryClient } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import {
   createRootRouteWithContext,
   HeadContent,
   Outlet,
   Scripts,
 } from '@tanstack/react-router';
-import { TanStackRouterDevtools } from '@tanstack/react-router-devtools';
+import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import { createServerFn } from '@tanstack/react-start';
 import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
@@ -185,8 +186,23 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           </ErrorBoundary>
         </Providers>
 
-        <TanStackRouterDevtools position='bottom-left' />
-        <ReactQueryDevtools initialIsOpen={false} />
+        {/* <TanStackRouterDevtools position='bottom-left' /> */}
+        {/* <ReactQueryDevtools initialIsOpen={false} />
+         */}
+        <TanStackDevtools
+          plugins={[
+            {
+              name: 'TanStack Query',
+              render: <ReactQueryDevtoolsPanel />,
+              defaultOpen: false,
+            },
+            {
+              name: 'TanStack Router',
+              render: <TanStackRouterDevtoolsPanel />,
+              defaultOpen: false,
+            },
+          ]}
+        />
         <Scripts />
       </body>
     </html>

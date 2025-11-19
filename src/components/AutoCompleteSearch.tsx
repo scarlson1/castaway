@@ -32,7 +32,7 @@ export const AutoCompleteSearch = ({
 
   const queryOptions = { query: debouncedQuery, max: 8, similar: true };
 
-  const { data, isFetching } = useQuery({
+  const { data } = useQuery({
     queryKey: ['search', 'podIndex', queryOptions],
     queryFn: () => search({ data: queryOptions }),
     enabled: Boolean(query),
