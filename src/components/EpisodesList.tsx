@@ -36,6 +36,7 @@ import { round } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
 import { MuiLink } from '~/components/MuiLink';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
+import { useAudioStore } from '~/hooks/useAudioStoreGPT';
 import { useQueue } from '~/hooks/useQueue';
 
 interface EpisodesListProps {
@@ -45,7 +46,9 @@ interface EpisodesListProps {
 export const EpisodesList = ({ podId }: EpisodesListProps) => {
   const nowPlaying = useQueue((state) => state.nowPlaying);
   const setPlaying = useQueue((state) => state.setPlaying);
+  const { isPlaying, setPlaying: p } = useAudioStore();
   const [pageSize, setPageSize] = useState(10);
+
   const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
 
   const playbackEpisodeIds = useMemo(() => {
@@ -74,6 +77,10 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
     [setPlaying]
   );
 
+  const togglePlaying = useCallback(() => {
+    p(!isPlaying);
+  }, [p, isPlaying]);
+
   return (
     <>
       <Stack
@@ -98,15 +105,16 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
           let playbackId: Id<'user_playback'> | undefined = undefined;
           if (found !== undefined && found >= 0)
             playbackId = userPlayback.data![found]?._id;
-          // console.log('e.episodeId: ', e.episodeId, found, playbackId);
 
           return (
             <Box key={e._id}>
               <EpisodeRow
                 episode={e}
-                isPlaying={e.episodeId === nowPlaying?.episodeId}
+                isCurrentAudio={e.episodeId === nowPlaying?.episodeId}
+                isPlaying={e.episodeId === nowPlaying?.episodeId && isPlaying}
                 setPlaying={handleSetPlaying}
                 playbackId={playbackId}
+                togglePlaying={togglePlaying}
               />
               <Divider />
             </Box>
@@ -156,19 +164,23 @@ const StyledIconButton = styled(IconButton)({
   minWidth: iconButtonSize,
 });
 
+interface EpisodeRowProps {
+  episode: Doc<'episodes'>;
+  setPlaying: (ep: Doc<'episodes'>) => void;
+  playbackId?: Id<'user_playback'> | null;
+  isPlaying?: boolean;
+  isCurrentAudio: boolean;
+  togglePlaying: () => void;
+}
+
 function EpisodeRow({
   episode,
   setPlaying,
   playbackId,
   isPlaying = false,
-}: {
-  episode: Doc<'episodes'>;
-  setPlaying: (ep: Doc<'episodes'>) => void;
-  playbackId?: Id<'user_playback'> | null;
-  isPlaying?: boolean;
-  // podId: string;
-  // podTitle: string;
-}) {
+  togglePlaying,
+  isCurrentAudio,
+}: EpisodeRowProps) {
   const { data: playback } = useQuery({
     ...convexQuery(api.playback.getById, {
       id: playbackId as Id<'user_playback'>,
@@ -248,8 +260,11 @@ function EpisodeRow({
         {isPlaying ? (
           <StyledIconButton
             size='small'
-            // onClick={() => setPlaying(episode)}
-            onClick={() => alert('TODO: move howler to context provider')}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              togglePlaying();
+            }}
           >
             <PauseRounded fontSize='inherit' color='primary' />
           </StyledIconButton>
@@ -259,7 +274,11 @@ function EpisodeRow({
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
-              setPlaying(episode);
+              if (isCurrentAudio) {
+                togglePlaying(); // TODO: remove queue store and use audio directly ??
+              } else {
+                setPlaying(episode);
+              }
             }}
           >
             <PlayArrowRounded fontSize='inherit' color='primary' />

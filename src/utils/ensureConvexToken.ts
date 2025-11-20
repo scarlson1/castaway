@@ -2,7 +2,6 @@ import type { RouterContext } from '~/routes/__root';
 import { getClerkToken } from '~/serverFn/auth';
 
 export async function ensureConvexToken(context: RouterContext) {
-  console.log('CONTEXT: ', context);
   // TODO: need to deal with token refresh
   if (context.token) {
     console.log('TOKEN PRESENT - RETURNING');

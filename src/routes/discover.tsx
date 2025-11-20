@@ -10,7 +10,7 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { queryOptions, useSuspenseQuery } from '@tanstack/react-query';
+import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, type LinkProps } from '@tanstack/react-router';
 import { Suspense, useCallback, useId, useRef, type RefObject } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -19,10 +19,6 @@ import { MuiStackLink } from '~/components/MuiStackLink';
 import { useHover } from '~/hooks/useHover';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 import { trendingQueryOptions } from '~/queries';
-import {
-  fetchAppleCharts,
-  type FetchAppleChartsOptions,
-} from '~/serverFn/trending';
 
 // TODO: add category selection at top of page
 
@@ -31,7 +27,7 @@ export const Route = createFileRoute('/discover')({
   loader: ({ context: { queryClient } }) => {
     // seed cache, but don't block
     queryClient.prefetchQuery(trendingQueryOptions({ max: 8 }));
-    queryClient.prefetchQuery(appleChartsQueryOptions({ limit: 10 }));
+    // queryClient.prefetchQuery(appleChartsQueryOptions({ limit: 10 }));
   },
 });
 
@@ -75,7 +71,7 @@ function RouteComponent() {
         <AlertTitle>TODO: suggested pods</AlertTitle>
         vectorized db & ML suggested posts
       </Alert>
-      <Box>
+      {/* <Box>
         <Divider />
         <Stack
           direction='row'
@@ -99,8 +95,8 @@ function RouteComponent() {
               <AppleCharts />
             </Suspense>
           </ErrorBoundary>
-        </Box>
-      </Box>
+        </Box> 
+      </Box>*/}
     </>
   );
 }
@@ -149,64 +145,64 @@ function Trending() {
   );
 }
 
-export const appleChartsQueryOptions = (
-  options: FetchAppleChartsOptions = {}
-) =>
-  queryOptions({
-    queryKey: ['trending', 'apple', options],
-    queryFn: () => fetchAppleCharts({ data: options }),
-    staleTime: Infinity, // Or a suitable value for your use case
-    gcTime: 1000 * 1000,
-  });
+// export const appleChartsQueryOptions = (
+//   options: FetchAppleChartsOptions = {}
+// ) =>
+//   queryOptions({
+//     queryKey: ['trending', 'apple', options],
+//     queryFn: () => fetchAppleCharts({ data: options }),
+//     staleTime: Infinity, // Or a suitable value for your use case
+//     gcTime: 1000 * 1000,
+//   });
 
-function AppleCharts() {
-  const { data } = useSuspenseQuery(appleChartsQueryOptions({ limit: 10 }));
-  // console.log('APPLE CHART DATA: ', data);
+// function AppleCharts() {
+//   const { data } = useSuspenseQuery(appleChartsQueryOptions({ limit: 10 }));
+//   // console.log('APPLE CHART DATA: ', data);
 
-  return (
-    <Box>
-      <Grid
-        container
-        rowSpacing={1}
-        columnSpacing={3}
-        sx={{
-          display: 'grid',
-          gridTemplateRows: 'repeat(4, 1fr)',
-          gridTemplateColumns: {
-            xs: 'repeat(1, minmax(0px, 1fr))',
-            sm: 'repeat(2, minmax(0px, 1fr))',
-          },
-          gridAutoRows: 0,
-          overflow: 'hidden',
-          rowGap: 0, // add margin bottom to child grid container
-        }}
-      >
-        {data.feed.results.map((p) => (
-          <Grid
-            size={{ xs: 12, sm: 6 }}
-            sx={{ width: 'unset !important', mb: 1 }}
-            key={p.id}
-          >
-            <TrendingCard
-              feed={
-                {
-                  id: '',
-                  artwork: p.artworkUrl100,
-                  title: p.name,
-                  author: p.artistName,
-                } as unknown as PodcastFeed
-              }
-              linkProps={{
-                to: '/podcast/apple/$itunesId',
-                params: { itunesId: `${p.id || ''}` },
-              }}
-            />
-          </Grid>
-        ))}
-      </Grid>
-    </Box>
-  );
-}
+//   return (
+//     <Box>
+//       <Grid
+//         container
+//         rowSpacing={1}
+//         columnSpacing={3}
+//         sx={{
+//           display: 'grid',
+//           gridTemplateRows: 'repeat(4, 1fr)',
+//           gridTemplateColumns: {
+//             xs: 'repeat(1, minmax(0px, 1fr))',
+//             sm: 'repeat(2, minmax(0px, 1fr))',
+//           },
+//           gridAutoRows: 0,
+//           overflow: 'hidden',
+//           rowGap: 0, // add margin bottom to child grid container
+//         }}
+//       >
+//         {data.feed.results.map((p) => (
+//           <Grid
+//             size={{ xs: 12, sm: 6 }}
+//             sx={{ width: 'unset !important', mb: 1 }}
+//             key={p.id}
+//           >
+//             <TrendingCard
+//               feed={
+//                 {
+//                   id: '',
+//                   artwork: p.artworkUrl100,
+//                   title: p.name,
+//                   author: p.artistName,
+//                 } as unknown as PodcastFeed
+//               }
+//               linkProps={{
+//                 to: '/podcast/apple/$itunesId',
+//                 params: { itunesId: `${p.id || ''}` },
+//               }}
+//             />
+//           </Grid>
+//         ))}
+//       </Grid>
+//     </Box>
+//   );
+// }
 
 interface TrendingCardProps {
   feed: PodcastFeed; // | TrendingResult

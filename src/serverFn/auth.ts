@@ -45,6 +45,15 @@ export const fetchClerkAuthOnly = createServerFn({ method: 'GET' }).handler(
   }
 );
 
+// rename ?? too similar to fetchClerkAuth
+export const getClerkUser = createServerFn({ method: 'GET' }).handler(
+  async () => {
+    const { orgId, userId, sessionId, sessionStatus } = await auth();
+
+    return { orgId, userId, sessionId, sessionStatus };
+  }
+);
+
 export const getClerkToken = createServerFn({ method: 'GET' }).handler(
   async () => {
     const { getToken, userId } = await auth();

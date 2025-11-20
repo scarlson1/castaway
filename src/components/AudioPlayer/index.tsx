@@ -1,8 +1,16 @@
+import { convexQuery } from '@convex-dev/react-query';
 import { Box, styled, Typography } from '@mui/material';
-import { useEffect } from 'react';
+import { useSuspenseQuery } from '@tanstack/react-query';
+import { api } from 'convex/_generated/api';
+import { Suspense, useEffect, useMemo } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { PlaybackControls } from '~/components/AudioPlayer/PlaybackControls';
-import { ProgressSlider } from '~/components/AudioPlayer/ProgressSlider';
+import {
+  ProgressSlider,
+  type ProgressSliderProps,
+} from '~/components/AudioPlayer/ProgressSlider';
 import { RateButtons } from '~/components/AudioPlayer/RateButton';
+import { SkipAdButton } from '~/components/AudioPlayer/SkipAdButton';
 import { VolumeControl } from '~/components/AudioPlayer/VolumeControl';
 import { useAudioPlayer } from '~/hooks/useAudioPlayer';
 import { useAudioStore } from '~/hooks/useAudioStoreGPT';
@@ -72,6 +80,7 @@ export default function AudioPlayer({
     position,
     duration,
     isPlaying,
+    episodeId,
   } = useAudioPlayer();
 
   // Load server + local state
@@ -91,13 +100,37 @@ export default function AudioPlayer({
         <img src={coverArt} alt={`${title} cover`} />
       </CoverImage>
 
-      <PlaybackControls
-        seek={seek}
-        position={position}
-        isPlaying={isPlaying}
-        pause={pause}
-        play={play}
-      />
+      <Box
+        display='flex'
+        alignItems='center'
+        justifyContent='center'
+        position='relative'
+      >
+        <ErrorBoundary fallback={<div />}>
+          <Suspense>
+            <Box
+              sx={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                right: 0,
+                display: 'flex',
+                justifyContent: 'center',
+                mt: -1,
+              }}
+            >
+              <SkipAdButton episodeId={id} seek={seek} />
+            </Box>
+          </Suspense>
+        </ErrorBoundary>
+        <PlaybackControls
+          seek={seek}
+          position={position}
+          isPlaying={isPlaying}
+          pause={pause}
+          play={play}
+        />
+      </Box>
 
       <Box
         sx={{
@@ -130,7 +163,13 @@ export default function AudioPlayer({
           }}
         >{`${podName} - ${releaseDate}`}</Typography>
         {/* TODO: debug delay resetting position when src is changed */}
-        <ProgressSlider position={position} duration={duration} seek={seek} />
+        {/* <ProgressSlider position={position} duration={duration} seek={seek} /> */}
+        <SliderWithAdMarks
+          position={position}
+          duration={duration}
+          seek={seek}
+          episodeId={id}
+        />
       </Box>
       <Box sx={{ display: { xs: 'none', md: 'block' } }}>
         <RateButtons rate={rate} setRate={setRate} />
@@ -150,4 +189,24 @@ export default function AudioPlayer({
       </Box>
     </Widget>
   );
+}
+
+function SliderWithAdMarks({
+  episodeId,
+  ...props
+}: ProgressSliderProps & { episodeId: string }) {
+  const {
+    data: adsData,
+    isPending,
+    isError,
+  } = useSuspenseQuery(
+    convexQuery(api.adSegments.getByEpisodeId, { id: episodeId })
+  );
+
+  const marks = useMemo(() => {
+    if (isError) return [];
+    return adsData.map((a) => ({ value: a.start, label: '' }));
+  }, [adsData]);
+
+  return <ProgressSlider {...props} marks={marks} />;
 }

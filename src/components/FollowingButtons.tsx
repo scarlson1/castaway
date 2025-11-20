@@ -25,30 +25,34 @@ export function FollowingButtons({ podId }: { podId: string }) {
     convexQuery(api.subscribe.isFollowing, { podId })
   );
 
-  return !isFollowing ? (
-    <Button
-      loading={isPending}
-      onClick={() => subscribe({ podcastId: podId })}
-      startIcon={<AddRounded fontSize='inherit' />}
-    >
-      Follow
-    </Button>
-  ) : (
-    <Button
-      component='button'
-      ref={ref}
-      loading={unsubPending}
-      onClick={() => unsubscribe({ podId })}
-      startIcon={
-        isHovering ? (
-          <RemoveRounded fontSize='inherit' />
-        ) : (
-          <CheckRounded fontSize='inherit' />
-        )
-      }
-      sx={{ minWidth: 80 }}
-    >
-      {`${isHovering ? 'Unfollow' : 'Following'}`}
-    </Button>
+  return (
+    <>
+      {!isFollowing ? (
+        <Button
+          loading={isPending}
+          onClick={() => subscribe({ podcastId: podId })}
+          startIcon={<AddRounded fontSize='inherit' />}
+        >
+          Follow
+        </Button>
+      ) : (
+        <Button
+          component='button'
+          ref={ref}
+          loading={unsubPending}
+          onClick={() => unsubscribe({ podId })}
+          startIcon={
+            isHovering ? (
+              <RemoveRounded fontSize='inherit' />
+            ) : (
+              <CheckRounded fontSize='inherit' />
+            )
+          }
+          sx={{ minWidth: 80 }}
+        >
+          {`${isHovering ? 'Unfollow' : 'Following'}`}
+        </Button>
+      )}
+    </>
   );
 }

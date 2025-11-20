@@ -1,4 +1,10 @@
-import { Box, Slider, styled, Typography } from '@mui/material';
+import {
+  Box,
+  Slider,
+  styled,
+  Typography,
+  type SliderProps,
+} from '@mui/material';
 import { formatDuration } from '~/utils/format';
 
 const TinyText = styled(Typography)({
@@ -8,7 +14,7 @@ const TinyText = styled(Typography)({
   letterSpacing: 0.2,
 });
 
-interface ProgressSliderProps {
+export interface ProgressSliderProps extends SliderProps {
   position: number;
   duration: number;
   seek: (val: number) => void;
@@ -18,17 +24,28 @@ export function ProgressSlider({
   position,
   duration,
   seek,
+  ...props
 }: ProgressSliderProps) {
   return (
     <>
       <Slider
+        {...props}
         aria-label='time-indicator'
         size='small'
         value={position}
         min={0}
-        max={duration || 1}
+        max={duration || 1000}
         step={1}
-        onChange={(_, val) => seek(val)}
+        onChange={(_, val) => seek(val as number)}
+        // onChangeCommitted={(_, val) => seek(val)}
+        // slotProps={{
+        //   rail: {
+        //     onClick: (e) => console.log('RAIL', e),
+        //   },
+        //   track: {
+        //     onClick: (e) => console.log('TRACK', e),
+        //   },
+        // }}
         sx={(t) => ({
           color: 'rgba(0,0,0,0.87)',
           height: 4,

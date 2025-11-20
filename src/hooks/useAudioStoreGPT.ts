@@ -28,7 +28,7 @@ export interface AudioState {
 // Generates a unique store key per episode
 const storageKey = (episodeId: string) => `audio-player-${episodeId}`;
 
-// TODO: rate and support db
+// TODO: rate and sync playback to db
 
 export const useAudioStore = create<AudioState>()(
   persist(

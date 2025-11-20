@@ -1,5 +1,5 @@
 import { Howl } from 'howler';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { useAudioStore } from './useAudioStoreGPT';
 
 export function useAudioPlayer() {
@@ -104,17 +104,18 @@ export function useAudioPlayer() {
     };
   }, [isPlaying]);
 
+  const seek = useCallback((seconds: number) => {
+    const howl = howlRef.current;
+    if (!howl) return;
+    howl.seek(seconds);
+    setPosition(seconds);
+  }, []);
+
   return {
     play: () => setPlaying(true),
     pause: () => setPlaying(false),
     toggle: () => setPlaying(!isPlaying),
-
-    seek: (seconds: number) => {
-      const howl = howlRef.current;
-      if (!howl) return;
-      howl.seek(seconds);
-      setPosition(seconds);
-    },
+    seek,
 
     rate,
     setRate,
@@ -122,7 +123,8 @@ export function useAudioPlayer() {
     position,
     volume,
     isPlaying,
-
     duration: duration ?? 0, // howlRef.current?.duration() ?? 0,
+
+    episodeId,
   };
 }

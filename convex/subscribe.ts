@@ -11,6 +11,7 @@ import { v } from 'convex/values';
 export const all = query({
   // args: {}
   handler: async ({ db, auth }) => {
+    console.log('CONVEX - GET ALL SUBS CALLED');
     const clerkId = await getClerkId(auth);
 
     let subscriptions = await db

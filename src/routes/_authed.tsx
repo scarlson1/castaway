@@ -1,12 +1,12 @@
-import { auth } from '@clerk/tanstack-react-start/server';
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { getClerkUser } from '~/serverFn/auth';
 import { ensureConvexToken } from '~/utils/ensureConvexToken';
 // import { getCurrentUserFn } from '../server/auth'
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: async ({ context, location }) => {
     // const { userId: userId2 } = await fetchClerkAuthOnly();
-    const { userId } = await auth();
+    const { userId } = await getClerkUser(); // auth();
 
     if (!userId) {
       throw redirect({
