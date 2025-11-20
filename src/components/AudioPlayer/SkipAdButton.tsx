@@ -3,7 +3,7 @@ import { Button, Fade } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useCallback, useMemo } from 'react';
-import { useAudioStore } from '~/hooks/useAudioStoreGPT';
+import { useAudioStore } from '~/hooks/useAudioStore';
 import { useDebounce } from '~/hooks/useDebounce';
 
 const useDebouncedPosition = (delay = 500) => {

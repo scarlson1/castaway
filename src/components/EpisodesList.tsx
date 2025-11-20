@@ -36,7 +36,7 @@ import { round } from 'lodash-es';
 import { useCallback, useMemo, useState } from 'react';
 import { MuiLink } from '~/components/MuiLink';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
-import { useAudioStore } from '~/hooks/useAudioStoreGPT';
+import { useAudioStore } from '~/hooks/useAudioStore';
 import { useQueue } from '~/hooks/useQueue';
 
 interface EpisodesListProps {

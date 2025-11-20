@@ -2,7 +2,7 @@ import { convexQuery } from '@convex-dev/react-query';
 import { Box, styled, Typography } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
-import { Suspense, useEffect, useMemo } from 'react';
+import { Suspense, useEffect, useEffectEvent, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { PlaybackControls } from '~/components/AudioPlayer/PlaybackControls';
 import {
@@ -13,7 +13,7 @@ import { RateButtons } from '~/components/AudioPlayer/RateButton';
 import { SkipAdButton } from '~/components/AudioPlayer/SkipAdButton';
 import { VolumeControl } from '~/components/AudioPlayer/VolumeControl';
 import { useAudioPlayer } from '~/hooks/useAudioPlayer';
-import { useAudioStore } from '~/hooks/useAudioStoreGPT';
+import { useAudioStore } from '~/hooks/useAudioStore';
 
 const Widget = styled('div')(({ theme }) => ({
   padding: 16,
@@ -55,6 +55,7 @@ interface AudioPlayerProps {
   releaseDate: string;
   durationSeconds?: number;
   savedPosition?: number;
+  dbPlayback?: { position?: number; duration?: number };
 }
 
 export default function AudioPlayer({
@@ -66,6 +67,7 @@ export default function AudioPlayer({
   releaseDate,
   durationSeconds,
   savedPosition = 0,
+  dbPlayback = {},
 }: AudioPlayerProps) {
   const loadAudio = useAudioStore((s) => s.loadAudio);
   const {
@@ -83,11 +85,18 @@ export default function AudioPlayer({
     episodeId,
   } = useAudioPlayer();
 
+  // trigger on id/src change, but not dbPlayback
+  const loadNewAudio = useEffectEvent((id, src) => {
+    console.log(`load audio ${id}`, dbPlayback);
+    loadAudio(id, src, dbPlayback);
+  });
+
   // Load server + local state
   useEffect(() => {
     // loadAudio(id, src, serverState);
     console.log(`playing: ${title} - ${id}`);
-    loadAudio(id, src); // TODO: server state
+    loadNewAudio(id, src);
+    // loadAudio(id, src); // TODO: server state useLayoutEffect (don't retrigger trigger on playback update)
   }, [id, src]);
 
   return (

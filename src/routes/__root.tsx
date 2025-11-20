@@ -208,24 +208,30 @@ function WrappedPlayer() {
   const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
   const episode = useQueue((state) => state.nowPlaying); // TODO: use audio store instead ?? add queue to audio store ??
 
-  // TODO: better cache refresh solution (not needed ?? convex should pick up new records)
-  // need to refresh cache when new item is played (only syncs initially returned?)
-  // useEffect(() => {
-  //   let t = setTimeout(() => {
-  //     console.log('REFRESHING userPlayback getAllForUser');
-  //     userPlayback.refetch();
-  //   }, 1000);
-  //   return () => clearTimeout(t);
-  // }, [episode]);
+  // const savedPosition = useMemo(() => {
+  //   const playbackIndex = userPlayback?.data?.findIndex(
+  //     (pb) => pb.episodeId === episode?.episodeId
+  //   );
+  //   if (playbackIndex !== undefined) {
+  //     const playback = userPlayback.data?.[playbackIndex];
+  //     return playback?.positionSeconds || 0;
+  //   }
+  // }, [episode, userPlayback]);
 
-  const savedPosition = useMemo(() => {
+  const dbPlayback = useMemo(() => {
     const playbackIndex = userPlayback?.data?.findIndex(
       (pb) => pb.episodeId === episode?.episodeId
     );
-    if (playbackIndex !== undefined) {
-      const playback = userPlayback.data?.[playbackIndex];
-      return playback?.positionSeconds || 0;
-    }
+    if (!playbackIndex) return {};
+
+    const playback = userPlayback.data?.[playbackIndex];
+
+    return playback?.positionSeconds
+      ? {
+          position: playback.positionSeconds,
+          duration: playback.duration,
+        }
+      : {};
   }, [episode, userPlayback]);
 
   if (!episode) return null;
@@ -242,7 +248,8 @@ function WrappedPlayer() {
           : ''
       }
       podName={episode.podName}
-      savedPosition={savedPosition || 0}
+      // savedPosition={savedPosition || 0}
+      dbPlayback={dbPlayback}
     />
   );
 

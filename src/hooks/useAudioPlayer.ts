@@ -1,6 +1,12 @@
+import { useConvexMutation } from '@convex-dev/react-query';
+import { useMutation } from '@tanstack/react-query';
+import { api } from 'convex/_generated/api';
 import { Howl } from 'howler';
 import { useCallback, useEffect, useRef } from 'react';
-import { useAudioStore } from './useAudioStoreGPT';
+import { useInterval } from '~/hooks/useInterval';
+import { useAudioStore } from './useAudioStore';
+
+// TODO: use howler 'end' event to play next in queue
 
 export function useAudioPlayer() {
   const {
@@ -19,6 +25,23 @@ export function useAudioPlayer() {
   } = useAudioStore();
 
   const howlRef = useRef<Howl | null>(null);
+
+  const { mutate: updatePlayback } = useMutation({
+    mutationFn: useConvexMutation(api.playback.update),
+  });
+
+  useInterval(
+    () => {
+      if (howlRef.current?.playing() && episodeId)
+        updatePlayback({
+          episodeId,
+          positionSeconds: position,
+          completed: Boolean(duration === position),
+        });
+    },
+    10000, // 10s
+    !isPlaying
+  );
 
   // Load / reload audio when URL changes
   useEffect(() => {
