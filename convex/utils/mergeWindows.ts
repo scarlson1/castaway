@@ -25,6 +25,7 @@ export function mergeAdWindows(
   for (let i = 1; i < positives.length; i++) {
     const w = positives[i];
 
+    // start is less than previous window + gap ==> ad window to current ad segment
     if (w.start <= cur.end + mergeGap) {
       cur.end = Math.max(cur.end, w.end);
       cur.transcript += ' ' + w.text;
@@ -32,6 +33,7 @@ export function mergeAdWindows(
         (cur.confidence * cur.count + w.confidence) / (cur.count + 1);
       cur.count++;
     } else {
+      // if start of window is more than 2 seconds after current ==> ad segment complete; start new segment
       if (cur.end - cur.start >= minDuration)
         segments.push({
           start: cur.start,

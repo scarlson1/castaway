@@ -1,6 +1,8 @@
 import type { ClassifiedWindow, Window } from 'convex/adSegments';
 import OpenAI from 'openai';
 
+// include previously classified ads for additional context ??
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function classifyWindowsBatch<T extends Record<string, any>>(

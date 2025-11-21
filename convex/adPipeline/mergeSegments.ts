@@ -4,6 +4,12 @@ import type { ClassifiedWindow } from 'convex/adSegments';
 import { mergeAdWindows } from 'convex/utils/mergeWindows';
 import { v } from 'convex/values';
 
+// iterate windows -> combine to determine ad segments
+// next action: save each ad segment to ads table
+
+const MIN_SEGMENT_LENGTH = 5;
+const MERGE_GAP = 2;
+
 export const fn = internalMutation({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
@@ -12,7 +18,11 @@ export const fn = internalMutation({
       .withIndex('by_jobId', (q) => q.eq('jobId', jobId))
       .collect();
 
-    const segments = mergeAdWindows(windows as ClassifiedWindow[]);
+    const segments = mergeAdWindows(
+      windows as ClassifiedWindow[],
+      MIN_SEGMENT_LENGTH,
+      MERGE_GAP
+    );
 
     await ctx.db.patch(jobId, {
       segments,

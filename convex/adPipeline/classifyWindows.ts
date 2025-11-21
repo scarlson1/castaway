@@ -5,6 +5,9 @@ import { internalAction } from 'convex/_generated/server';
 import { classifyWindowsBatch } from 'convex/utils/llmBatchClassifier';
 import { v } from 'convex/values';
 
+// classify windows in batches (continue to call classifyWindows until all adWindows are processed)
+// trigger next step: mergeSegments
+
 export const fn = internalAction({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {

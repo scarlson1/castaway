@@ -95,15 +95,6 @@ function RouteComponent() {
     },
   });
 
-  // const {
-  //   episodeId: curEpId,
-  //   isPlaying,
-  //   setPlaying,
-  // } = useAudioStore(({ episodeId, isPlaying, setPlaying }) => ({
-  //   episodeId,
-  //   isPlaying,
-  //   setPlaying,
-  // }));
   const curEpId = useAudioStore(({ episodeId }) => episodeId);
   const isPlaying = useAudioStore(({ isPlaying }) => isPlaying);
   const setPlaying = useAudioStore(({ setPlaying }) => setPlaying);

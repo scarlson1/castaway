@@ -5,6 +5,11 @@ import { internalAction } from 'convex/_generated/server';
 import { transcribeUrl } from 'convex/utils/transcribeUrl';
 import { v } from 'convex/values';
 
+// fetch audio from url --> break into chunks (open AI 25MB limit)
+// call transcription service for each chunk
+// write transcript to adJob doc
+// trigger next step: chunkTranscript
+
 export const fn = internalAction({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {

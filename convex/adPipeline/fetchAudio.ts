@@ -2,6 +2,8 @@
 // import { internalAction } from 'convex/_generated/server';
 // import { v } from 'convex/values';
 
+// only reason to keep is if audio is used to train model ??
+
 // // DELETE step ?? can use the original audio url instead ??
 
 // export const fn = internalAction({

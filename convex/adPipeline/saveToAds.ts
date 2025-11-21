@@ -2,6 +2,8 @@ import { api, internal } from 'convex/_generated/api';
 import { internalAction } from 'convex/_generated/server';
 import { v } from 'convex/values';
 
+// save each ad segment from job to ads table
+
 export const fn = internalAction({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {

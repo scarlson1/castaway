@@ -17,8 +17,6 @@ export const startAdDetection = mutation({
       createdAt: Date.now(),
     });
 
-    // schedule next step
-    // await ctx.scheduler.runAfter(0, internal.adPipeline.fetchAudio.fn, { jobId });
     await ctx.scheduler.runAfter(0, internal.adPipeline.transcribe.fn, {
       jobId,
     });

@@ -31,10 +31,7 @@ import type * as users from "../users.js";
 import type * as utils_buildWindows from "../utils/buildWindows.js";
 import type * as utils_embeddings from "../utils/embeddings.js";
 import type * as utils_llmBatchClassifier from "../utils/llmBatchClassifier.js";
-import type * as utils_llmClassifier from "../utils/llmClassifier.js";
 import type * as utils_mergeWindows from "../utils/mergeWindows.js";
-import type * as utils_processPodcast from "../utils/processPodcast.js";
-import type * as utils_transcribe from "../utils/transcribe.js";
 import type * as utils_transcribeUrl from "../utils/transcribeUrl.js";
 
 import type {
@@ -67,10 +64,7 @@ declare const fullApi: ApiFromModules<{
   "utils/buildWindows": typeof utils_buildWindows;
   "utils/embeddings": typeof utils_embeddings;
   "utils/llmBatchClassifier": typeof utils_llmBatchClassifier;
-  "utils/llmClassifier": typeof utils_llmClassifier;
   "utils/mergeWindows": typeof utils_mergeWindows;
-  "utils/processPodcast": typeof utils_processPodcast;
-  "utils/transcribe": typeof utils_transcribe;
   "utils/transcribeUrl": typeof utils_transcribeUrl;
 }>;
 
