@@ -37,15 +37,15 @@ import { useCallback, useMemo, useState } from 'react';
 import { MuiLink } from '~/components/MuiLink';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 import { useAudioStore } from '~/hooks/useAudioStore';
-import { useQueue } from '~/hooks/useQueue';
+import { useQueueStore } from '~/hooks/useQueueStore';
 
 interface EpisodesListProps {
   podId: string;
 }
 
 export const EpisodesList = ({ podId }: EpisodesListProps) => {
-  const nowPlaying = useQueue((state) => state.nowPlaying);
-  const setPlaying = useQueue((state) => state.setPlaying);
+  const nowPlaying = useQueueStore((state) => state.nowPlaying);
+  const setPlaying = useQueueStore((state) => state.setPlaying);
   const { isPlaying, setPlaying: p } = useAudioStore();
   const [pageSize, setPageSize] = useState(10);
 

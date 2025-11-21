@@ -19,13 +19,13 @@ import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { format } from 'date-fns';
-import { Suspense, useMemo, type ReactNode } from 'react';
+import { Suspense, type ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import castawayLogo from '~/assets/castaway-light.png';
 import { AppHeader } from '~/components/AppHeader';
 import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
-import { useQueue } from '~/hooks/useQueue';
+import { useQueueStore } from '~/hooks/useQueueStore';
 import { theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
@@ -182,8 +182,6 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           </ErrorBoundary>
         </Providers>
 
-        {/* <TanStackRouterDevtools position='bottom-left' /> */}
-        {/* <ReactQueryDevtools initialIsOpen={false} /> */}
         <TanStackDevtools
           plugins={[
             {
@@ -206,33 +204,23 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 
 function WrappedPlayer() {
   const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
-  const episode = useQueue((state) => state.nowPlaying); // TODO: use audio store instead ?? add queue to audio store ??
+  const episode = useQueueStore((state) => state.nowPlaying);
 
-  // const savedPosition = useMemo(() => {
+  // const dbPlayback = useMemo(() => {
   //   const playbackIndex = userPlayback?.data?.findIndex(
   //     (pb) => pb.episodeId === episode?.episodeId
   //   );
-  //   if (playbackIndex !== undefined) {
-  //     const playback = userPlayback.data?.[playbackIndex];
-  //     return playback?.positionSeconds || 0;
-  //   }
+  //   if (!playbackIndex) return {};
+
+  //   const playback = userPlayback.data?.[playbackIndex];
+
+  //   return playback?.positionSeconds
+  //     ? {
+  //         position: playback.positionSeconds,
+  //         duration: playback.duration,
+  //       }
+  //     : {};
   // }, [episode, userPlayback]);
-
-  const dbPlayback = useMemo(() => {
-    const playbackIndex = userPlayback?.data?.findIndex(
-      (pb) => pb.episodeId === episode?.episodeId
-    );
-    if (!playbackIndex) return {};
-
-    const playback = userPlayback.data?.[playbackIndex];
-
-    return playback?.positionSeconds
-      ? {
-          position: playback.positionSeconds,
-          duration: playback.duration,
-        }
-      : {};
-  }, [episode, userPlayback]);
 
   if (!episode) return null;
 
@@ -248,30 +236,13 @@ function WrappedPlayer() {
           : ''
       }
       podName={episode.podName}
-      // savedPosition={savedPosition || 0}
-      dbPlayback={dbPlayback}
+      // dbPlayback={dbPlayback}
     />
   );
-
-  // return (
-  //   <AudioPlayerPersist
-  //     coverArt={episode.image}
-  //     id={episode.episodeId}
-  //     title={episode.title}
-  //     src={episode.audioUrl}
-  //     releaseDate={
-  //       episode.releaseDateMs
-  //         ? format(new Date(episode.releaseDateMs), 'MMM d')
-  //         : ''
-  //     }
-  //     podName={episode.podName}
-  //     savedPosition={savedPosition || 0}
-  //   />
-  // );
 }
 
 function AudioPlayerBottomSpacer() {
-  const episode = useQueue((state) => state.nowPlaying);
+  const episode = useQueueStore((state) => state.nowPlaying);
   const show = Boolean(episode);
   return (
     <Box

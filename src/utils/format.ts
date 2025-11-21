@@ -1,3 +1,5 @@
+import type { Duration } from 'date-fns';
+
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   const secs = Math.floor(seconds % 60);
@@ -8,4 +10,14 @@ export function formatDuration(value: number) {
   const minute = Math.floor(value / 60);
   const secondLeft = Math.floor(value - minute * 60);
   return `${minute}:${secondLeft < 10 ? `0${secondLeft}` : secondLeft}`;
+}
+
+export function toFormattedDuration(s: number): Duration {
+  const hours = Math.floor(s / 3600);
+  const mRemain = s % 3600;
+  const minutes = Math.floor(mRemain / 60);
+  const sRemain = mRemain % 60;
+  const seconds = Math.floor(sRemain / 60);
+
+  return { hours, minutes, seconds };
 }

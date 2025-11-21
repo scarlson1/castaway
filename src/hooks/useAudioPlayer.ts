@@ -1,9 +1,5 @@
-import { useConvexMutation } from '@convex-dev/react-query';
-import { useMutation } from '@tanstack/react-query';
-import { api } from 'convex/_generated/api';
 import { Howl } from 'howler';
 import { useCallback, useEffect, useRef } from 'react';
-import { useInterval } from '~/hooks/useInterval';
 import { useAudioStore } from './useAudioStore';
 
 // TODO: use howler 'end' event to play next in queue
@@ -25,23 +21,24 @@ export function useAudioPlayer() {
   } = useAudioStore();
 
   const howlRef = useRef<Howl | null>(null);
+  const isControllingRef = useRef(false);
 
-  const { mutate: updatePlayback } = useMutation({
-    mutationFn: useConvexMutation(api.playback.update),
-  });
+  // const { mutate: updatePlayback } = useMutation({
+  //   mutationFn: useConvexMutation(api.playback.update),
+  // });
 
-  useInterval(
-    () => {
-      if (howlRef.current?.playing() && episodeId)
-        updatePlayback({
-          episodeId,
-          positionSeconds: position,
-          completed: Boolean(duration === position),
-        });
-    },
-    10000, // 10s
-    !isPlaying
-  );
+  // useInterval(
+  //   () => {
+  //     if (howlRef.current?.playing() && episodeId)
+  //       updatePlayback({
+  //         episodeId,
+  //         positionSeconds: position,
+  //         completed: Boolean(duration === position),
+  //       });
+  //   },
+  //   10000 // 10s
+  //   // !isPlaying
+  // );
 
   // Load / reload audio when URL changes
   useEffect(() => {
@@ -58,10 +55,26 @@ export function useAudioPlayer() {
       html5: true,
       volume,
       preload: true,
-      onplay: () => setPlaying(true),
-      onpause: () => setPlaying(false),
-      onstop: () => setPlaying(false),
-      onend: () => setPlaying(false),
+      onplay: () => {
+        if (!isControllingRef.current) {
+          setPlaying(true);
+        }
+      },
+      onpause: () => {
+        if (!isControllingRef.current) {
+          setPlaying(false);
+        }
+      },
+      onstop: () => {
+        if (!isControllingRef.current) {
+          setPlaying(false);
+        }
+      },
+      onend: () => {
+        if (!isControllingRef.current) {
+          setPlaying(false);
+        }
+      },
       onload: (v) => console.log('LOAD', v),
     });
 
@@ -87,10 +100,22 @@ export function useAudioPlayer() {
     const howl = howlRef.current;
     if (!howl) return;
 
-    if (isPlaying && !howl.playing()) {
-      howl.play();
-    } else if (!isPlaying && howl.playing()) {
-      howl.pause();
+    // Only update if state is out of sync
+    const isCurrentlyPlaying = howl.playing();
+    if (isPlaying === isCurrentlyPlaying) return;
+
+    isControllingRef.current = true;
+    try {
+      if (isPlaying) {
+        howl.play();
+      } else {
+        howl.pause();
+      }
+    } finally {
+      // Reset flag after callbacks have a chance to fire
+      requestAnimationFrame(() => {
+        isControllingRef.current = false;
+      });
     }
   }, [isPlaying]);
 

@@ -87,16 +87,13 @@ export default function AudioPlayer({
 
   // trigger on id/src change, but not dbPlayback
   const loadNewAudio = useEffectEvent((id, src) => {
-    console.log(`load audio ${id}`, dbPlayback);
+    console.log(`load audio ${title} - ${id}`, dbPlayback);
     loadAudio(id, src, dbPlayback);
   });
 
   // Load server + local state
   useEffect(() => {
-    // loadAudio(id, src, serverState);
-    console.log(`playing: ${title} - ${id}`);
     loadNewAudio(id, src);
-    // loadAudio(id, src); // TODO: server state useLayoutEffect (don't retrigger trigger on playback update)
   }, [id, src]);
 
   return (

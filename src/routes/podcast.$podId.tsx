@@ -27,7 +27,7 @@ import {
 import { Suspense, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { FollowingButtons } from '~/components/FollowingButtons';
-import { useQueue } from '~/hooks/useQueue';
+import { useQueueStore } from '~/hooks/useQueueStore';
 import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
 import { episodesQueryOptions, podDetailsQueryOptions } from '~/queries';
 import { getRootDomain } from '~/utils/getDomain';
@@ -160,7 +160,7 @@ function EpisodesList({
   const { data } = useSuspenseQuery(
     episodesQueryOptions(podId, { max: limit })
   );
-  const setPlaying = useQueue((state) => state.setPlaying);
+  const setPlaying = useQueueStore((state) => state.setPlaying);
 
   const handleSetPlaying = useCallback(
     (ep: EpisodeItem) => {

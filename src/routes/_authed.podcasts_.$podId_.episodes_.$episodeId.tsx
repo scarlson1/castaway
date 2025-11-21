@@ -23,14 +23,16 @@ import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import type { Doc } from 'convex/_generated/dataModel';
-import { formatDate, formatDuration, type Duration } from 'date-fns';
+import { formatDate, formatDuration } from 'date-fns';
 import { Suspense, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { AdsTimeline } from '~/components/AdsTimeline';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
-import { useQueue } from '~/hooks/useQueue';
+import { useAudioStore } from '~/hooks/useAudioStore';
+import { useQueueStore } from '~/hooks/useQueueStore';
 import { getEpisodeLabel } from '~/routes/podcast.$podId';
+import { toFormattedDuration } from '~/utils/format';
 
 export const Route = createFileRoute(
   '/_authed/podcasts_/$podId_/episodes_/$episodeId'
@@ -93,22 +95,31 @@ function RouteComponent() {
     },
   });
 
-  const nowPlaying = useQueue((state) => state.nowPlaying);
-  const setPlaying = useQueue((state) => state.setPlaying);
+  // const {
+  //   episodeId: curEpId,
+  //   isPlaying,
+  //   setPlaying,
+  // } = useAudioStore(({ episodeId, isPlaying, setPlaying }) => ({
+  //   episodeId,
+  //   isPlaying,
+  //   setPlaying,
+  // }));
+  const curEpId = useAudioStore(({ episodeId }) => episodeId);
+  const isPlaying = useAudioStore(({ isPlaying }) => isPlaying);
+  const setPlaying = useAudioStore(({ setPlaying }) => setPlaying);
 
-  const handleSetPlaying = useCallback(
-    (ep: Doc<'episodes'>) => {
-      setPlaying({
-        image: ep.feedImage || ep.image || '',
-        episodeId: ep.episodeId,
-        title: ep.title,
-        audioUrl: ep.audioUrl,
-        releaseDateMs: ep.publishedAt,
-        podName: ep.podcastTitle,
-      });
-    },
-    [setPlaying]
-  );
+  const playEpisode = useQueueStore((state) => state.setPlaying);
+
+  const handlePlayEpisode = useCallback((ep: Doc<'episodes'>) => {
+    playEpisode({
+      image: ep.feedImage || ep.image || '',
+      episodeId: ep.episodeId,
+      title: ep.title,
+      audioUrl: ep.audioUrl,
+      releaseDateMs: ep.publishedAt,
+      podName: ep.podcastTitle,
+    });
+  }, []);
 
   if (!data) throw new Error('podcast not found');
 
@@ -155,20 +166,18 @@ function RouteComponent() {
           <Typography variant='h5' gutterBottom>
             {data?.title}
           </Typography>
-          {nowPlaying ? (
+          {isPlaying && curEpId === episodeId ? (
             <IconButton
-              // size='large'
               color='primary'
-              onClick={() => alert('TODO: move audio controls to context')}
+              onClick={() => setPlaying(false)}
               edge='start'
             >
               <PauseCircleFilledRounded fontSize='inherit' />
             </IconButton>
           ) : (
             <IconButton
-              // size='large'
               color='primary'
-              onClick={() => handleSetPlaying(data)}
+              onClick={() => handlePlayEpisode(data)}
               edge='start'
             >
               <PlayCircleFilledRounded fontSize='inherit' />
@@ -217,10 +226,7 @@ function RouteComponent() {
             loading={isPending}
             onClick={() =>
               mutate({
-                // podcastId: podId,
                 episodeId,
-                // convexEpId: data._id,
-                // audioUrl: data.audioUrl,
               })
             }
           >
@@ -264,15 +270,7 @@ function RouteComponent() {
   );
 }
 
-function AdSegments({
-  // ads,
-  // audioUrl,
-  episodeId,
-}: {
-  // ads: { start: number; end: number }[];
-  // audioUrl: string;
-  episodeId: string;
-}) {
+function AdSegments({ episodeId }: { episodeId: string }) {
   const { data } = useSuspenseQuery(
     convexQuery(api.adSegments.getByEpisodeId, { id: episodeId })
   );
@@ -280,18 +278,6 @@ function AdSegments({
   return (
     <Box sx={{ mx: 'auto' }}>
       <AdsTimeline adSegments={data} />
-
-      {/* {data?.map(({ confidence, duration, start, end, transcript, _id }) => (
-        <Typography variant='body2' component='div' key={_id}>
-          <pre>
-            {JSON.stringify(
-              { confidence, duration, start, end, transcript },
-              null,
-              2
-            )}
-          </pre>
-        </Typography>
-      ))} */}
     </Box>
   );
 }
@@ -319,10 +305,9 @@ function EpisodeActions() {
 }
 
 function AdJobs({ episodeId }: { episodeId: string }) {
-  const { data } = useSuspenseQuery({
-    ...convexQuery(api.adJobs.getByEpisodeId, { episodeId }),
-    // throwOnError: false
-  });
+  const { data } = useSuspenseQuery(
+    convexQuery(api.adJobs.getByEpisodeId, { episodeId })
+  );
 
   if (!data?.length) return <Typography>No jobs</Typography>;
 
@@ -331,21 +316,11 @@ function AdJobs({ episodeId }: { episodeId: string }) {
       {data.map((j) => {
         const { transcript, ...job } = j;
         return (
-          <Typography component='div' variant='body2'>
+          <Typography component='div' variant='body2' key={j._id}>
             <pre>{JSON.stringify(job, null, 2)}</pre>
           </Typography>
         );
       })}
     </>
   );
-}
-
-function toFormattedDuration(s: number): Duration {
-  const hours = Math.floor(s / 3600);
-  const mRemain = s % 3600;
-  const minutes = Math.floor(mRemain / 60);
-  const sRemain = mRemain % 60;
-  const seconds = Math.floor(sRemain / 60);
-
-  return { hours, minutes, seconds };
 }

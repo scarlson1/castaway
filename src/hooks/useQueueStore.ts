@@ -32,7 +32,7 @@ interface QueueState {
   addToQueue: (ep: Temp) => void;
 }
 
-export const useQueue = create<QueueState>()((set) => ({
+export const useQueueStore = create<QueueState>()((set) => ({
   queue: [],
   nowPlaying: null,
   setPlaying: (ep: Temp) => set((state) => ({ nowPlaying: ep })),
