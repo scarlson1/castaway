@@ -1,36 +1,5 @@
-import { api, internal } from 'convex/_generated/api';
-import { action, internalMutation, query } from 'convex/_generated/server';
-import type { SegmentLabel } from 'convex/utils/llmClassifier';
+import { internalMutation, query } from 'convex/_generated/server';
 import { v } from 'convex/values';
-
-// initial implementation
-// export const insert = internalMutation({
-//   args: {
-//     audioUrl: v.string(),
-//     ads: v.array(
-//       v.object({
-//         start: v.number(),
-//         end: v.number(),
-//       })
-//     ),
-//     episodeId: v.string(),
-//     convexEpId: v.id('episodes'),
-//     podcastId: v.string(),
-//   },
-//   handler: async (
-//     { db },
-//     { audioUrl, ads, episodeId, convexEpId, podcastId }
-//   ) => {
-//     return await db.insert('adSegments', {
-//       audioUrl,
-//       ads,
-//       episodeId,
-//       convexEpId,
-//       podcastId,
-//       createdAt: Date.now(),
-//     });
-//   },
-// });
 
 interface WindowTime {
   start: number;
@@ -41,9 +10,9 @@ export interface Window extends WindowTime {
   text: string;
 }
 
-export interface LabelledWindow extends Window {
-  label: SegmentLabel;
-}
+// export interface LabelledWindow extends Window {
+//   label: SegmentLabel;
+// }
 
 export interface ClassifiedWindow extends Window {
   is_ad: boolean;
@@ -58,35 +27,6 @@ export interface MergedAdSegment {
   transcript: string;
   confidence: number;
 }
-
-// DELETE ?? use pipeline
-export const transcribeAndClassify = action({
-  args: {
-    // audioUrl: v.string(),
-    episodeId: v.string(),
-    // convexEpId: v.id('episodes'),
-    // podcastId: v.string(),
-  },
-  // handler: async (ctx, { episodeId }): Promise<{ ads: MergedAdSegment[] }> => {
-  handler: async (ctx, { episodeId }): Promise<{ status: string }> => {
-    const episode = await ctx.runQuery(api.episodes.getByGuid, {
-      id: episodeId,
-    });
-    if (!episode) throw new Error(`Episode not found (ID: ${episodeId})`);
-
-    console.log(
-      `starting podcast ad detection for episode ${episodeId}: "${episode.title}"`
-    );
-    await ctx.scheduler.runAfter(0, internal.node.processPodcastAds, {
-      audioUrl: episode.audioUrl,
-      episodeId: episode.episodeId,
-      podcastId: episode.podcastId,
-      convexEpId: episode._id,
-    });
-
-    return { status: 'initiated' };
-  },
-});
 
 // new implementation
 export const saveAdDoc = internalMutation({

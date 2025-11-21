@@ -18,7 +18,6 @@ import { Route as TrendingAppleRouteImport } from './routes/trending.apple'
 import { Route as PodcastPodIdRouteImport } from './routes/podcast.$podId'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthSigninRouteImport } from './routes/auth.signin'
-import { Route as ApiSearchRouteImport } from './routes/api/search'
 import { Route as AuthedPodcastsIndexRouteImport } from './routes/_authed.podcasts.index'
 import { Route as PodcastAppleItunesIdRouteImport } from './routes/podcast.apple_.$itunesId'
 import { Route as AuthedPodcastsPodIdRouteImport } from './routes/_authed.podcasts_.$podId'
@@ -68,11 +67,6 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   path: '/auth/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiSearchRoute = ApiSearchRouteImport.update({
-  id: '/api/search',
-  path: '/api/search',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedPodcastsIndexRoute = AuthedPodcastsIndexRouteImport.update({
   id: '/podcasts/',
   path: '/podcasts/',
@@ -99,7 +93,6 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
   '/trending': typeof TrendingRouteWithChildren
-  '/api/search': typeof ApiSearchRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
@@ -113,7 +106,6 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
-  '/api/search': typeof ApiSearchRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
@@ -130,7 +122,6 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/discover': typeof DiscoverRoute
   '/trending': typeof TrendingRouteWithChildren
-  '/api/search': typeof ApiSearchRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
@@ -147,7 +138,6 @@ export interface FileRouteTypes {
     | '/'
     | '/discover'
     | '/trending'
-    | '/api/search'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
@@ -161,7 +151,6 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/discover'
-    | '/api/search'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
@@ -177,7 +166,6 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/discover'
     | '/trending'
-    | '/api/search'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
@@ -194,7 +182,6 @@ export interface RootRouteChildren {
   AuthedRoute: typeof AuthedRouteWithChildren
   DiscoverRoute: typeof DiscoverRoute
   TrendingRoute: typeof TrendingRouteWithChildren
-  ApiSearchRoute: typeof ApiSearchRoute
   AuthSigninRoute: typeof AuthSigninRoute
   AuthSignupRoute: typeof AuthSignupRoute
   PodcastPodIdRoute: typeof PodcastPodIdRoute
@@ -266,13 +253,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/search': {
-      id: '/api/search'
-      path: '/api/search'
-      fullPath: '/api/search'
-      preLoaderRoute: typeof ApiSearchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed/podcasts/': {
       id: '/_authed/podcasts/'
       path: '/podcasts'
@@ -339,7 +319,6 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRoute: AuthedRouteWithChildren,
   DiscoverRoute: DiscoverRoute,
   TrendingRoute: TrendingRouteWithChildren,
-  ApiSearchRoute: ApiSearchRoute,
   AuthSigninRoute: AuthSigninRoute,
   AuthSignupRoute: AuthSignupRoute,
   PodcastPodIdRoute: PodcastPodIdRoute,
