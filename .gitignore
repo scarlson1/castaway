@@ -1,5 +1,6 @@
 node_modules
 *.local
 
+.env.production
+
 convex/_generated
-PERFORMANCE_ANALYSIS.md
