@@ -1,6 +1,4 @@
 node_modules
 *.local
 
-.env.production
-
 convex/_generated
