@@ -2,7 +2,6 @@
 
 import { internal } from 'convex/_generated/api';
 import { internalAction } from 'convex/_generated/server';
-import { processPodcast } from 'convex/utils/processPodcast';
 import { v } from 'convex/values';
 import OpenAI from 'openai';
 
@@ -43,18 +42,5 @@ export const saveAdSegment = internalAction({
     });
 
     return { ok: true };
-  },
-});
-
-export const processPodcastAds = internalAction({
-  args: {
-    podcastId: v.string(),
-    episodeId: v.string(),
-    convexEpId: v.id('episodes'),
-    audioUrl: v.string(),
-  },
-  handler: async (ctx, args) => {
-    console.log(`starting ad detection for ${args.episodeId}`);
-    return await processPodcast(ctx, args);
   },
 });
