@@ -1,8 +1,4 @@
-import {
-  convexQuery,
-  useConvexAction,
-  useConvexMutation,
-} from '@convex-dev/react-query';
+import { convexQuery, useConvexMutation } from '@convex-dev/react-query';
 import {
   DownloadRounded,
   IosShareRounded,
@@ -60,23 +56,6 @@ function RouteComponent() {
   const { data } = useSuspenseQuery(
     convexQuery(api.episodes.getByGuid, { id: episodeId })
   );
-
-  const { mutate, isPending } = useMutation<
-    { status: string },
-    Error,
-    { episodeId: string }
-  >({
-    mutationFn: useConvexAction(api.adSegments.transcribeAndClassify),
-    onSuccess: (data, vars) => {
-      console.log(data, vars);
-      toast.info(`Ad detection process initiated`);
-      // toast.success('test');
-    },
-    onError: (err, vars) => {
-      console.log(err, vars);
-      toast.error(`something went wrong`);
-    },
-  });
 
   const { mutate: startJob, isPending: jobPending } = useMutation<
     { jobId: string },
@@ -213,16 +192,6 @@ function RouteComponent() {
           <MuiButtonLink to='/podcasts/$podId' params={{ podId }}>
             See all episodes
           </MuiButtonLink>
-          <Button
-            loading={isPending}
-            onClick={() =>
-              mutate({
-                episodeId,
-              })
-            }
-          >
-            Transcribe & classify ads
-          </Button>
           <Button
             loading={jobPending}
             onClick={() =>
