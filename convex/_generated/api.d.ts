@@ -29,6 +29,7 @@ import type * as subscribe from "../subscribe.js";
 import type * as users from "../users.js";
 import type * as utils_buildWindows from "../utils/buildWindows.js";
 import type * as utils_embeddings from "../utils/embeddings.js";
+import type * as utils_env from "../utils/env.js";
 import type * as utils_llmBatchClassifier from "../utils/llmBatchClassifier.js";
 import type * as utils_mergeWindows from "../utils/mergeWindows.js";
 import type * as utils_transcribeUrl from "../utils/transcribeUrl.js";
@@ -61,6 +62,7 @@ declare const fullApi: ApiFromModules<{
   users: typeof users;
   "utils/buildWindows": typeof utils_buildWindows;
   "utils/embeddings": typeof utils_embeddings;
+  "utils/env": typeof utils_env;
   "utils/llmBatchClassifier": typeof utils_llmBatchClassifier;
   "utils/mergeWindows": typeof utils_mergeWindows;
   "utils/transcribeUrl": typeof utils_transcribeUrl;

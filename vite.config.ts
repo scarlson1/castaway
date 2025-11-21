@@ -16,5 +16,6 @@ export default defineConfig({
     include: ['@emotion/styled'],
   },
   plugins: [tsConfigPaths(), devtools(), tanstackStart(), nitro(), viteReact()],
+  nitro: {},
   envPrefix: ['CLERK_SIGN_IN_', 'CLERK_SIGN_UP_', 'VITE_'],
 });

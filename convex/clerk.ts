@@ -1,15 +1,8 @@
 import type { WebhookEvent } from '@clerk/backend';
+import { ensureEnvironmentVariable } from 'convex/utils/env';
 import { Webhook } from 'svix';
 import { internal } from './_generated/api';
 import { httpAction } from './_generated/server';
-
-function ensureEnvironmentVariable(name: string): string {
-  const value = process.env[name];
-  if (value === undefined) {
-    throw new Error(`missing environment variable ${name}`);
-  }
-  return value;
-}
 
 const webhookSecret = ensureEnvironmentVariable('CLERK_WEBHOOK_SECRET');
 
