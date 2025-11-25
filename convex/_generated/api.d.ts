@@ -27,6 +27,7 @@ import type * as playback from "../playback.js";
 import type * as podcasts from "../podcasts.js";
 import type * as subscribe from "../subscribe.js";
 import type * as users from "../users.js";
+import type * as utils_auth from "../utils/auth.js";
 import type * as utils_buildWindows from "../utils/buildWindows.js";
 import type * as utils_embeddings from "../utils/embeddings.js";
 import type * as utils_env from "../utils/env.js";
@@ -60,6 +61,7 @@ declare const fullApi: ApiFromModules<{
   podcasts: typeof podcasts;
   subscribe: typeof subscribe;
   users: typeof users;
+  "utils/auth": typeof utils_auth;
   "utils/buildWindows": typeof utils_buildWindows;
   "utils/embeddings": typeof utils_embeddings;
   "utils/env": typeof utils_env;

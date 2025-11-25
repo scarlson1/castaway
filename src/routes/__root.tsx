@@ -26,6 +26,7 @@ import { AppHeader } from '~/components/AppHeader';
 import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
 import { useQueueStore } from '~/hooks/useQueueStore';
+import { getCachedClerkAuth } from '~/serverFn/auth';
 import { theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
@@ -38,30 +39,80 @@ export interface RouterContext {
   // user: User | null;
 }
 
+// TODO: cache the fetchClerkAuth()
+// verify token: https://clerk.com/docs/reference/backend/verify-token (expiration/refresh etc.)
+// Networkless if the jwtKey is provided
+
+// beforeLoad: async ({ context }) => {
+//   // TODO: move to server function
+//   // const a = await auth();
+//   const a = await fetchClerkAuthOnly();
+//   const { userId, orgId, isAuthenticated } = a;
+//   if (userId) {
+//     if (context.token) {
+//       console.log('VERIFYING TOKEN');
+//       try {
+//         let verifyResult = await verifyToken(context.token, {
+//           // jwtKey: process.env.CLERK_SECRET_KEY
+//           // authorizedParties: ["http://localhost:3001", "api.example.com"]
+//         });
+//         console.log('verify result: ', verifyResult);
+//       } catch (err) {
+//         console.log('VERIFY ERR: ', err);
+
+//         let freshToken = await getClerkToken();
+//         return { token: freshToken, userId };
+//       }
+//     } else {
+//       let freshToken = await getClerkToken();
+//       return { token: freshToken, userId };
+//     }
+//   }
+// },
+
+// beforeLoad: async ({ context }) => {
+//   const { token, userId } = await ensureConvexToken(context);
+//   return { token, userId };
+// },
+// https://docs.convex.dev/client/tanstack/tanstack-start/clerk
+// beforeLoad: async ({ context }) => {
+//   // only call if not context.userId or context.token ??
+
+//   const { userId, token } = await fetchClerkAuth({
+//     data: { token: context.token, userId: context.userId },
+//   });
+
+//   // During SSR only (the only time serverHttpClient exists),
+//   // set the Clerk auth token to make HTTP queries with.
+//   if (token) context.convexQueryClient.serverHttpClient?.setAuth(token);
+
+//   return { userId, token };
+// },
+// loader: async () => {
+//   const { userId, orgId, isAuthenticated } = await auth();
+
+//   return { userId, orgId, isAuthenticated };
+// },
+
 export const Route = createRootRouteWithContext<RouterContext>()({
-  // beforeLoad: async ({ context }) => {
-  //   const { token, userId } = await ensureConvexToken(context);
-  //   return { token, userId };
-  // },
-  // https://docs.convex.dev/client/tanstack/tanstack-start/clerk
-  // beforeLoad: async ({ context }) => {
-  //   // only call if not context.userId or context.token ??
+  beforeLoad: async (ctx) => {
+    // const { userId, token } = await fetchClerkAuth();
+    // TODO: used cookie based solution ??
+    const { userId, token } = await getCachedClerkAuth();
 
-  //   const { userId, token } = await fetchClerkAuth({
-  //     data: { token: context.token, userId: context.userId },
-  //   });
+    // During SSR only (the only time serverHttpClient exists),
+    // set the Clerk auth token to make HTTP queries with.
+    if (token) {
+      console.log('SETTING CONVEX CLIENT TOKEN');
+      ctx.context.convexQueryClient.serverHttpClient?.setAuth(token);
+    }
 
-  //   // During SSR only (the only time serverHttpClient exists),
-  //   // set the Clerk auth token to make HTTP queries with.
-  //   if (token) context.convexQueryClient.serverHttpClient?.setAuth(token);
+    return {
+      userId,
+      token,
+    };
+  },
 
-  //   return { userId, token };
-  // },
-  // loader: async () => {
-  //   const { userId, orgId, isAuthenticated } = await auth();
-
-  //   return { userId, orgId, isAuthenticated };
-  // },
   head: () => ({
     meta: [
       {

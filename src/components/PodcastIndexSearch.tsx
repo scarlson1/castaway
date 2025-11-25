@@ -19,6 +19,8 @@ import {
   type SearchByTermResult,
 } from '~/lib/podcastIndexTypes';
 
+// DELETE ?? use autocomplete
+
 export const searchPodIndex = createServerFn({ method: 'GET' })
   .inputValidator(searchByTermSchema)
   .handler(async ({ data }) => {

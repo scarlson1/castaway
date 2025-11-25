@@ -1,12 +1,10 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
 import { getClerkUser } from '~/serverFn/auth';
-import { ensureConvexToken } from '~/utils/ensureConvexToken';
 // import { getCurrentUserFn } from '../server/auth'
 
 export const Route = createFileRoute('/_authed')({
   beforeLoad: async ({ context, location }) => {
-    // const { userId: userId2 } = await fetchClerkAuthOnly();
-    const { userId } = await getClerkUser(); // auth();
+    const { userId } = await getClerkUser();
 
     if (!userId) {
       throw redirect({
@@ -20,7 +18,7 @@ export const Route = createFileRoute('/_authed')({
   },
   loader: async ({ context }) => {
     // required for SSR convex request (useSuspenseQuery will run on server)
-    await ensureConvexToken(context);
+    // await ensureConvexToken(context);
   },
 });
 

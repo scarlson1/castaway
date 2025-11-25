@@ -6,6 +6,7 @@ import {
   internalMutation,
   internalQuery,
   query,
+  type QueryCtx,
 } from 'convex/_generated/server';
 import { api } from 'convex/actions';
 import { getTimestamp } from 'convex/playback';
@@ -13,6 +14,8 @@ import {
   paginationOptsValidator,
   type WithoutSystemFields,
 } from 'convex/server';
+import { getUserSubscriptions } from 'convex/subscribe';
+import { getClerkId, getClerkIdIfExists } from 'convex/utils/auth';
 import { v } from 'convex/values';
 import type {
   EpisodeItem,
@@ -22,8 +25,7 @@ import type {
 export const getByPodcast = query({
   args: { podId: v.string(), paginationOpts: paginationOptsValidator },
   handler: async ({ db }, { podId, paginationOpts }) => {
-    // require auth ??
-    const results = db
+    const results = await db
       .query('episodes')
       .withIndex('by_podId_pub', (q) => q.eq('podcastId', podId))
       .order('desc')
@@ -32,6 +34,160 @@ export const getByPodcast = query({
     return results;
   },
 });
+
+// TODO: support infinite scroll
+export const feed = query({
+  args: { numItems: v.optional(v.number()) },
+  handler: async ({ db, auth }, { numItems = 50 }) => {
+    const clerkId = await getClerkIdIfExists(auth);
+    if (clerkId) {
+      // move user feed to helper function
+      const subscriptions = await getUserSubscriptions(db, clerkId);
+
+      const podcastIds = subscriptions.map((s) => s.podcastId);
+
+      if (podcastIds.length === 0) return [];
+
+      const episodesPromises = podcastIds.map((podcastId) =>
+        getRecentEpisodes(db, podcastId, 5)
+      );
+
+      const episodesArrays = await Promise.all(episodesPromises);
+
+      // Flatten + sort by publishedAt
+      const allEpisodes = episodesArrays.flat();
+
+      return allEpisodes
+        .sort((a, b) => b.publishedAt - a.publishedAt)
+        .slice(0, numItems);
+    }
+
+    return db
+      .query('episodes')
+      .withIndex('by_publishedAt')
+      .order('desc')
+      .take(numItems);
+  },
+});
+
+export const getRecentFeed = query({
+  args: {
+    pageSize: v.optional(v.number()),
+    cursor: v.optional(
+      v.union(
+        v.object({
+          publishedAt: v.optional(v.number()),
+          episodeId: v.optional(v.id('episodes')),
+        }),
+        v.null()
+      )
+    ),
+  },
+  handler: async ({ db, auth }, { pageSize = 10, cursor }) => {
+    console.log(`fetch next page`, cursor);
+    // Fetch subscriptions
+    const clerkId = await getClerkId(auth);
+    const subscriptions = await getUserSubscriptions(db, clerkId);
+
+    const podcastIds = subscriptions.map((s) => s.podcastId);
+    if (podcastIds.length === 0) return { items: [], cursor: null };
+
+    // Fetch episodes for each podcast
+    const perPodcast = await Promise.all(
+      podcastIds.map((podcastId) => {
+        let q = db
+          .query('episodes')
+          .withIndex('by_podId_pub', (x) => x.eq('podcastId', podcastId))
+          .order('desc');
+
+        // If cursor exists, apply "start after" filter
+        if (cursor?.publishedAt) {
+          q = q.filter((x) =>
+            x.lt(x.field('publishedAt'), cursor.publishedAt as number)
+          );
+          // q = q.filter(ep =>
+          //   ep.publishedAt < cursor.publishedAt ||
+          //   (ep.publishedAt === cursor.publishedAt &&
+          //     ep._id < cursor.episodeId)
+          // );
+        }
+
+        return q.take(Math.ceil(pageSize / subscriptions.length) * 3); // small per-podcast request
+      })
+    );
+
+    // Merge + sort from all podcasts
+    const merged = perPodcast.flat();
+    // console.log('MERGED[0]: ', merged[0]);
+
+    if (merged.length === 0) {
+      return { items: [], cursor: null };
+    }
+
+    // sort global feed
+    merged.sort((a, b) => {
+      if (b.publishedAt !== a.publishedAt) {
+        return b.publishedAt - a.publishedAt;
+      }
+      return b._id.localeCompare(a._id);
+    });
+
+    const slice = merged.slice(0, pageSize);
+
+    const last = slice[slice.length - 1];
+
+    return {
+      items: slice,
+      cursor: last
+        ? {
+            publishedAt: last?.publishedAt,
+            episodeId: last?._id,
+          }
+        : null,
+    };
+  },
+});
+
+// delete ?? use feed instead
+export const recentlyUpdatedUserSubscribed = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async ({ db, auth }, { limit = 50 }) => {
+    const clerkId = await getClerkId(auth);
+    const subscriptions = await getUserSubscriptions(db, clerkId);
+
+    const podcastIds = subscriptions.map((s) => s.podcastId);
+
+    if (podcastIds.length === 0) return [];
+
+    const episodesPromises = podcastIds.map((podcastId) =>
+      getRecentEpisodes(db, podcastId, 5)
+    );
+
+    const episodesArrays = await Promise.all(episodesPromises);
+
+    // Flatten + sort by publishedAt
+    const allEpisodes = episodesArrays.flat();
+
+    return allEpisodes
+      .sort((a, b) => b.publishedAt - a.publishedAt)
+      .slice(0, limit); // overall limit
+    // return await asyncMap(await getUserSubscriptions(db, clerkId), (sub) =>
+    //   getRecentEpisodes(db, sub.podcastId)
+    // );
+  },
+});
+
+async function getRecentEpisodes(
+  db: QueryCtx['db'],
+  podId: string,
+  limit = 10
+) {
+  return await db
+    .query('episodes')
+    .withIndex('by_podId_pub', (q) => q.eq('podcastId', podId))
+    .order('desc')
+    .take(limit);
+}
 
 export const getById = internalQuery({
   args: { convexId: v.id('episodes') },

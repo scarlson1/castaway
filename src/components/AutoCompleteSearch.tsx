@@ -35,7 +35,7 @@ export const AutoCompleteSearch = ({
   const { data } = useQuery({
     queryKey: ['search', 'podIndex', queryOptions],
     queryFn: () => search({ data: queryOptions }),
-    enabled: Boolean(query),
+    enabled: Boolean(query.trim()),
     staleTime: 5 * 60 * 1000, // 5 mins
   });
 

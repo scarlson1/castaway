@@ -1,7 +1,6 @@
-import { Container, Stack, Typography } from '@mui/material';
+import { Box, Stack } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 import { useCallback } from 'react';
-import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 export const Route = createFileRoute('/')({
@@ -21,14 +20,19 @@ function Home() {
 
   return (
     <Stack alignItems='center'>
-      <Typography variant='h1' marginBlockEnd={4}>
+      {/* <Typography variant='h1' marginBlockEnd={4}>
         Castaway
-      </Typography>
+      </Typography> */}
 
-      <Container maxWidth='sm'>
-        {/* <PodcastIndexSearch /> */}
+      {/* TODO: Signed in wrapper component */}
+
+      <Box></Box>
+
+      {/* <PodcastIndexSearch /> */}
+      {/* <Container maxWidth='sm'>
+        
         <AutoCompleteSearch onSelect={handleSelect} />
-      </Container>
+      </Container> */}
 
       {/* <button
         onClick={() => {

@@ -14,7 +14,7 @@ export const fn = internalAction({
     const windows = await ctx.runQuery(internal.adJobs.getWindows, {
       jobId,
       classified: false,
-      count: 10,
+      count: 20,
     });
 
     if (windows.length === 0) {

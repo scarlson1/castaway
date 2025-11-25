@@ -171,6 +171,7 @@ export default defineSchema({
     .index('by_episodeId', ['episodeId'])
     .index('by_podId_pub', ['podcastId', 'publishedAt'])
     .index('by_podId_episode', ['podcastId', 'episode'])
+    .index('by_publishedAt', ['publishedAt'])
     .searchIndex('search_body', {
       searchField: 'title',
       filterFields: ['podcastId'],

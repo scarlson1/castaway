@@ -1,4 +1,5 @@
-import type { Duration } from 'date-fns';
+// import type { Duration,} from 'date-fns';
+import { differenceInHours, format, isBefore, type Duration } from 'date-fns';
 
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -20,4 +21,17 @@ export function toFormattedDuration(s: number): Duration {
   const seconds = Math.floor(sRemain / 60);
 
   return { hours, minutes, seconds };
+}
+
+export function formatRelativeTime(date) {
+  const now = new Date();
+  const hoursDiff = differenceInHours(now, date);
+
+  if (hoursDiff < 24 && isBefore(date, now)) {
+    // If less than 24 hours ago and the date is in the past
+    return `${hoursDiff} hours ago`;
+  } else {
+    // Otherwise, format as a standard date
+    return format(date, 'MMM dd, yyyy'); // Example format: Nov 25, 2025
+  }
 }

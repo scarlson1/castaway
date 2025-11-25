@@ -6,12 +6,13 @@ import {
   type QueryCtx,
 } from 'convex/_generated/server';
 import { getTimestamp } from 'convex/playback';
+import { getClerkId } from 'convex/utils/auth';
 import { v } from 'convex/values';
 
 export const all = query({
   // args: {}
   handler: async ({ db, auth }) => {
-    console.log('CONVEX - GET ALL SUBS CALLED');
+    // console.log('CONVEX - GET ALL SUBS CALLED');
     const clerkId = await getClerkId(auth);
 
     let subscriptions = await db
@@ -123,14 +124,6 @@ export const update = mutation({
   },
 });
 
-export async function getClerkId(auth: QueryCtx['auth']) {
-  const identity = await auth.getUserIdentity();
-  const clerkId = identity?.subject;
-  if (!clerkId) throw new Error('Must be signed in');
-
-  return clerkId;
-}
-
 export function withoutSystemFields<
   T extends { _creationTime: number; _id: Id<any> }
 >(doc: T) {
@@ -150,6 +143,16 @@ async function checkExisting(
     )
     .unique();
   return sub;
+}
+
+export async function getUserSubscriptions(
+  db: QueryCtx['db'],
+  clerkId: string
+): Promise<Doc<'subscriptions'>[]> {
+  return await db
+    .query('subscriptions')
+    .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
+    .collect();
 }
 
 async function getSubscription(
