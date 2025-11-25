@@ -43,33 +43,6 @@ export interface RouterContext {
 // verify token: https://clerk.com/docs/reference/backend/verify-token (expiration/refresh etc.)
 // Networkless if the jwtKey is provided
 
-// beforeLoad: async ({ context }) => {
-//   // TODO: move to server function
-//   // const a = await auth();
-//   const a = await fetchClerkAuthOnly();
-//   const { userId, orgId, isAuthenticated } = a;
-//   if (userId) {
-//     if (context.token) {
-//       console.log('VERIFYING TOKEN');
-//       try {
-//         let verifyResult = await verifyToken(context.token, {
-//           // jwtKey: process.env.CLERK_SECRET_KEY
-//           // authorizedParties: ["http://localhost:3001", "api.example.com"]
-//         });
-//         console.log('verify result: ', verifyResult);
-//       } catch (err) {
-//         console.log('VERIFY ERR: ', err);
-
-//         let freshToken = await getClerkToken();
-//         return { token: freshToken, userId };
-//       }
-//     } else {
-//       let freshToken = await getClerkToken();
-//       return { token: freshToken, userId };
-//     }
-//   }
-// },
-
 export const Route = createRootRouteWithContext<RouterContext>()({
   // beforeLoad: async (ctx) => {
   //   const auth = await getClerkTokenWithCookie();
@@ -93,14 +66,10 @@ export const Route = createRootRouteWithContext<RouterContext>()({
   //     // return { userId: auth.userId, token: auth.token, headers: { 'Set-Cookie': setCookieHeader } }
   //   }
 
-  //   if (auth.token && ctx.context.convexQueryClient.serverHttpClient) {
+  //   if (auth.token && ctx.context.convexQueryClient.serverHttpClient)
   //     ctx.context.convexQueryClient.serverHttpClient.setAuth(auth.token);
-  //   }
 
-  //   return {
-  //     userId: auth.userId,
-  //     token: auth.token,
-  //   };
+  //   return { userId: auth.userId,token: auth.token,};
   // },
 
   beforeLoad: async (ctx) => {

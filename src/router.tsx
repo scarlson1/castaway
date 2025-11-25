@@ -1,5 +1,6 @@
 // src/router.tsx
 import { ConvexQueryClient } from '@convex-dev/react-query';
+import * as Sentry from '@sentry/tanstackstart-react';
 import { QueryClient } from '@tanstack/react-query';
 import { createRouter } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
@@ -95,6 +96,17 @@ export function getRouter() {
     // handleRedirects: true,
     // wrapQueryClient: true, // automatically wraps with QueryClientProvider (default: true)
   });
+
+  if (!router.isServer) {
+    Sentry.init({
+      dsn: 'https://e2a118ee2e3bf5449f9a134f77810958@o4509429931442176.ingest.us.sentry.io/4510428280717312',
+
+      // Adds request headers and IP for users, for more info visit:
+      // https://docs.sentry.io/platforms/javascript/guides/tanstackstart-react/configuration/options/#sendDefaultPii
+      sendDefaultPii: true,
+      // integrations: []
+    });
+  }
 
   return router;
 
