@@ -44,7 +44,7 @@ function RouteComponent() {
   );
 }
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 10;
 
 function RecentlyUpdated() {
   const { convexClient } = Route.useRouteContext();

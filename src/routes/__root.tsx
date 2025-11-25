@@ -70,31 +70,39 @@ export interface RouterContext {
 //   }
 // },
 
-// beforeLoad: async ({ context }) => {
-//   const { token, userId } = await ensureConvexToken(context);
-//   return { token, userId };
-// },
-// https://docs.convex.dev/client/tanstack/tanstack-start/clerk
-// beforeLoad: async ({ context }) => {
-//   // only call if not context.userId or context.token ??
-
-//   const { userId, token } = await fetchClerkAuth({
-//     data: { token: context.token, userId: context.userId },
-//   });
-
-//   // During SSR only (the only time serverHttpClient exists),
-//   // set the Clerk auth token to make HTTP queries with.
-//   if (token) context.convexQueryClient.serverHttpClient?.setAuth(token);
-
-//   return { userId, token };
-// },
-// loader: async () => {
-//   const { userId, orgId, isAuthenticated } = await auth();
-
-//   return { userId, orgId, isAuthenticated };
-// },
-
 export const Route = createRootRouteWithContext<RouterContext>()({
+  // beforeLoad: async (ctx) => {
+  //   const auth = await getClerkTokenWithCookie();
+
+  //   // If we fetched a fresh token (from Clerk), set cookie so subsequent requests reuse it.
+  //   if (!auth.fromCookie && auth.userId && auth.token) {
+  //     const setCookieHeader = makeSetClerkCookieHeader({
+  //       token: auth.token,
+  //       userId: auth.userId,
+  //       expiresAt: auth.expiresAt,
+  //     });
+
+  //     // Approach A: if your framework exposes ctx.responseHeaders (as in earlier snippets)
+  //     const headers = new Headers();
+  //     headers.set('set-cookie', setCookieHeader);
+  //     setResponseHeaders(headers);
+  //     // if (!ctx.responseHeaders) ctx.responseHeaders = new Headers()
+  //     // ctx.responseHeaders.append("set-cookie", setCookieHeader)
+
+  //     // Approach B: alternatively return headers from loader if your app expects that:
+  //     // return { userId: auth.userId, token: auth.token, headers: { 'Set-Cookie': setCookieHeader } }
+  //   }
+
+  //   if (auth.token && ctx.context.convexQueryClient.serverHttpClient) {
+  //     ctx.context.convexQueryClient.serverHttpClient.setAuth(auth.token);
+  //   }
+
+  //   return {
+  //     userId: auth.userId,
+  //     token: auth.token,
+  //   };
+  // },
+
   beforeLoad: async (ctx) => {
     // const { userId, token } = await fetchClerkAuth();
     // TODO: used cookie based solution ??

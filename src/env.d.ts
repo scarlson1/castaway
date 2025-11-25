@@ -25,6 +25,7 @@ declare global {
       readonly CONVEX_DEPLOYMENT: string;
       readonly CLERK_SECRET_KEY: string;
       readonly CLERK_FRONTEND_API_URL: string;
+      readonly COOKIE_SECRET: string;
       // readonly JWT_SECRET: string
       // readonly AUTH0_CLIENT_SECRET: string
       // readonly STRIPE_SECRET_KEY: string

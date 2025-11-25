@@ -112,7 +112,7 @@ export const getRecentFeed = query({
           // );
         }
 
-        return q.take(Math.ceil(pageSize / subscriptions.length) * 3); // small per-podcast request
+        return q.take(Math.ceil(pageSize / subscriptions.length) * 2); // small per-podcast request
       })
     );
 
