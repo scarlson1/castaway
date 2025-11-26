@@ -7,10 +7,10 @@
   "sideEffects": false,
   "scripts": {
     "dev": "npx convex dev --once && npm-run-all --parallel dev:web dev:db",
-    "dev:web": "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev",
+    "dev:web": "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --mode development",
     "dev:db": "convex dev",
     "dev:db:old": "convex dev --run board:seed",
-    "build": "vite build && cp instrument.server.mjs .output/server",
+    "build": "vite build && cp instrument.server.mjs /dist",
     "start": "node --import ./.output/server/instrument.server.mjs .output/server/index.mjs",
     "start:old": "vite start",
     "dev:webhook": "ngrok http 3211 --url wondrous-opossum-sensible.ngrok-free.app"

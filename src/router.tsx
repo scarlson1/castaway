@@ -100,6 +100,8 @@ export function getRouter() {
   if (!router.isServer) {
     Sentry.init({
       dsn: 'https://e2a118ee2e3bf5449f9a134f77810958@o4509429931442176.ingest.us.sentry.io/4510428280717312',
+      // tunnel: '/tunnel',
+      environment: env.MODE,
 
       // Adds request headers and IP for users, for more info visit:
       // https://docs.sentry.io/platforms/javascript/guides/tanstackstart-react/configuration/options/#sendDefaultPii

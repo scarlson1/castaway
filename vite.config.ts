@@ -26,3 +26,8 @@ export default defineConfig({
   },
   envPrefix: ['CLERK_SIGN_IN_', 'CLERK_SIGN_UP_', 'VITE_'],
 });
+// sentryVitePlugin({
+//   org: process.env.SENTRY_ORG,
+//   project: process.env.SENTRY_PROJECT,
+//   authToken: process.env.SENTRY_AUTH_TOKEN,
+// })
