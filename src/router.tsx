@@ -2,9 +2,10 @@
 import { ConvexQueryClient } from '@convex-dev/react-query';
 import * as Sentry from '@sentry/tanstackstart-react';
 import { QueryClient } from '@tanstack/react-query';
-import { createRouter } from '@tanstack/react-router';
+import { createRouter, ErrorComponent } from '@tanstack/react-router';
 import { setupRouterSsrQueryIntegration } from '@tanstack/react-router-ssr-query';
 import { ConvexReactClient } from 'convex/react';
+import { useEffect } from 'react';
 import { env } from '~/utils/env.validation';
 import { routeTree } from './routeTree.gen';
 
@@ -41,7 +42,13 @@ export function getRouter() {
     scrollRestoration: true,
     defaultPreload: 'intent',
     defaultPreloadDelay: 100,
-    defaultErrorComponent: (err) => <p>{err.error.stack}</p>,
+    defaultErrorComponent: ({ error }) => {
+      useEffect(() => {
+        Sentry.captureException(error);
+      }, [error]);
+
+      return <ErrorComponent error={error} />;
+    },
     // defaultErrorComponent: DefaultCatchBoundary,
     defaultNotFoundComponent: () => <p>not found</p>,
     // USED IN DOCS BUT DUPLICATES <ConvexProviderWithClerk>
