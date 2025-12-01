@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z.string(), // .default('development'), // z.enum(['development', 'production', 'test']),
+  NODE_ENV: z.string().optional(), // .default('development'), // z.enum(['development', 'production', 'test']),
   MODE: z.string(),
   // VITE_API_URL: z.string().url(),
   // VITE_FB_API_KEY: z.string(),
