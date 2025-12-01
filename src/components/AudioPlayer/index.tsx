@@ -1,5 +1,5 @@
 import { convexQuery } from '@convex-dev/react-query';
-import { Box, styled, Typography } from '@mui/material';
+import { Box, styled } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { Suspense, useEffect, useEffectEvent, useMemo } from 'react';
@@ -12,6 +12,7 @@ import {
 import { RateButtons } from '~/components/AudioPlayer/RateButton';
 import { SkipAdButton } from '~/components/AudioPlayer/SkipAdButton';
 import { VolumeControl } from '~/components/AudioPlayer/VolumeControl';
+import { MuiLink } from '~/components/MuiLink';
 import { useAudioPlayer } from '~/hooks/useAudioPlayer';
 import { useAudioStore } from '~/hooks/useAudioStore';
 
@@ -47,6 +48,7 @@ const CoverImage = styled('div')(({ theme }) => ({
 }));
 
 interface AudioPlayerProps {
+  podcastId: string;
   id: string;
   src: string;
   title: string;
@@ -59,6 +61,7 @@ interface AudioPlayerProps {
 }
 
 export default function AudioPlayer({
+  podcastId,
   id,
   src,
   title,
@@ -88,7 +91,7 @@ export default function AudioPlayer({
   // trigger on id/src change, but not dbPlayback
   const loadNewAudio = useEffectEvent((id, src) => {
     console.log(`load audio ${title} - ${id}`, dbPlayback);
-    loadAudio(id, src, dbPlayback);
+    loadAudio(podcastId, id, src, dbPlayback);
   });
 
   // Load server + local state
@@ -147,18 +150,23 @@ export default function AudioPlayer({
         }}
       >
         {/* TODO: if overflowing container --> animate in loop */}
-        <Typography
+        <MuiLink
           variant='h6'
+          color='textPrimary'
           sx={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             textAlign: 'center',
+            display: 'block',
           }}
+          to='/podcasts/$podId/episodes/$episodeId'
+          params={{ podId: podcastId, episodeId: episodeId || '' }}
+          underline='hover'
         >
           {title}
-        </Typography>
-        <Typography
+        </MuiLink>
+        <MuiLink
           variant='body2'
           color='textSecondary'
           sx={{
@@ -166,8 +174,12 @@ export default function AudioPlayer({
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
             textAlign: 'center',
+            display: 'block',
           }}
-        >{`${podName} - ${releaseDate}`}</Typography>
+          to='/podcasts/$podId'
+          params={{ podId: podcastId }}
+          underline='hover'
+        >{`${podName} - ${releaseDate}`}</MuiLink>
         {/* TODO: debug delay resetting position when src is changed */}
         {/* <ProgressSlider position={position} duration={duration} seek={seek} /> */}
         <SliderWithAdMarks

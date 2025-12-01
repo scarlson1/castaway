@@ -6,6 +6,7 @@ import { useAudioStore } from './useAudioStore';
 
 export function useAudioPlayer() {
   const {
+    podcastId,
     episodeId,
     audioUrl,
     isPlaying,
@@ -173,6 +174,7 @@ export function useAudioPlayer() {
     isPlaying,
     duration: duration ?? 0, // howlRef.current?.duration() ?? 0,
 
+    podcastId,
     episodeId,
   };
 }

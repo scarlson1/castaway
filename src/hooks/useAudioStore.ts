@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export interface AudioState {
+  podcastId: string | null;
   episodeId: string | null;
   audioUrl: string | null;
   isPlaying: boolean;
@@ -12,6 +13,7 @@ export interface AudioState {
 
   // actions
   loadAudio: (
+    podcastId: string,
     episodeId: string,
     audioUrl: string,
     incomingState?: Partial<AudioState>
@@ -33,6 +35,7 @@ const storageKey = (episodeId: string) => `audio-player-${episodeId}`;
 export const useAudioStore = create<AudioState>()(
   persist(
     (set, get) => ({
+      podcastId: null,
       episodeId: null,
       audioUrl: null,
       isPlaying: false,
@@ -41,7 +44,12 @@ export const useAudioStore = create<AudioState>()(
       volume: 1,
       rate: 1,
 
-      loadAudio: (episodeId: string, audioUrl, serverState = {}) => {
+      loadAudio: (
+        podcastId: string,
+        episodeId: string,
+        audioUrl,
+        serverState = {}
+      ) => {
         useAudioStore.persist.setOptions({
           name: storageKey(episodeId),
         });
@@ -57,6 +65,7 @@ export const useAudioStore = create<AudioState>()(
         };
 
         set({
+          podcastId,
           episodeId,
           audioUrl,
           isPlaying: false, // TODO: how should isPlaying state be handled ??
@@ -73,6 +82,7 @@ export const useAudioStore = create<AudioState>()(
 
       reset: () =>
         set({
+          podcastId: null,
           episodeId: null,
           audioUrl: null,
           isPlaying: false,
@@ -108,6 +118,7 @@ export const useAudioStore = create<AudioState>()(
       partialize: (state) => ({
         position: state.position,
         volume: state.volume,
+        podcastId: state.podcastId,
         episodeId: state.episodeId,
         isPlaying: state.isPlaying,
       }),

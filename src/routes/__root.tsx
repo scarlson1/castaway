@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
-import { convexQuery, type ConvexQueryClient } from '@convex-dev/react-query';
+import { type ConvexQueryClient } from '@convex-dev/react-query';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
 import { Box, Container, CssBaseline, ThemeProvider } from '@mui/material';
 import { TanStackDevtools } from '@tanstack/react-devtools';
-import { useQuery, type QueryClient } from '@tanstack/react-query';
+import { type QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import {
   createRootRouteWithContext,
@@ -15,7 +15,6 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { format } from 'date-fns';
@@ -231,7 +230,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 function WrappedPlayer() {
-  const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
+  // const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
   const episode = useQueueStore((state) => state.nowPlaying);
 
   // const dbPlayback = useMemo(() => {
@@ -255,6 +254,7 @@ function WrappedPlayer() {
   return (
     <AudioPlayer
       coverArt={episode.image}
+      podcastId={episode.podcastId}
       id={episode.episodeId}
       title={episode.title}
       src={episode.audioUrl}

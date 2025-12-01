@@ -148,6 +148,16 @@ export function AppHeader() {
               <li>
                 <MuiLink to='/podcasts'>Podcasts</MuiLink>
               </li>
+              <SignedIn>
+                <li>
+                  <MuiLink to='/podcasts/feed'>New Episodes</MuiLink>
+                </li>
+              </SignedIn>
+              <SignedIn>
+                <li>
+                  <MuiLink to='/podcasts/progress'>In Progress</MuiLink>
+                </li>
+              </SignedIn>
             </ul>
           </Navigation>
         </Box>

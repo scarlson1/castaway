@@ -1,3 +1,7 @@
+import { asyncMap } from 'convex-helpers';
+import { paginationOptsValidator } from 'convex/server';
+import { getClerkIdIfExists } from 'convex/utils/auth';
+import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
 import { mutation, query } from './_generated/server';
 
@@ -85,6 +89,8 @@ function getPlayedPct(pos: number, duration: number) {
   return Math.round((1 - (duration - pos) / duration) * 100) / 100;
 }
 
+// TODO: paginate ??
+
 export const getAllForUser = query({
   handler: async ({ db, auth }) => {
     const identity = await auth.getUserIdentity();
@@ -93,8 +99,10 @@ export const getAllForUser = query({
 
     let playback = await db
       .query('user_playback')
-      .withIndex('by_clerk_id')
+      .withIndex('by_clerkId_lastUpdatedAt')
+      .order('desc')
       .collect();
+
     return playback;
   },
 });
@@ -108,6 +116,56 @@ export const getById = query({
       return null;
     }
     return await db.get(id);
+  },
+});
+
+export const getByEpisodeId = query({
+  args: { episodeId: v.string() },
+  handler: async ({ db, auth }, { episodeId }) => {
+    const clerkId = await getClerkIdIfExists(auth);
+
+    if (!clerkId) return null;
+
+    return await db
+      .query('user_playback')
+      .withIndex('by_clerk_episode', (q) =>
+        q.eq('clerkId', clerkId).eq('episodeId', episodeId)
+      )
+      .first();
+  },
+});
+
+export const inProgress = query({
+  args: { paginationOpts: paginationOptsValidator },
+  handler: async ({ db, auth }, { paginationOpts }) => {
+    const clerkId = await getClerkIdIfExists(auth);
+    console.log('CLERK ID: ', clerkId);
+    if (!clerkId) throw new Error('must be signed in');
+    // return {
+    //   page: [],
+    //   isDone: true,
+    //   continueCursor: null,
+    //   splitCursor: null,
+    //   pageStatus: null,
+    // };
+
+    let { page, ...rest } = await db
+      .query('user_playback')
+      .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
+      .order('desc')
+      .paginate(paginationOpts);
+
+    const merged = await asyncMap(page, async (p) => {
+      const episode = await db
+        .query('episodes')
+        .withIndex('by_episodeId', (q) => q.eq('episodeId', p.episodeId))
+        .first();
+
+      if (!episode) return null;
+      return { ...episode, ...p };
+    });
+
+    return { page: merged.filter(isNotNullish), ...rest };
   },
 });
 

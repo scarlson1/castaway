@@ -20,6 +20,7 @@ import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthSigninRouteImport } from './routes/auth.signin'
 import { Route as AuthedPodcastsIndexRouteImport } from './routes/_authed.podcasts.index'
 import { Route as PodcastAppleItunesIdRouteImport } from './routes/podcast.apple_.$itunesId'
+import { Route as AuthedPodcastsProgressRouteImport } from './routes/_authed.podcasts_.progress'
 import { Route as AuthedPodcastsFeedRouteImport } from './routes/_authed.podcasts_.feed'
 import { Route as AuthedPodcastsPodIdRouteImport } from './routes/_authed.podcasts_.$podId'
 import { Route as AuthedPodcastsPodIdEpisodesEpisodeIdRouteImport } from './routes/_authed.podcasts_.$podId_.episodes_.$episodeId'
@@ -78,6 +79,11 @@ const PodcastAppleItunesIdRoute = PodcastAppleItunesIdRouteImport.update({
   path: '/podcast/apple/$itunesId',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedPodcastsProgressRoute = AuthedPodcastsProgressRouteImport.update({
+  id: '/podcasts_/progress',
+  path: '/podcasts/progress',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedPodcastsFeedRoute = AuthedPodcastsFeedRouteImport.update({
   id: '/podcasts_/feed',
   path: '/podcasts/feed',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/trending/': typeof TrendingIndexRoute
   '/podcasts/$podId': typeof AuthedPodcastsPodIdRoute
   '/podcasts/feed': typeof AuthedPodcastsFeedRoute
+  '/podcasts/progress': typeof AuthedPodcastsProgressRoute
   '/podcast/apple/$itunesId': typeof PodcastAppleItunesIdRoute
   '/podcasts': typeof AuthedPodcastsIndexRoute
   '/podcasts/$podId/episodes/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
@@ -120,6 +127,7 @@ export interface FileRoutesByTo {
   '/trending': typeof TrendingIndexRoute
   '/podcasts/$podId': typeof AuthedPodcastsPodIdRoute
   '/podcasts/feed': typeof AuthedPodcastsFeedRoute
+  '/podcasts/progress': typeof AuthedPodcastsProgressRoute
   '/podcast/apple/$itunesId': typeof PodcastAppleItunesIdRoute
   '/podcasts': typeof AuthedPodcastsIndexRoute
   '/podcasts/$podId/episodes/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
@@ -137,6 +145,7 @@ export interface FileRoutesById {
   '/trending/': typeof TrendingIndexRoute
   '/_authed/podcasts_/$podId': typeof AuthedPodcastsPodIdRoute
   '/_authed/podcasts_/feed': typeof AuthedPodcastsFeedRoute
+  '/_authed/podcasts_/progress': typeof AuthedPodcastsProgressRoute
   '/podcast/apple_/$itunesId': typeof PodcastAppleItunesIdRoute
   '/_authed/podcasts/': typeof AuthedPodcastsIndexRoute
   '/_authed/podcasts_/$podId_/episodes_/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
@@ -154,6 +163,7 @@ export interface FileRouteTypes {
     | '/trending/'
     | '/podcasts/$podId'
     | '/podcasts/feed'
+    | '/podcasts/progress'
     | '/podcast/apple/$itunesId'
     | '/podcasts'
     | '/podcasts/$podId/episodes/$episodeId'
@@ -168,6 +178,7 @@ export interface FileRouteTypes {
     | '/trending'
     | '/podcasts/$podId'
     | '/podcasts/feed'
+    | '/podcasts/progress'
     | '/podcast/apple/$itunesId'
     | '/podcasts'
     | '/podcasts/$podId/episodes/$episodeId'
@@ -184,6 +195,7 @@ export interface FileRouteTypes {
     | '/trending/'
     | '/_authed/podcasts_/$podId'
     | '/_authed/podcasts_/feed'
+    | '/_authed/podcasts_/progress'
     | '/podcast/apple_/$itunesId'
     | '/_authed/podcasts/'
     | '/_authed/podcasts_/$podId_/episodes_/$episodeId'
@@ -279,6 +291,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PodcastAppleItunesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/podcasts_/progress': {
+      id: '/_authed/podcasts_/progress'
+      path: '/podcasts/progress'
+      fullPath: '/podcasts/progress'
+      preLoaderRoute: typeof AuthedPodcastsProgressRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/podcasts_/feed': {
       id: '/_authed/podcasts_/feed'
       path: '/podcasts/feed'
@@ -306,6 +325,7 @@ declare module '@tanstack/react-router' {
 interface AuthedRouteChildren {
   AuthedPodcastsPodIdRoute: typeof AuthedPodcastsPodIdRoute
   AuthedPodcastsFeedRoute: typeof AuthedPodcastsFeedRoute
+  AuthedPodcastsProgressRoute: typeof AuthedPodcastsProgressRoute
   AuthedPodcastsIndexRoute: typeof AuthedPodcastsIndexRoute
   AuthedPodcastsPodIdEpisodesEpisodeIdRoute: typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
@@ -313,6 +333,7 @@ interface AuthedRouteChildren {
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedPodcastsPodIdRoute: AuthedPodcastsPodIdRoute,
   AuthedPodcastsFeedRoute: AuthedPodcastsFeedRoute,
+  AuthedPodcastsProgressRoute: AuthedPodcastsProgressRoute,
   AuthedPodcastsIndexRoute: AuthedPodcastsIndexRoute,
   AuthedPodcastsPodIdEpisodesEpisodeIdRoute:
     AuthedPodcastsPodIdEpisodesEpisodeIdRoute,

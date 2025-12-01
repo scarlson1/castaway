@@ -255,7 +255,7 @@ export default (
       feedId,
       since = null,
       max = 10,
-      fullText = false
+      fullText = true
     ) => {
       let queries = {
         id: feedId,
@@ -269,7 +269,7 @@ export default (
       feedUrl,
       since = null,
       max = 10,
-      fullText = false
+      fullText = true
     ) => {
       let queries = {
         url: feedUrl,

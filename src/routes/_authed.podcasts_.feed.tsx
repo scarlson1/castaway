@@ -1,18 +1,10 @@
-import {
-  Box,
-  Button,
-  Container,
-  Stack,
-  styled,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Container, Stack, Typography } from '@mui/material';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { MuiStackLink } from '~/components/MuiStackLink';
-import { formatRelativeTime } from '~/utils/format';
+import { TrendingCard } from '~/components/TrendingCard';
 
 export const Route = createFileRoute('/_authed/podcasts_/feed')({
   component: RouteComponent,
@@ -24,7 +16,7 @@ function RouteComponent() {
   // );
 
   return (
-    <Container maxWidth='sm' disableGutters>
+    <Container maxWidth='md' disableGutters>
       <Box
         sx={{
           display: 'flex',
@@ -35,9 +27,6 @@ function RouteComponent() {
         <Typography variant='h6' gutterBottom>
           Recently Updated
         </Typography>
-        {/* <SignedIn>
-          <MuiButtonLink to='/podcasts/feed'>See all</MuiButtonLink>
-        </SignedIn> */}
       </Box>
       <RecentlyUpdated />
     </Container>
@@ -64,21 +53,18 @@ function RecentlyUpdated() {
 
   const {
     data,
-    error,
+    // error, // TODO: error handling
     fetchNextPage,
     hasNextPage,
-    isFetching,
+    // isFetching,
     isFetchingNextPage,
-    status,
+    // status,
   } = useInfiniteQuery({
     queryKey: ['episodesFeed'],
     queryFn: fetchEpisodes,
     staleTime: 1000 * 60 * 5,
     initialPageParam: null,
-    getNextPageParam: (lastPage) => {
-      // console.log('LAST PAGE: ', lastPage);
-      return lastPage.cursor;
-    },
+    getNextPageParam: (lastPage) => lastPage.cursor,
   });
 
   useEffect(() => {
@@ -95,10 +81,12 @@ function RecentlyUpdated() {
             key={ep._id}
             title={ep.title}
             secondaryText={ep.podcastTitle}
-            actionText={formatRelativeTime(new Date(ep.publishedAt))}
+            // actionText={formatRelativeTime(new Date(ep.publishedAt))}
+            publishedAt={ep.publishedAt}
             podId={ep.podcastId}
             episodeId={ep.episodeId}
             imgSrc={ep.feedImage || ep.image || ''}
+            audioUrl={ep.audioUrl}
           />
         ))
       )}
@@ -111,106 +99,5 @@ function RecentlyUpdated() {
         Load more
       </Button>
     </Stack>
-  );
-}
-
-const ClampedTypography = styled(Typography)({
-  overflow: 'hidden',
-  display: '-webkit-box',
-  // lineClamp: 2,
-  '-webkit-line-clamp': '2',
-  '-webkit-box-orient': 'vertical',
-  // boxOrient: 'vertical',
-  textOverflow: 'ellipsis',
-  whiteSpace: 'nowrap',
-});
-
-interface TrendingCardProps {
-  title: string;
-  secondaryText: string;
-  actionText?: string;
-  orientation?: 'vertical' | 'horizontal';
-  rank?: number;
-  podId: string;
-  episodeId: string;
-  imgSrc: string;
-  // linkProps?: LinkProps;
-}
-
-// TODO: reusable component
-export function TrendingCard({
-  title,
-  secondaryText,
-  actionText,
-  podId,
-  episodeId,
-  imgSrc,
-  orientation = 'horizontal',
-  rank,
-}: // linkProps,
-TrendingCardProps) {
-  let isRow = orientation === 'horizontal';
-
-  return (
-    <div>
-      <MuiStackLink
-        direction={isRow ? 'row' : 'column'}
-        spacing={isRow ? 2 : 0.5}
-        to={'/podcasts/$podId/episodes/$episodeId'}
-        params={{ podId, episodeId }}
-        sx={{
-          textDecoration: 'none',
-          '&:visited': { color: 'textPrimary' },
-          '&:hover': { color: 'textPrimary' },
-          minWidth: 0,
-        }}
-        // {...linkProps}
-      >
-        {rank !== undefined ? (
-          <Typography
-            variant='overline'
-            color='textSecondary'
-            sx={{ lineHeight: '1.4', textAlign: 'center' }}
-          >
-            {rank || ''}
-          </Typography>
-        ) : null}
-
-        <Box sx={{ position: 'relative' }}>
-          <Box
-            sx={{
-              width: 52,
-              height: 52,
-              objectFit: 'cover',
-              overflow: 'hidden',
-              flex: '0 0 52px',
-              borderRadius: 1,
-              backgroundColor: 'rgba(0,0,0,0.08)',
-              '& > img': {
-                width: '100%',
-              },
-            }}
-          >
-            <img src={imgSrc} alt={`${title} cover art`} />
-          </Box>
-        </Box>
-
-        <Stack direction='column' spacing={0.5} sx={{ minWidth: 0, pr: 2 }}>
-          <ClampedTypography variant='body1' color='textPrimary'>
-            {title}
-          </ClampedTypography>
-          <ClampedTypography variant='body2' color='textSecondary'>
-            {secondaryText}
-          </ClampedTypography>
-        </Stack>
-        {actionText ? (
-          <Box sx={{ ml: 'auto !important', flex: `0 0 100px` }}>
-            <Typography variant='body2' color='textSecondary'>
-              {actionText}
-            </Typography>
-          </Box>
-        ) : null}
-      </MuiStackLink>
-    </div>
   );
 }
