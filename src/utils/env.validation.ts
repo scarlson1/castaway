@@ -26,7 +26,7 @@ function validateEnv(): Env {
   const parsedEnv = envSchema.safeParse(import.meta.env);
 
   if (!parsedEnv.success) {
-    console.error(parsedEnv.error.flatten);
+    console.error(z.prettifyError(parsedEnv.error));
     console.error(
       'Invalid environment variables:',
       z.treeifyError(parsedEnv.error),
