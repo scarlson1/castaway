@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 const envSchema = z.object({
-  NODE_ENV: z.enum(['development', 'production', 'test']),
+  NODE_ENV: z.string(), // .default('development'), // z.enum(['development', 'production', 'test']),
   MODE: z.string(),
   // VITE_API_URL: z.string().url(),
   // VITE_FB_API_KEY: z.string(),
@@ -23,6 +23,7 @@ const envSchema = z.object({
 type Env = z.infer<typeof envSchema>;
 
 function validateEnv(): Env {
+  console.log('NODE_ENV: ', import.meta.env.NODE_ENV);
   const parsedEnv = envSchema.safeParse(import.meta.env);
 
   if (!parsedEnv.success) {
