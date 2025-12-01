@@ -16,6 +16,7 @@ const envSchema = z.object({
   VITE_CONVEX_URL: z.string(),
   CLERK_SIGN_IN_URL: z.string().optional(),
   CLERK_SIGN_UP_URL: z.string().optional(),
+  VITE_SENTRY_DNS: z.string(),
   // COOKIE_SECRET: z.string(),
 });
 
