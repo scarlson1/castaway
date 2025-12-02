@@ -13,11 +13,12 @@ import {
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { useRef, type RefObject } from 'react';
+import { useCallback, useRef, type RefObject } from 'react';
 import { CategoryCard } from '~/components/CategoryCard';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { useHover } from '~/hooks/useHover';
+import { useQueueStore } from '~/hooks/useQueueStore';
 import {
   categoryQueryOptions,
   randomEpisodesQueryOptions,
@@ -50,7 +51,6 @@ function Home() {
             <MuiButtonLink to='/podcasts/feed'>See more</MuiButtonLink>
           </SignedIn>
         </Box>
-
         <RecentSubscribedEpisodes />
       </Box>
 
@@ -116,6 +116,8 @@ function RecentSubscribedEpisodes() {
             imgSrc={ep.feedImage || ''}
             podId={ep.podcastId}
             episodeId={ep.episodeId}
+            audioUrl={ep.audioUrl}
+            publishedAt={ep.publishedAt}
           />
         </Grid>
       ))}
@@ -140,17 +142,35 @@ function EpisodeVerticalCard({
   podName,
   episodeId,
   podId,
+  audioUrl,
+  publishedAt,
 }: {
   imgSrc: string;
   title: string;
   podName: string;
   episodeId: string;
   podId: string;
+  audioUrl: string;
+  publishedAt: number;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovering] = useHover<HTMLDivElement>(
     ref as RefObject<HTMLDivElement>
   );
+
+  const playEpisode = useQueueStore((state) => state.setPlaying);
+
+  const handlePlay = useCallback(() => {
+    playEpisode({
+      podcastId: podId,
+      image: imgSrc || '',
+      episodeId: episodeId,
+      title,
+      audioUrl,
+      releaseDateMs: publishedAt,
+      podName,
+    });
+  }, [episodeId, podId, imgSrc, title, podName, publishedAt, audioUrl]);
 
   return (
     <div ref={ref}>
@@ -186,7 +206,7 @@ function EpisodeVerticalCard({
                 right: 4,
               }}
             >
-              <IconButton size='small'>
+              <IconButton size='small' onClick={() => handlePlay()}>
                 <PlayArrowRounded fontSize='inherit' />
               </IconButton>
               {/* <SubscribeIconButton
