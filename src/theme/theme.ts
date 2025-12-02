@@ -2,6 +2,8 @@ import { createTheme } from '@mui/material/styles';
 import type {} from '@mui/material/themeCssVarsAugmentation';
 import { colorSchemes, shape } from '~/theme/themePrimitives';
 
+export const modeStorageKey = 'castaway-theme-mode';
+
 export const theme = createTheme({
   // colorSchemes: { light: true, dark: true },
   colorSchemes: colorSchemes,

@@ -4,7 +4,13 @@ import { type ConvexQueryClient } from '@convex-dev/react-query';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
-import { Box, Container, CssBaseline, ThemeProvider } from '@mui/material';
+import {
+  Box,
+  Container,
+  CssBaseline,
+  InitColorSchemeScript,
+  ThemeProvider,
+} from '@mui/material';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { type QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
@@ -26,7 +32,7 @@ import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import { getCachedClerkAuth } from '~/serverFn/auth';
-import { theme } from '~/theme/theme';
+import { modeStorageKey, theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
 export interface RouterContext {
@@ -88,7 +94,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       token,
     };
   },
-
   head: () => ({
     meta: [
       {
@@ -160,11 +165,15 @@ function RootComponent() {
 }
 
 function Providers({ children }: { children: ReactNode }) {
-  const emotionCache = createCache({ key: 'css' });
+  const emotionCache = createCache({ key: 'emotion-css' });
 
   return (
     <CacheProvider value={emotionCache}>
-      <ThemeProvider theme={theme} defaultMode='system'>
+      <ThemeProvider
+        theme={theme}
+        defaultMode='system'
+        modeStorageKey={modeStorageKey}
+      >
         <CssBaseline enableColorScheme />
         <Toaster />
         {children}
@@ -178,9 +187,14 @@ function Providers({ children }: { children: ReactNode }) {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <head>
         <HeadContent />
+        <InitColorSchemeScript
+          attribute='data'
+          defaultMode='system'
+          modeStorageKey={modeStorageKey}
+        />
       </head>
       <body>
         <Providers>

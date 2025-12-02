@@ -31,7 +31,7 @@ const Header = styled('header')(({ theme }) => [
   } as const,
   theme.applyStyles('dark', {
     backdropFilter: 'blur(16px)',
-    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.8)`,
+    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.9)`,
   }),
 ]);
 
