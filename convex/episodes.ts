@@ -175,6 +175,17 @@ export const recentlyUpdatedUserSubscribed = query({
   },
 });
 
+export const unauthedRecentEpisodes = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async ({ db }, { limit = 10 }) => {
+    return await db
+      .query('episodes')
+      .withIndex('by_creation_time')
+      .order('desc')
+      .take(limit);
+  },
+});
+
 async function getRecentEpisodes(
   db: QueryCtx['db'],
   podId: string,

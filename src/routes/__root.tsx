@@ -32,7 +32,7 @@ import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import { getCachedClerkAuth } from '~/serverFn/auth';
-import { modeStorageKey, theme } from '~/theme/theme';
+import { colorSchemeSelector, modeStorageKey, theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
 export interface RouterContext {
@@ -177,9 +177,6 @@ function Providers({ children }: { children: ReactNode }) {
         <CssBaseline enableColorScheme />
         <Toaster />
         {children}
-        {/* <FirebaseAppContext>
-          <FirebaseServicesContext>{children}</FirebaseServicesContext>
-        </FirebaseAppContext> */}
       </ThemeProvider>
     </CacheProvider>
   );
@@ -191,7 +188,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <head>
         <HeadContent />
         <InitColorSchemeScript
-          attribute='data'
+          attribute={colorSchemeSelector}
           defaultMode='system'
           modeStorageKey={modeStorageKey}
         />

@@ -18,10 +18,6 @@ export const Route = createFileRoute('/_authed/podcasts_/feed')({
 });
 
 function RouteComponent() {
-  // const { data } = useSuspenseQuery(
-  //   convexQuery(api.episodes.feed, { numItems: 50 })
-  // );
-
   return (
     <Container maxWidth='md' disableGutters>
       <Box
@@ -49,12 +45,10 @@ function RecentlyUpdated() {
   const fetchEpisodes = async ({ pageParam }) => {
     console.log('FETCHING NEXT PAGE: ', pageParam);
     const data = await convexClient.query(api.episodes.getRecentFeed, {
-      pageSize: PAGE_SIZE, // pageParam,
+      pageSize: PAGE_SIZE,
       cursor: pageParam,
-      // pageSize,
-      // cursor
     });
-    console.log('DATA fetchEpisodes: ', data);
+    // console.log('DATA fetchEpisodes: ', data);
     return data;
   };
 

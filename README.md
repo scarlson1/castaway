@@ -25,6 +25,16 @@ Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the
 - auto-skip ads
 - search
 - vector search to find similar podcasts (combine with metadata (category, people, etc.) to produce score) ??
+- fingerprint ad detection (repeated segments across episodes)
+  - Use audio fingerprints (Chromaprint/AcoustID-like, or embeddings hashed + approximate nearest neighbors).
+- Rule / heuristic based ad detection
+  - RSS/episode chapter markers: many publishers include chapters or timestamps labeled “ad” or “sponsor” — parse first.
+- Hybrid rule+ML multi-stage pipeline (recommended)
+  - Stage 0: cheap metadata & heuristics (chapters, silence, VAD, standard positions) → candidate windows.
+  - Stage 1: fingerprint lookup against known ads (fast) → immediate labels.
+  - Stage 2: audio-embedding classifier on candidate windows (small model on CPU) → high recall.
+  - Stage 3: if ambiguous, ASR + lightweight transcript classifier / rule matcher → resolve host-read language.
+  - Stage 4: optionally send the very small set of ambiguous windows to an LLM/Human review for final decision.
 
 ## Subscription flow
 

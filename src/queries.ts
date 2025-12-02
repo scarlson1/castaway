@@ -1,5 +1,12 @@
 import { queryOptions } from '@tanstack/react-query';
 import {
+  fetchRandomEpisodes,
+  fetchRecentEpisodes,
+  type FetchRecentEpisodesOptions,
+  type RandomEpisodesOptions,
+} from '~/serverFn/episodes';
+import { fetchGenres } from '~/serverFn/genre';
+import {
   fetchEpisodesByPodGuid,
   fetchPodDetailsByPodIndexId,
   fetPodDetailsByITunes,
@@ -34,5 +41,26 @@ export const podDetailsITunesQueryOptions = (id: number) =>
   queryOptions({
     queryKey: ['podcast', id],
     queryFn: () => fetPodDetailsByITunes({ data: { id } }),
-    staleTime: Infinity, // Or a suitable value for your use case
+    staleTime: Infinity,
+  });
+
+export const categoryQueryOptions = () =>
+  queryOptions({
+    queryKey: ['genre'],
+    queryFn: () => fetchGenres(),
+    staleTime: Infinity,
+  });
+
+export const recentEpisodesQueryOptions = (opts: FetchRecentEpisodesOptions) =>
+  queryOptions({
+    queryKey: ['recent', 'episodes', opts],
+    queryFn: () => fetchRecentEpisodes({ data: opts }),
+    staleTime: 1000 * 60 * 30,
+  });
+
+export const randomEpisodesQueryOptions = (opts: RandomEpisodesOptions) =>
+  queryOptions({
+    queryKey: ['episodes', 'random', opts],
+    queryFn: () => fetchRandomEpisodes({ data: opts }),
+    staleTime: 1000 * 60 * 5,
   });

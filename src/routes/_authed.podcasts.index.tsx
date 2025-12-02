@@ -14,7 +14,7 @@ import { api } from 'convex/_generated/api';
 import { sortBy } from 'lodash-es';
 import { useMemo, useState } from 'react';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
-import { TrendingCard } from '~/routes/trending.index';
+import { TrendingCard } from '~/routes/trending';
 
 export const Route = createFileRoute('/_authed/podcasts/')({
   component: RouteComponent,
