@@ -7,8 +7,8 @@ export const fetchTrendingOptions = z.object({
   max: z.int().min(1).max(100).optional(),
   since: z.int().optional().nullable(),
   lang: z.string().optional().nullable(),
-  cat: z.string().optional().nullable(),
-  notcat: z.string().optional().nullable(),
+  cat: z.string().or(z.int()).optional().nullable(),
+  notcat: z.string().or(z.int()).optional().nullable(),
 });
 export type FetchTrendingOptions = z.infer<typeof fetchTrendingOptions>;
 
@@ -76,7 +76,7 @@ export const fetchAppleCharts = createServerFn()
     return result;
   });
 
-interface MusicChartStatsResults {
+export interface MusicChartStatsResults {
   title: string;
   description: string;
   timestamp: number;
@@ -92,13 +92,14 @@ interface MusicChartStatsResults {
   };
 }
 
-// export const fetchMusicChartsStats = createServerFn()
-//   // .inputValidator(fetchTrendingOptions)
-//   .handler(async ({ data }) => {
-//     const podClient = getPodClient();
+export const fetchMusicChartsStats = createServerFn()
+  // .inputValidator(fetchTrendingOptions)
+  .handler(async ({ data }) => {
+    const podClient = getPodClient();
 
-//     const results = await podClient.custom<MusicChartStatsResults>(
-//       'static/stats/v4vmusic.json'
-//     );
-//     return results;
-//   });
+    const results = await podClient.musicChart();
+    // .custom<MusicChartStatsResults>(
+    //   'static/stats/v4vmusic.json'
+    // );
+    return results;
+  });

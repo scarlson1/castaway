@@ -82,6 +82,7 @@ function RouteComponent() {
 
   const handlePlayEpisode = useCallback((ep: Doc<'episodes'>) => {
     playEpisode({
+      podcastId: podId,
       image: ep.feedImage || ep.image || '',
       episodeId: ep.episodeId,
       title: ep.title,
@@ -235,6 +236,13 @@ function AdSegments({ episodeId }: { episodeId: string }) {
     convexQuery(api.adSegments.getByEpisodeId, { id: episodeId })
   );
 
+  if (!data?.length)
+    return (
+      <Typography>
+        Click the button above to analyze this episode for ads.
+      </Typography>
+    );
+
   return (
     <Box sx={{ mx: 'auto' }}>
       <AdsTimeline adSegments={data} />
@@ -269,14 +277,23 @@ function AdJobs({ episodeId }: { episodeId: string }) {
     convexQuery(api.adJobs.getByEpisodeId, { episodeId })
   );
 
-  if (!data?.length) return <Typography>No jobs</Typography>;
+  if (!data?.length) return <Typography>No classification jobs</Typography>;
 
   return (
     <>
       {data.map((j) => {
         const { transcript, ...job } = j;
         return (
-          <Typography component='div' variant='body2' key={j._id}>
+          <Typography
+            component='div'
+            variant='body2'
+            key={j._id}
+            sx={{
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+          >
             <pre>{JSON.stringify(job, null, 2)}</pre>
           </Typography>
         );

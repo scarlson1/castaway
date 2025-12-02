@@ -84,7 +84,6 @@ export const getRecentFeed = query({
     ),
   },
   handler: async ({ db, auth }, { pageSize = 10, cursor }) => {
-    console.log(`fetch next page`, cursor);
     // Fetch subscriptions
     const clerkId = await getClerkId(auth);
     const subscriptions = await getUserSubscriptions(db, clerkId);
@@ -118,7 +117,6 @@ export const getRecentFeed = query({
 
     // Merge + sort from all podcasts
     const merged = perPodcast.flat();
-    // console.log('MERGED[0]: ', merged[0]);
 
     if (merged.length === 0) {
       return { items: [], cursor: null };
@@ -174,6 +172,17 @@ export const recentlyUpdatedUserSubscribed = query({
     // return await asyncMap(await getUserSubscriptions(db, clerkId), (sub) =>
     //   getRecentEpisodes(db, sub.podcastId)
     // );
+  },
+});
+
+export const unauthedRecentEpisodes = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async ({ db }, { limit = 10 }) => {
+    return await db
+      .query('episodes')
+      .withIndex('by_creation_time')
+      .order('desc')
+      .take(limit);
   },
 });
 

@@ -12,6 +12,14 @@ import type {
   SearchByTermSchema,
   TrendingResult,
 } from '~/lib/podcastIndexTypes';
+import type {
+  FetchRecentEpisodesOptions,
+  RandomEpisodesOptions,
+  RandomEpisodesResult,
+  RecentEpisodesResult,
+} from '~/serverFn/episodes';
+import type { FetchCategoriesResult } from '~/serverFn/genre';
+import type { MusicChartStatsResults } from '~/serverFn/trending';
 
 // API docs: https://podcastindex-org.github.io/docs-api/#get-/search/byterm
 
@@ -43,7 +51,7 @@ const PATH_RECENT_NEWFEEDS = 'recent/newfeeds';
 const PATH_RECENT_SOUNDBITES = 'recent/soundbites';
 const PATH_VALUE_BY_FEED_ID = 'value/byfeedid';
 const PATH_VALUE_BY_FEED_URL = 'value/byfeedurl';
-const PATH_CATEGORIES_LIST = 'categories/list';
+// const PATH_CATEGORIES_LIST = 'categories/list';
 const PATH_HUB_PUBNOTIFIY = 'hub/pubnotify';
 
 const PodIndexPath = z.enum([
@@ -73,7 +81,6 @@ const PodIndexPath = z.enum([
   'value/byfeedurl',
   'categories/list',
   'hub/pubnotify',
-  'static/stats/v4vmusic.json',
 ]);
 type PodIndexPath = z.infer<typeof PodIndexPath>;
 
@@ -225,8 +232,8 @@ export default (
       max = 10,
       since: number | null = null,
       lang: string | null = 'en',
-      cat: string | null = null,
-      notcat: string | null = null
+      cat: string | number | null = null,
+      notcat: string | number | null = null
     ) => {
       return custom<TrendingResult>(PATH_PODCASTS_TRENDING, {
         max: max,
@@ -255,7 +262,7 @@ export default (
       feedId,
       since = null,
       max = 10,
-      fullText = false
+      fullText = true
     ) => {
       let queries = {
         id: feedId,
@@ -269,7 +276,7 @@ export default (
       feedUrl,
       since = null,
       max = 10,
-      fullText = false
+      fullText = true
     ) => {
       let queries = {
         url: feedUrl,
@@ -318,20 +325,15 @@ export default (
       return custom(PATH_EPISODES_BY_ID, queries);
     },
     episodesRandom: async (
-      max = 1,
-      lang = null,
-      cat = null,
-      notcat = null,
-      fullText = true
+      opts: RandomEpisodesOptions
+      // max = 1,
+      // lang = null,
+      // cat = null,
+      // notcat = null,
+      // fullText = true
     ) => {
-      let queries = {
-        max: max,
-        lang: lang,
-        cat: cat,
-        notcat: notcat,
-      };
-      if (fullText) queries['fullText'] = '';
-      return custom(PATH_EPISODES_RANDOM, queries);
+      // if (fullText) queries['fullText'] = '';
+      return custom<RandomEpisodesResult>(PATH_EPISODES_RANDOM, opts);
     },
 
     recentFeeds: async (
@@ -350,18 +352,19 @@ export default (
       });
     },
     recentEpisodes: async (
-      max = 10,
-      excludeString = null,
-      before = null,
-      fullText = true
+      options: FetchRecentEpisodesOptions
+      // max = 10,
+      // excludeString = null,
+      // before = null,
+      // fullText = true
     ) => {
-      let queries = {
-        max: max,
-        excludeString: excludeString ? excludeString : null,
-        before: before,
-      };
-      if (fullText) queries['fullText'] = '';
-      return custom(PATH_RECENT_EPISODES, queries);
+      // let queries = {
+      //   max: max,
+      //   excludeString: excludeString ? excludeString : null,
+      //   before: before,
+      // };
+      // if (fullText) queries['fullText'] = '';
+      return custom<RecentEpisodesResult>(PATH_RECENT_EPISODES, options);
     },
     recentNewFeeds: async (max = 20, since = null) => {
       return custom(PATH_RECENT_NEWFEEDS, {
@@ -387,7 +390,9 @@ export default (
     },
 
     categoriesList: async () => {
-      return custom(PATH_CATEGORIES_LIST);
+      return custom<FetchCategoriesResult>(
+        PodIndexPath.enum['categories/list']
+      ); // (PATH_CATEGORIES_LIST);
     },
 
     hubPubNotifyById: async (feedId) => {
@@ -401,6 +406,15 @@ export default (
         url: feedUrl,
       };
       return custom(PATH_HUB_PUBNOTIFIY, queries);
+    },
+
+    musicChart: async () => {
+      // return custom<MusicChartStatsResults>(PodIndexPath.enum['v4vmusic.json']);
+      const result = await got
+        .post('https://stats.podcastindex.org/v4vmusic.json')
+        .json<MusicChartStatsResults>();
+
+      return result;
     },
   };
 };

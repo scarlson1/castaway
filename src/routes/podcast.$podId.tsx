@@ -32,6 +32,7 @@ import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
 import { episodesQueryOptions, podDetailsQueryOptions } from '~/queries';
 import { getRootDomain } from '~/utils/getDomain';
 
+// podcast index ID (not pod guid)
 export const Route = createFileRoute('/podcast/$podId')({
   component: RouteComponent,
   loader: ({ context: { queryClient }, params }) => {
@@ -171,6 +172,7 @@ function EpisodesList({
         audioUrl: ep.enclosureUrl,
         releaseDateMs: ep.datePublished * 1000,
         podName: podTitle,
+        podcastId: ep.podcastGuid,
       });
     },
     [setPlaying]

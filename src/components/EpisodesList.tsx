@@ -3,16 +3,10 @@ import {
   useConvexAction,
   useConvexPaginatedQuery,
 } from '@convex-dev/react-query';
-import {
-  MoreVertRounded,
-  PauseRounded,
-  PlayArrowRounded,
-  RefreshRounded,
-} from '@mui/icons-material';
+import { MoreVertRounded, RefreshRounded } from '@mui/icons-material';
 import {
   Box,
   Button,
-  CircularProgress,
   Divider,
   IconButton,
   ListItemIcon,
@@ -20,40 +14,26 @@ import {
   Menu,
   MenuItem,
   Stack,
-  styled,
   Typography,
 } from '@mui/material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
-import { Doc, type Id } from 'convex/_generated/dataModel';
-import {
-  differenceInDays,
-  format,
-  formatDistanceToNow,
-  intervalToDuration,
-} from 'date-fns';
-import { round } from 'lodash-es';
-import { useCallback, useMemo, useState } from 'react';
-import { MuiLink } from '~/components/MuiLink';
+import { useCallback, useState } from 'react';
+import { EpisodeRow } from '~/components/EpisodeRow';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
-import { useAudioStore } from '~/hooks/useAudioStore';
-import { useQueueStore } from '~/hooks/useQueueStore';
 
 interface EpisodesListProps {
   podId: string;
 }
 
 export const EpisodesList = ({ podId }: EpisodesListProps) => {
-  const nowPlaying = useQueueStore((state) => state.nowPlaying);
-  const setPlaying = useQueueStore((state) => state.setPlaying);
-  const { isPlaying, setPlaying: p } = useAudioStore();
   const [pageSize, setPageSize] = useState(10);
 
   const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
 
-  const playbackEpisodeIds = useMemo(() => {
-    return userPlayback.data?.map((p) => p.episodeId);
-  }, [userPlayback.data]);
+  // const playbackEpisodeIds = useMemo(() => {
+  //   return userPlayback.data?.map((p) => p.episodeId);
+  // }, [userPlayback.data]);
 
   // convex hook wrapped with react query
   const { results, status, loadMore, isLoading } = useConvexPaginatedQuery(
@@ -61,25 +41,6 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
     { podId },
     { initialNumItems: pageSize }
   );
-  // console.log('results: ', results);
-
-  const handleSetPlaying = useCallback(
-    (ep: Doc<'episodes'>) => {
-      setPlaying({
-        image: ep.feedImage || ep.image || '',
-        episodeId: ep.episodeId,
-        title: ep.title,
-        audioUrl: ep.audioUrl,
-        releaseDateMs: ep.publishedAt,
-        podName: ep.podcastTitle,
-      });
-    },
-    [setPlaying]
-  );
-
-  const togglePlaying = useCallback(() => {
-    p(!isPlaying);
-  }, [p, isPlaying]);
 
   return (
     <>
@@ -99,23 +60,18 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
 
       <Box>
         {results.map((e) => {
-          const found = playbackEpisodeIds?.findIndex(
-            (epId) => epId === e.episodeId
+          // const found = playbackEpisodeIds?.findIndex((epId) => epId === e.episodeId);
+          // let playbackId: Id<'user_playback'> | undefined = undefined;
+          // if (found !== undefined && found >= 0)
+          //   playbackId = userPlayback.data![found]?._id;
+
+          const playback = userPlayback?.data?.find(
+            (p) => p.episodeId === e.episodeId
           );
-          let playbackId: Id<'user_playback'> | undefined = undefined;
-          if (found !== undefined && found >= 0)
-            playbackId = userPlayback.data![found]?._id;
 
           return (
             <Box key={e._id}>
-              <EpisodeRow
-                episode={e}
-                isCurrentAudio={e.episodeId === nowPlaying?.episodeId}
-                isPlaying={e.episodeId === nowPlaying?.episodeId && isPlaying}
-                setPlaying={handleSetPlaying}
-                playbackId={playbackId}
-                togglePlaying={togglePlaying}
-              />
+              <EpisodeRow episode={e} playback={playback} />
               <Divider />
             </Box>
           );
@@ -143,185 +99,23 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
 
 // TODO: use tanstack table or mui X datagrid
 
-function getPlaybackPct(
-  progress: number = 0,
-  duration?: number,
-  playbackPct?: number
-) {
-  if (playbackPct) return (1 - playbackPct) * 100;
-  if (typeof duration === 'undefined' || duration <= 0) return 100;
+// interface WrappedEpisodeRowProps {
+//   episode: Doc<'episodes'>;
+//   playbackId?: Id<'user_playback'> | null;
+// }
 
-  return round(((duration - progress) / duration) * 100, 2);
-}
+// function WrappedEpisodeRow({episode, playbackId}:WrappedEpisodeRowProps) {
+//   const { data: playback } = useQuery({
+//     ...convexQuery(api.playback.getById, {
+//       id: playbackId as Id<'user_playback'>,
+//     }),
+//     enabled: Boolean(playbackId), // not working ?? fires anyway ??
+//   });
 
-const iconButtonSize = 28;
-const StyledIconButton = styled(IconButton)({
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  minWidth: iconButtonSize,
-});
-
-interface EpisodeRowProps {
-  episode: Doc<'episodes'>;
-  setPlaying: (ep: Doc<'episodes'>) => void;
-  playbackId?: Id<'user_playback'> | null;
-  isPlaying?: boolean;
-  isCurrentAudio: boolean;
-  togglePlaying: () => void;
-}
-
-function EpisodeRow({
-  episode,
-  setPlaying,
-  playbackId,
-  isPlaying = false,
-  togglePlaying,
-  isCurrentAudio,
-}: EpisodeRowProps) {
-  const { data: playback } = useQuery({
-    ...convexQuery(api.playback.getById, {
-      id: playbackId as Id<'user_playback'>,
-    }),
-    enabled: Boolean(playbackId), // not working ?? fires anyway ??
-  });
-
-  const progress = playback?.playedPercentage
-    ? (1 - playback.playedPercentage) * 100
-    : getPlaybackPct(
-        playback?.positionSeconds,
-        episode.durationSeconds ?? undefined
-      );
-
-  return (
-    <Stack
-      direction='row'
-      sx={{ alignItems: 'center', my: { xs: 0.5, sm: 1 } }}
-      spacing={2}
-    >
-      <Typography
-        color='textSecondary'
-        sx={{ width: 80, flex: '0 0 80px', overflow: 'hidden' }}
-      >
-        {episode.episode
-          ? `E${episode.episode}`
-          : episode.episodeType === 'bonus'
-          ? 'bonus'
-          : ''}
-      </Typography>
-      <MuiLink
-        to='/podcasts/$podId/episodes/$episodeId'
-        params={{ podId: episode.podcastId, episodeId: episode.episodeId }}
-        underline='hover'
-        sx={{ flex: '1 1 auto', color: 'inherit', minWidth: 0 }}
-      >
-        <Typography
-          sx={{
-            overflow: 'hidden',
-            textOverflow: 'ellipsis',
-            whiteSpace: 'nowrap',
-            flex: '1 1 60%',
-          }}
-        >
-          {episode.title}
-        </Typography>
-      </MuiLink>
-      <Typography
-        variant='body2'
-        color='textSecondary'
-        sx={{
-          width: 80,
-          flex: '0 0 80px',
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {formatTimestamp(episode.publishedAt)}
-      </Typography>
-      <Typography
-        variant='body2'
-        color='textSecondary'
-        sx={{ width: 80, flex: '0 0 80px' }}
-      >
-        {episode.durationSeconds ? getDuration(episode.durationSeconds) : ''}
-      </Typography>
-      <Box sx={{ position: 'relative', ml: 2, height: 28, width: 28 }}>
-        <CircularProgress
-          enableTrackSlot
-          variant='determinate'
-          value={progress}
-          size={iconButtonSize}
-          thickness={2.4}
-          sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-        />
-        {isPlaying ? (
-          <StyledIconButton
-            size='small'
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              togglePlaying();
-            }}
-          >
-            <PauseRounded fontSize='inherit' color='primary' />
-          </StyledIconButton>
-        ) : (
-          <StyledIconButton
-            size='small'
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (isCurrentAudio) {
-                togglePlaying(); // TODO: remove queue store and use audio directly ??
-              } else {
-                setPlaying(episode);
-              }
-            }}
-          >
-            <PlayArrowRounded fontSize='inherit' color='primary' />
-          </StyledIconButton>
-        )}
-      </Box>
-    </Stack>
-  );
-}
-
-/**
- * Format a timestamp (in milliseconds) as relative time if within a day,
- * otherwise as "MMM. d" (e.g. "Jan. 7").
- *
- * @param {number} timestampMs - The timestamp in milliseconds.
- * @returns {string} A formatted date string.
- */
-function formatTimestamp(timestampMs: number) {
-  const date = new Date(timestampMs);
-  const now = new Date();
-
-  const daysDiff = differenceInDays(now, date);
-
-  if (daysDiff < 1) {
-    // Within 24 hours → show relative time
-    return `${formatDistanceToNow(date, { addSuffix: true })}`;
-  }
-
-  // 1 day or more → show formatted date like "Jan. 7"
-  return format(date, 'MMM. d');
-}
-
-function getDuration(seconds: number) {
-  const { hours, minutes } = intervalToDuration({
-    start: 0,
-    end: seconds * 1000,
-  });
-  // return formatDuration({ days, hours, minutes });
-  let formatted = ``;
-  if (hours) formatted += `${hours}h`;
-  if (minutes) formatted += ` ${minutes}m`;
-  return formatted;
-}
+//   return (
+//     <EpisodeRow  />
+//   )
+// }
 
 const ITEM_HEIGHT = 48;
 

@@ -1,3 +1,6 @@
+import { useConvexMutation } from '@convex-dev/react-query';
+import { useMutation } from '@tanstack/react-query';
+import { api } from 'convex/_generated/api';
 import { Howl } from 'howler';
 import { useCallback, useEffect, useRef } from 'react';
 import { useAudioStore } from './useAudioStore';
@@ -6,6 +9,7 @@ import { useAudioStore } from './useAudioStore';
 
 export function useAudioPlayer() {
   const {
+    podcastId,
     episodeId,
     audioUrl,
     isPlaying,
@@ -23,9 +27,54 @@ export function useAudioPlayer() {
   const howlRef = useRef<Howl | null>(null);
   const isControllingRef = useRef(false);
 
-  // const { mutate: updatePlayback } = useMutation({
-  //   mutationFn: useConvexMutation(api.playback.update),
-  // });
+  const { mutate: updatePlayback } = useMutation({
+    mutationFn: useConvexMutation(api.playback.update),
+  });
+
+  // periodic sync → Convex
+  useEffect(() => {
+    if (!episodeId) return;
+    const howl = howlRef.current;
+    if (!howl) return;
+
+    let lastSent = 0;
+
+    const interval = setInterval(() => {
+      if (!howl.playing() || isControllingRef.current) return;
+
+      const pos = howl.seek() as number;
+      const isComplete = duration && pos >= duration - 1;
+
+      // Prevent redundant writes
+      if (Math.abs(pos - lastSent) < 0.75) return;
+      lastSent = pos;
+
+      console.log('updating playback: ', pos);
+      updatePlayback({
+        episodeId,
+        positionSeconds: Math.floor(pos),
+        completed: Boolean(isComplete),
+      });
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [episodeId, duration]);
+
+  // onend → mark completed
+  useEffect(() => {
+    const howl = howlRef.current;
+    if (!howl) return;
+
+    howl.on('end', () => {
+      if (episodeId) {
+        updatePlayback({
+          episodeId,
+          positionSeconds: duration ?? 0,
+          completed: true,
+        });
+      }
+    });
+  }, [episodeId, duration]);
 
   // useInterval(
   //   () => {
@@ -173,6 +222,7 @@ export function useAudioPlayer() {
     isPlaying,
     duration: duration ?? 0, // howlRef.current?.duration() ?? 0,
 
+    podcastId,
     episodeId,
   };
 }

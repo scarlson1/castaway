@@ -182,6 +182,7 @@ export default defineSchema({
   user_playback: defineTable({
     // id: v.string(), // "play:user:abc:episode:yyyy", // or fields userId + episodeId as keys
     clerkId: v.string(), // v.id('users'),
+    // podcastId: v.optional(v.string()),
     episodeId: v.string(), // TODO: make userId:episodeId unique
     positionSeconds: v.float64(),
     duration: v.optional(v.number()),
@@ -191,7 +192,8 @@ export default defineSchema({
     episodeTitle: v.optional(v.string()),
     podcastTitle: v.optional(v.string()),
   })
-    .index('by_clerk_id', ['clerkId'])
+    .index('by_clerkId', ['clerkId'])
+    .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt'])
     .index('by_clerk_episode', ['clerkId', 'episodeId']),
 
   adSegmentsOld: defineTable({

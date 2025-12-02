@@ -1,5 +1,14 @@
 // import type { Duration,} from 'date-fns';
-import { differenceInHours, format, isBefore, type Duration } from 'date-fns';
+import {
+  differenceInDays,
+  differenceInHours,
+  format,
+  formatDistanceToNow,
+  intervalToDuration,
+  isBefore,
+  type Duration,
+} from 'date-fns';
+import { round } from 'lodash-es';
 
 export function formatTime(seconds: number): string {
   const mins = Math.floor(seconds / 60);
@@ -34,4 +43,49 @@ export function formatRelativeTime(date) {
     // Otherwise, format as a standard date
     return format(date, 'MMM dd, yyyy'); // Example format: Nov 25, 2025
   }
+}
+
+export function getDuration(seconds: number) {
+  const { hours, minutes } = intervalToDuration({
+    start: 0,
+    end: seconds * 1000,
+  });
+  // return formatDuration({ days, hours, minutes });
+  let formatted = ``;
+  if (hours) formatted += `${hours}h`;
+  if (minutes) formatted += ` ${minutes}m`;
+  return formatted;
+}
+
+/**
+ * Format a timestamp (in milliseconds) as relative time if within a day,
+ * otherwise as "MMM. d" (e.g. "Jan. 7").
+ *
+ * @param {number} timestampMs - The timestamp in milliseconds.
+ * @returns {string} A formatted date string.
+ */
+export function formatTimestamp(timestampMs: number) {
+  const date = new Date(timestampMs);
+  const now = new Date();
+
+  const daysDiff = differenceInDays(now, date);
+
+  if (daysDiff < 1) {
+    // Within 24 hours → show relative time
+    return `${formatDistanceToNow(date, { addSuffix: true })}`;
+  }
+
+  // 1 day or more → show formatted date like "Jan. 7"
+  return format(date, 'MMM. d');
+}
+
+export function getPlaybackPct(
+  progress: number = 0,
+  duration?: number,
+  playbackPct?: number
+) {
+  if (playbackPct) return (1 - playbackPct) * 100;
+  if (typeof duration === 'undefined' || duration <= 0) return 100;
+
+  return round(((duration - progress) / duration) * 100, 2);
 }

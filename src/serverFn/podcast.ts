@@ -54,6 +54,21 @@ export const fetchEpisodesByPodGuid = createServerFn()
     return results;
   });
 
+// const fetchPodcastByTagOptions = z.object({
+//   tag: z.string(),
+//   max: z.int().max(5000).optional(),
+//   start_at: z.int().optional()
+// })
+
+//   export const fetchPodcastByTag = createServerFn()
+//   .inputValidator(fetchPodcastByTagOptions)
+//   .handler(async ({ data: { tag } }) => {
+//     const podClient = getPodClient();
+
+//     const results = await podClient.episodesByPodGuid(id, since, max, fullText);
+//     return results;
+//   });
+
 // export const addPodToDb = createServerFn()
 // .inputValidator(z.object({podId: z.string()}))
 // .handler(async ({ data: { podId } }) => {

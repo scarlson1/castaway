@@ -1,12 +1,18 @@
 /// <reference types="vite/client" />
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
-import { convexQuery, type ConvexQueryClient } from '@convex-dev/react-query';
+import { type ConvexQueryClient } from '@convex-dev/react-query';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
-import { Box, Container, CssBaseline, ThemeProvider } from '@mui/material';
+import {
+  Box,
+  Container,
+  CssBaseline,
+  InitColorSchemeScript,
+  ThemeProvider,
+} from '@mui/material';
 import { TanStackDevtools } from '@tanstack/react-devtools';
-import { useQuery, type QueryClient } from '@tanstack/react-query';
+import { type QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import {
   createRootRouteWithContext,
@@ -15,7 +21,6 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
-import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { format } from 'date-fns';
@@ -27,7 +32,7 @@ import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import { getCachedClerkAuth } from '~/serverFn/auth';
-import { theme } from '~/theme/theme';
+import { colorSchemeSelector, modeStorageKey, theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
 
 export interface RouterContext {
@@ -89,7 +94,6 @@ export const Route = createRootRouteWithContext<RouterContext>()({
       token,
     };
   },
-
   head: () => ({
     meta: [
       {
@@ -161,17 +165,18 @@ function RootComponent() {
 }
 
 function Providers({ children }: { children: ReactNode }) {
-  const emotionCache = createCache({ key: 'css' });
+  const emotionCache = createCache({ key: 'emotion-css' });
 
   return (
     <CacheProvider value={emotionCache}>
-      <ThemeProvider theme={theme} defaultMode='system'>
+      <ThemeProvider
+        theme={theme}
+        defaultMode='system'
+        modeStorageKey={modeStorageKey}
+      >
         <CssBaseline enableColorScheme />
         <Toaster />
         {children}
-        {/* <FirebaseAppContext>
-          <FirebaseServicesContext>{children}</FirebaseServicesContext>
-        </FirebaseAppContext> */}
       </ThemeProvider>
     </CacheProvider>
   );
@@ -179,9 +184,14 @@ function Providers({ children }: { children: ReactNode }) {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <head>
         <HeadContent />
+        <InitColorSchemeScript
+          attribute={colorSchemeSelector}
+          defaultMode='system'
+          modeStorageKey={modeStorageKey}
+        />
       </head>
       <body>
         <Providers>
@@ -231,7 +241,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 }
 
 function WrappedPlayer() {
-  const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
+  // const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
   const episode = useQueueStore((state) => state.nowPlaying);
 
   // const dbPlayback = useMemo(() => {
@@ -255,6 +265,7 @@ function WrappedPlayer() {
   return (
     <AudioPlayer
       coverArt={episode.image}
+      podcastId={episode.podcastId}
       id={episode.episodeId}
       title={episode.title}
       src={episode.audioUrl}

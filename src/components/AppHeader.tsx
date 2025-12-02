@@ -31,7 +31,7 @@ const Header = styled('header')(({ theme }) => [
   } as const,
   theme.applyStyles('dark', {
     backdropFilter: 'blur(16px)',
-    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.8)`,
+    backgroundColor: `rgba(${theme.vars.palette.background.paper} / 0.9)`,
   }),
 ]);
 
@@ -148,6 +148,16 @@ export function AppHeader() {
               <li>
                 <MuiLink to='/podcasts'>Podcasts</MuiLink>
               </li>
+              <SignedIn>
+                <li>
+                  <MuiLink to='/podcasts/feed'>New Episodes</MuiLink>
+                </li>
+              </SignedIn>
+              <SignedIn>
+                <li>
+                  <MuiLink to='/podcasts/progress'>In Progress</MuiLink>
+                </li>
+              </SignedIn>
             </ul>
           </Navigation>
         </Box>
