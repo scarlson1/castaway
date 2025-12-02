@@ -9,7 +9,7 @@ import {
 } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { Fragment, Suspense } from 'react';
+import { Suspense } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { TrendingCard } from '~/components/TrendingCard';
 
@@ -49,31 +49,33 @@ function UserPlayback() {
 
   return (
     <>
-      <Stack direction='column' spacing={1}>
+      <Stack direction='column' spacing={1} divider={<Divider />}>
         {results.map((ep) => (
-          <Fragment key={ep._id}>
-            <TrendingCard
-              title={ep.title}
-              secondaryText={ep.podcastTitle}
-              // actionText={formatRelativeTime(new Date(ep.publishedAt))}
-              publishedAt={ep.publishedAt}
-              podId={ep.podcastId}
-              episodeId={ep.episodeId}
-              imgSrc={ep.feedImage || ep.image || ''}
-              audioUrl={ep.audioUrl}
-            />
-            <Divider />
-          </Fragment>
+          <TrendingCard
+            key={ep._id}
+            title={ep.title}
+            secondaryText={ep.podcastTitle}
+            // actionText={formatRelativeTime(new Date(ep.publishedAt))}
+            publishedAt={ep.publishedAt}
+            podId={ep.podcastId}
+            episodeId={ep.episodeId}
+            imgSrc={ep.feedImage || ep.image || ''}
+            audioUrl={ep.audioUrl}
+            duration={ep.durationSeconds}
+          />
         ))}
       </Stack>
-      <Button
-        ref={ref}
-        onClick={() => loadMore(PAGE_SIZE)}
-        loading={isLoading}
-        disabled={isLoading || status !== 'CanLoadMore'}
-      >
-        Load more
-      </Button>
+      {status !== 'Exhausted' ? (
+        <Button
+          ref={ref}
+          onClick={() => loadMore(PAGE_SIZE)}
+          loading={isLoading}
+          disabled={isLoading || status !== 'CanLoadMore'}
+          sx={{ mt: 2 }}
+        >
+          {`${status === 'CanLoadMore' ? 'Load more' : 'fetching...'}`}
+        </Button>
+      ) : null}
     </>
   );
 }

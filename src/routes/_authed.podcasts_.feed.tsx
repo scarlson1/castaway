@@ -1,4 +1,11 @@
-import { Box, Button, Container, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Container,
+  Divider,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
@@ -74,7 +81,7 @@ function RecentlyUpdated() {
   if (!data || !data.pages) return null;
 
   return (
-    <Stack direction='column' spacing={1}>
+    <Stack direction='column' spacing={1} divider={<Divider />}>
       {data?.pages?.map((page) =>
         page.items?.map((ep) => (
           <TrendingCard
@@ -87,6 +94,7 @@ function RecentlyUpdated() {
             episodeId={ep.episodeId}
             imgSrc={ep.feedImage || ep.image || ''}
             audioUrl={ep.audioUrl}
+            duration={ep.durationSeconds}
           />
         ))
       )}

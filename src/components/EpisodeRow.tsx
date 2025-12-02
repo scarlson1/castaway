@@ -65,8 +65,8 @@ export function EpisodeRow({ playback, episode }: EpisodeRowProps) {
       </Typography>
       <PlaybackButton
         episode={episode}
-        positionSeconds={playback?.positionSeconds || 0}
-        playedPercentage={playback?.playedPercentage}
+        // positionSeconds={playback?.positionSeconds || 0}
+        // playedPercentage={playback?.playedPercentage}
       />
     </Stack>
   );
