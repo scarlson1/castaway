@@ -28,6 +28,8 @@ import { Suspense, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { AdsTimeline } from '~/components/AdsTimeline';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
+import { MuiLink } from '~/components/MuiLink';
+import { SimilarEpisodes } from '~/components/SimilarEpisodes';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 import { useAudioStore } from '~/hooks/useAudioStore';
 import { useQueueStore } from '~/hooks/useQueueStore';
@@ -131,9 +133,18 @@ function RouteComponent() {
         </Box>
         <Stack direction='column' spacing={1} sx={{ alignItems: 'flex-start' }}>
           <Stack direction='row' spacing={2}>
-            <Typography variant='overline' color='textSecondary'>
+            {/* <Typography variant='overline' color='textSecondary'>
               {data?.podcastTitle}
-            </Typography>
+            </Typography> */}
+            <MuiLink
+              to='/podcasts/$podId'
+              params={{ podId }}
+              underline='none'
+              variant='overline'
+              color='textSecondary'
+            >
+              {data?.podcastTitle}
+            </MuiLink>
             <Typography variant='overline' color='textSecondary'>
               {getEpisodeLabel(data)}
             </Typography>
@@ -231,6 +242,19 @@ function RouteComponent() {
             <AdJobs episodeId={episodeId} />
           </Suspense>
         </ErrorBoundary>
+
+        <Box sx={{ py: 3 }}>
+          <Divider sx={{ mb: 3 }} />
+          <Typography variant='h6' gutterBottom>
+            You might also like
+          </Typography>
+          <SimilarEpisodes
+            limit={4}
+            episodeConvexId={data._id}
+            gridItemProps={{ size: { xs: 8, sm: 4 } }}
+          />
+          <Divider sx={{ my: 3 }} />
+        </Box>
       </Box>
     </>
   );

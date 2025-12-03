@@ -31,7 +31,7 @@ interface TrendingCardProps {
   // linkProps?: LinkProps;
 }
 
-// TODO: reusable component
+// TODO: reusable component (not working in vertical orientation)
 export function TrendingCard({
   title,
   secondaryText,

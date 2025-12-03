@@ -1,26 +1,15 @@
 import { SignedIn } from '@clerk/tanstack-react-start';
 import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
-import { PlayArrowRounded } from '@mui/icons-material';
-import {
-  Box,
-  Divider,
-  Grid,
-  IconButton,
-  Stack,
-  styled,
-  Typography,
-} from '@mui/material';
+import { Box, Divider, Grid, Stack, styled, Typography } from '@mui/material';
 import { ErrorBoundary } from '@sentry/tanstackstart-react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { useCallback, useRef, type RefObject } from 'react';
 import { CategoryCard } from '~/components/CategoryCard';
+import { EpisodeCard } from '~/components/EpisodeCard';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
-import { useHover } from '~/hooks/useHover';
-import { useQueueStore } from '~/hooks/useQueueStore';
 import {
   categoryQueryOptions,
   randomEpisodesQueryOptions,
@@ -70,15 +59,6 @@ function Home() {
 
       <Divider flexItem />
 
-      <Box>
-        <Typography variant='h5' gutterBottom>
-          Find something new
-        </Typography>
-        <RandomEpisodes />
-      </Box>
-
-      <Divider flexItem />
-
       {isAuthenticated ? (
         <Box sx={{ width: '100%' }}>
           <Typography variant='h5' gutterBottom>
@@ -89,6 +69,15 @@ function Home() {
           </ErrorBoundary>
         </Box>
       ) : null}
+
+      <Divider flexItem />
+
+      <Box>
+        <Typography variant='h5' gutterBottom>
+          Find something new
+        </Typography>
+        <RandomEpisodes />
+      </Box>
 
       {/* TODO: get most recent listened episode and use to generate recommendations */}
 
@@ -128,7 +117,7 @@ function RecentSubscribedEpisodes() {
     <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
       {data?.map((ep) => (
         <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={ep._id}>
-          <EpisodeVerticalCard
+          <EpisodeCard
             title={ep.title}
             podName={ep.podcastTitle}
             imgSrc={ep.feedImage || ''}
@@ -140,110 +129,6 @@ function RecentSubscribedEpisodes() {
         </Grid>
       ))}
     </Grid>
-  );
-}
-
-const ClampedTypography = styled(Typography)({
-  overflow: 'hidden',
-  display: '-webkit-box',
-  // lineClamp: 2,
-  '-webkit-line-clamp': '2',
-  '-webkit-box-orient': 'vertical',
-  // boxOrient: 'vertical',
-  textOverflow: 'ellipsis',
-});
-
-// TODO: generalize card in trending.tsx / components/TrendingCard
-function EpisodeVerticalCard({
-  imgSrc,
-  title,
-  podName,
-  episodeId,
-  podId,
-  audioUrl,
-  publishedAt,
-}: {
-  imgSrc: string;
-  title: string;
-  podName: string;
-  episodeId: string;
-  podId: string;
-  audioUrl: string;
-  publishedAt: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isHovering] = useHover<HTMLDivElement>(
-    ref as RefObject<HTMLDivElement>
-  );
-
-  const playEpisode = useQueueStore((state) => state.setPlaying);
-
-  const handlePlay = useCallback(() => {
-    playEpisode({
-      podcastId: podId,
-      image: imgSrc || '',
-      episodeId: episodeId,
-      title,
-      audioUrl,
-      releaseDateMs: publishedAt,
-      podName,
-    });
-  }, [episodeId, podId, imgSrc, title, podName, publishedAt, audioUrl]);
-
-  return (
-    <div ref={ref}>
-      <Stack direction='column' spacing={0.5}>
-        <Box sx={{ position: 'relative' }}>
-          <Box
-            sx={{
-              width: '100%', // { xs: 52, sm: 64 },
-              // height: 'auto',
-              height: { xs: 120, sm: 180, md: 128 },
-              // flex: '0 0 60px',
-              objectFit: 'cover',
-              overflow: 'hidden',
-              flexShrink: 0,
-              borderRadius: 1,
-              backgroundColor: 'rgba(0,0,0,0.08)',
-              '& > img': {
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-              },
-            }}
-          >
-            <img src={imgSrc} alt={podName} />
-          </Box>
-          <SignedIn>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                opacity: isHovering ? 1 : 0,
-                transition: 'opacity 0.3s ease-in-out',
-                position: 'absolute',
-                bottom: 8,
-                right: 4,
-              }}
-            >
-              <IconButton size='small' onClick={() => handlePlay()}>
-                <PlayArrowRounded fontSize='inherit' />
-              </IconButton>
-              {/* <SubscribeIconButton
-              podcastId={(feed as PodcastFeed).podcastGuid}
-            /> */}
-            </Box>
-          </SignedIn>
-        </Box>
-        <ClampedTypography variant='body1' color='textPrimary'>
-          {title}
-        </ClampedTypography>
-        <ClampedTypography variant='body2' color='textSecondary'>
-          {podName}
-        </ClampedTypography>
-      </Stack>
-    </div>
   );
 }
 

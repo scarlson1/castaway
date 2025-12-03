@@ -123,10 +123,10 @@ export const getSimilarEpisodes = action({
     );
 
     let filtered = similarDocuments
-      .filter((r) => !!r && r?._id !== episodeConvexId)
+      .filter((r) => isNotNullish(r) && r?._id !== episodeConvexId)
       .slice(0, limit);
 
-    return filtered;
+    return filtered as Doc<'episodes'>[];
   },
 });
 

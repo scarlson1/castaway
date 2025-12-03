@@ -1,10 +1,10 @@
 import { useConvexAction } from '@convex-dev/react-query';
-import { Stack, Typography } from '@mui/material';
+import { CircularProgress, Grid } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import type { Doc } from 'convex/_generated/dataModel';
 import { useEffect, useState } from 'react';
-import { MuiLink } from '~/components/MuiLink';
+import { EpisodeCard } from '~/components/EpisodeCard';
 
 export const RecommendedEpisodes = ({ limit = 8 }: { limit?: number }) => {
   // const { data } = useSuspenseQuery({
@@ -29,27 +29,26 @@ export const RecommendedEpisodes = ({ limit = 8 }: { limit?: number }) => {
     mutate({ limit });
   }, [mutate]);
 
+  if (isPending && !recs.length) return <CircularProgress />;
+
   if (!recs.length) return null;
 
   return (
-    <>
-      {/* <BulkEmbedButton /> */}
-      {recs.map((r) => (
-        <Stack direction='column' spacing={0} sx={{ my: 1 }} key={r._id}>
-          <MuiLink
-            to={'/podcasts/$podId/episodes/$episodeId'}
-            params={{ podId: r.podcastId, episodeId: r.episodeId }}
-            color='textPrimary'
-            underline='hover'
-          >
-            {`${r.title}`}
-          </MuiLink>
-          <Typography variant='body2' color='textSecondary'>
-            {`${r.podcastTitle}`}
-          </Typography>
-        </Stack>
+    <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
+      {recs.map((ep) => (
+        <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={ep._id}>
+          <EpisodeCard
+            title={ep.title}
+            podName={ep.podcastTitle}
+            publishedAt={ep.publishedAt}
+            podId={ep.podcastId}
+            episodeId={ep.episodeId}
+            imgSrc={ep.feedImage || ''}
+            audioUrl={ep.audioUrl}
+          />
+        </Grid>
       ))}
-    </>
+    </Grid>
   );
 };
 
