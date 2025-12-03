@@ -81,7 +81,9 @@ export const getEpEmbByEpId = query({
   handler: async ({ db }, { episodeConvexId }) => {
     return await db
       .query('episodeEmbeddings')
-      .filter((q) => q.eq(q.field('episodeConvexId'), episodeConvexId))
+      .withIndex('by_episodeConvexId', (q) =>
+        q.eq('episodeConvexId', episodeConvexId)
+      )
       .first();
   },
 });

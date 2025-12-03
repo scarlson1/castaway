@@ -244,18 +244,20 @@ function RouteComponent() {
         </ErrorBoundary>
 
         <ErrorBoundary fallback={null}>
-          <Box sx={{ py: 3 }}>
-            <Divider sx={{ mb: 3 }} />
-            <Typography variant='h6' gutterBottom>
-              You might also like
-            </Typography>
-            <SimilarEpisodes
-              limit={4}
-              episodeConvexId={data._id}
-              gridItemProps={{ size: { xs: 8, sm: 4 } }}
-            />
-            <Divider sx={{ my: 3 }} />
-          </Box>
+          <Suspense>
+            <Box sx={{ py: 3 }}>
+              <Divider sx={{ mb: 3 }} />
+              <Typography variant='h6' gutterBottom>
+                You might also like
+              </Typography>
+              <SimilarEpisodes
+                limit={4}
+                episodeConvexId={data._id}
+                gridItemProps={{ size: { xs: 8, sm: 4 } }}
+              />
+              <Divider sx={{ my: 3 }} />
+            </Box>
+          </Suspense>
         </ErrorBoundary>
       </Box>
     </>
