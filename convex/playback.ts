@@ -3,7 +3,7 @@ import { paginationOptsValidator } from 'convex/server';
 import { getClerkIdIfExists } from 'convex/utils/auth';
 import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
-import { mutation, query } from './_generated/server';
+import { internalQuery, mutation, query } from './_generated/server';
 
 export const update = mutation({
   args: {
@@ -99,11 +99,22 @@ export const getAllForUser = query({
 
     let playback = await db
       .query('user_playback')
-      .withIndex('by_clerkId_lastUpdatedAt')
+      .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
       .order('desc')
       .collect();
 
     return playback;
+  },
+});
+
+export const getAllByClerkId = internalQuery({
+  args: { clerkId: v.string() },
+  handler: async ({ db }, { clerkId }) => {
+    return await db
+      .query('user_playback')
+      .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
+      .order('desc')
+      .collect();
   },
 });
 

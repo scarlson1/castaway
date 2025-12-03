@@ -131,7 +131,7 @@ export default defineSchema({
     feedUrl: v.union(v.string(), v.null()),
     feedImage: v.union(v.string(), v.null()),
     feedItunesId: v.union(v.number(), v.null()),
-    summary: v.string(),
+    summary: v.string(), // = description
     enclosureType: v.string(),
     season: v.optional(v.union(v.number(), v.null())),
     episode: v.optional(v.union(v.number(), v.null())),
@@ -140,6 +140,7 @@ export default defineSchema({
     language: v.union(v.string(), v.null()),
     retrievedAt: v.number(), // ms
     embeddingId: v.optional(v.id('episodeEmbeddings')),
+    chaptersUrl: v.optional(v.union(v.string(), v.null())),
     transcripts: v.optional(
       v.array(v.object({ url: v.string(), type: v.string() }))
     ),
@@ -181,16 +182,20 @@ export default defineSchema({
     }),
 
   episodeEmbeddings: defineTable({
-    episodeId: v.id('episodes'),
+    episodeConvexId: v.id('episodes'),
     episodeGuid: v.string(),
     podcastId: v.string(),
     embedding: v.array(v.float64()),
     metadata: v.any(),
-  }).vectorIndex('by_embedding', {
-    vectorField: 'embedding',
-    dimensions: 1536,
-    filterFields: ['podcastId', 'episodeGuid'],
-  }),
+    createdAt: v.number(),
+  })
+    .index('by_episodeConvexId', ['episodeConvexId'])
+    .index('by_episodeGuid', ['episodeGuid'])
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 1536,
+      filterFields: ['podcastId', 'episodeGuid'],
+    }),
 
   user_playback: defineTable({
     // id: v.string(), // "play:user:abc:episode:yyyy", // or fields userId + episodeId as keys

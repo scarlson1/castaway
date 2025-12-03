@@ -2,6 +2,8 @@ export async function createEmbedding(
   text: string,
   { model = 'text-embedding-3-small', apiKey = process.env.OPENAI_API_KEY } = {}
 ): Promise<number[]> {
+  if (!apiKey) throw new Error('OPENAI_API_KEY required');
+
   const resp = await fetch('https://api.openai.com/v1/embeddings', {
     method: 'POST',
     headers: {
@@ -16,5 +18,10 @@ export async function createEmbedding(
   }
 
   const json = await resp.json();
-  return json.data[0].embedding;
+
+  if (!json.data || !json.data[0] || !json.data[0].embedding)
+    throw new Error('Invalid embedding response');
+
+  return json.data[0].embedding as number[];
+  // return json.data[0].embedding;
 }
