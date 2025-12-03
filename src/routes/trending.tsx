@@ -89,13 +89,32 @@ function RouteComponent() {
 
   return (
     <>
-      <Stack direction='row' sx={{ justifyContent: 'space-between' }}>
-        <Typography variant='h4' gutterBottom>
-          Trending
-        </Typography>
-        <FormControl sx={{ width: 180, ml: 'auto' }}>
+      <Stack
+        direction='row'
+        sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+      >
+        <Box>
+          {cat ? (
+            <Typography
+              variant='overline'
+              lineHeight={1.2}
+              color='textSecondary'
+            >
+              {cat}
+            </Typography>
+          ) : null}
+          <Typography variant='h4' gutterBottom>
+            Trending
+          </Typography>
+        </Box>
+        <FormControl sx={{ width: 180, ml: 'auto' }} size='small'>
           <InputLabel id='demo-simple-select-label'>Trending</InputLabel>
-          <Select value={weeks} onChange={handleSinceChange} label='Trending'>
+          <Select
+            value={weeks}
+            onChange={handleSinceChange}
+            label='Trending'
+            size='small'
+          >
             <MenuItem value={1}>last week</MenuItem>
             <MenuItem value={4}>last month</MenuItem>
             <MenuItem value={52}>last year</MenuItem>
@@ -168,6 +187,7 @@ interface TrendingCardProps {
 
 // use clsx for orientation styling ??
 // TODO: finish support for orientation
+// TODO: support subscribe button with TrendFeed (need to look up podcastGUID)
 
 export function TrendingCard({
   feed,
@@ -181,6 +201,7 @@ export function TrendingCard({
   );
 
   let isRow = orientation === 'horizontal';
+  console.log('isRow: ', isRow, feed);
 
   return (
     <div ref={ref}>
