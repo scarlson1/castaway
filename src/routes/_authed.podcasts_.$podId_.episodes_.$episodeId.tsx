@@ -1,4 +1,8 @@
-import { convexQuery, useConvexMutation } from '@convex-dev/react-query';
+import {
+  convexQuery,
+  useConvexAction,
+  useConvexMutation,
+} from '@convex-dev/react-query';
 import {
   DownloadRounded,
   IosShareRounded,
@@ -15,10 +19,10 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import type { Doc } from 'convex/_generated/dataModel';
+import type { Doc, Id } from 'convex/_generated/dataModel';
 import { formatDate, formatDuration } from 'date-fns';
 import { Suspense, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -204,6 +208,7 @@ function RouteComponent() {
           >
             Transcribe & classify job
           </Button>
+          <EmbedEpisode convexId={data._id} />
         </Stack>
 
         <Typography variant='h6' gutterBottom>
@@ -299,5 +304,31 @@ function AdJobs({ episodeId }: { episodeId: string }) {
         );
       })}
     </>
+  );
+}
+
+function EmbedEpisode({ convexId }: { convexId: Id<'episodes'> }) {
+  const toast = useAsyncToast();
+  const { data } = useQuery(
+    convexQuery(api.episodeEmbeddings.getEpEmbByEpId, {
+      episodeConvexId: convexId,
+    })
+  );
+
+  const { mutate, isPending } = useMutation({
+    mutationFn: useConvexAction(api.episodeEmbeddings.generateEpisodeEmbedding),
+    onMutate: () => toast.loading('generating embedding...'),
+    onError: () => toast.error('error generating embedding'),
+    onSuccess: () => toast.success('embedding complete'),
+  });
+
+  return (
+    <Button
+      loading={isPending}
+      onClick={() => mutate({ episodeConvexId: convexId })}
+      disabled={Boolean(data)}
+    >
+      Embed Episode
+    </Button>
   );
 }

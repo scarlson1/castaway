@@ -201,14 +201,14 @@ async function getRecentEpisodes(
 export const getById = internalQuery({
   args: { convexId: v.id('episodes') },
   handler: async ({ db }, { convexId }) => {
-    return db.get(convexId);
+    return await db.get(convexId);
   },
 });
 
 export const getByGuid = query({
   args: { id: v.string() },
   handler: async ({ db }, { id }) => {
-    return db
+    return await db
       .query('episodes')
       .withIndex('by_episodeId', (q) => q.eq('episodeId', id))
       .first();
@@ -244,6 +244,7 @@ export const saveEpisodesToDb = internalMutation({
   },
 });
 
+// TODO: promise all ??
 export const fetchEmbResults = internalQuery({
   args: { ids: v.array(v.id('episodeEmbeddings')) },
   handler: async (ctx, args) => {

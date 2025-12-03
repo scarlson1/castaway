@@ -1,5 +1,5 @@
 import { SignedIn } from '@clerk/tanstack-react-start';
-import { convexQuery } from '@convex-dev/react-query';
+import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
 import { PlayArrowRounded } from '@mui/icons-material';
 import {
   Box,
@@ -10,6 +10,7 @@ import {
   styled,
   Typography,
 } from '@mui/material';
+import { ErrorBoundary } from '@sentry/tanstackstart-react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
@@ -17,6 +18,7 @@ import { useCallback, useRef, type RefObject } from 'react';
 import { CategoryCard } from '~/components/CategoryCard';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
+import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import { useHover } from '~/hooks/useHover';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import {
@@ -33,6 +35,7 @@ export const Route = createFileRoute('/')({
 });
 
 function Home() {
+  const { isAuthenticated } = useConvexAuth();
   return (
     <Stack alignItems='center' spacing={{ xs: 4, sm: 5, md: 6 }}>
       {/* <Typography variant='h1' marginBlockEnd={4}>
@@ -48,7 +51,7 @@ function Home() {
             width: '100%',
           }}
         >
-          <Typography variant='h5'>Episode you won't want to miss</Typography>
+          <Typography variant='h5'>Episodes you won't want to miss</Typography>
           <SignedIn>
             <MuiButtonLink to='/podcasts/feed'>See more</MuiButtonLink>
           </SignedIn>
@@ -76,6 +79,21 @@ function Home() {
 
       <Divider flexItem />
 
+      {isAuthenticated ? (
+        <Box sx={{ width: '100%' }}>
+          <Typography variant='h5' gutterBottom>
+            You might also like
+          </Typography>
+          <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
+            <RecommendedEpisodes limit={8} />
+          </ErrorBoundary>
+        </Box>
+      ) : null}
+
+      {/* TODO: get most recent listened episode and use to generate recommendations */}
+
+      <Divider flexItem />
+
       <Box sx={{ width: '100%' }}>
         <Typography variant='h5' gutterBottom>
           Categories
@@ -84,22 +102,6 @@ function Home() {
       </Box>
 
       <TestGraphQL />
-
-      {/* <button
-        onClick={() => {
-          fetch('/api/search', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            // body: JSON.stringify({ name: 'Spencer' }),
-          })
-            .then((res) => res.json())
-            .then((data) => console.log(data));
-        }}
-      >
-        Say Hello
-      </button> */}
     </Stack>
   );
 }
@@ -395,19 +397,3 @@ function EpisodeItem({
     </Stack>
   );
 }
-
-// function Test() {
-//   const { data } = useQuery({
-//     queryKey: ['test', 'charts'],
-//     queryFn: () => fetchMusicChartsStats(),
-//   });
-//   console.log('TEST: ', data);
-
-//   return (
-//     <>
-//       <Typography component='div'>
-//         <pre>{JSON.stringify(data, null, 2)}</pre>
-//       </Typography>
-//     </>
-//   );
-// }

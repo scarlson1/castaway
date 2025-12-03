@@ -1,11 +1,13 @@
 import { asyncMap } from 'convex-helpers';
-import { internal } from 'convex/_generated/api';
+import { api, internal } from 'convex/_generated/api';
 import { Doc } from 'convex/_generated/dataModel';
 import {
   action,
   internalMutation,
   internalQuery,
+  query,
 } from 'convex/_generated/server';
+import { getClerkId } from 'convex/utils/auth';
 import { createEmbedding } from 'convex/utils/embeddings';
 import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
@@ -45,6 +47,7 @@ export const saveEpisodeEmbedding = internalMutation({
   },
 });
 
+// for testing manually - TODO: batch on episode import
 export const generateEpisodeEmbedding = action({
   args: {
     episodeConvexId: v.id('episodes'),
@@ -81,7 +84,7 @@ export const generateEpisodeEmbedding = action({
   },
 });
 
-export const getEpEmbByEpId = internalQuery({
+export const getEpEmbByEpId = query({
   args: { episodeConvexId: v.id('episodes') },
   handler: async ({ db }, { episodeConvexId }) => {
     return await db
@@ -91,8 +94,8 @@ export const getEpEmbByEpId = internalQuery({
   },
 });
 
-export const getEpEmbByEpGuid = internalQuery({
-  args: { episodeGuid: v.id('episodes') },
+export const getEpEmbByEpGuid = query({
+  args: { episodeGuid: v.string() },
   handler: async ({ db }, { episodeGuid }) => {
     return await db
       .query('episodeEmbeddings')
@@ -100,6 +103,16 @@ export const getEpEmbByEpGuid = internalQuery({
       .first();
   },
 });
+
+// export const test = query({
+//   args: { episodeGuid: v.id('episodes') },
+//   handler: async ({ db }, { episodeGuid }) => {
+//     return await db
+//       .query('episodeEmbeddings')
+//       .withIndex('by_episodeGuid', (q) => q.eq('episodeGuid', episodeGuid))
+//       .first();
+//   },
+// });
 
 export const getSimilarEpisodes = action({
   args: { episodeConvexId: v.id('episodes'), limit: v.optional(v.number()) },
@@ -109,7 +122,7 @@ export const getSimilarEpisodes = action({
     //   .filter((q) => q.eq(q.field('episodeId'), episodeId))
     //   .unique();
     const row: Doc<'episodeEmbeddings'> | null = await ctx.runQuery(
-      internal.episodeEmbeddings.getEpEmbByEpId,
+      api.episodeEmbeddings.getEpEmbByEpId,
       {
         episodeConvexId,
       }
@@ -123,7 +136,7 @@ export const getSimilarEpisodes = action({
     });
 
     const similarDocuments: (Doc<'episodes'> | null)[] = await ctx.runQuery(
-      internal.episodes.fetchEpResults,
+      internal.episodes.fetchEmbResults,
       { ids: results.map((result) => result._id) }
     );
 
@@ -137,10 +150,11 @@ export const getSimilarEpisodes = action({
 
 export const getPersonalizedRecommendations = action({
   args: {
-    clerkId: v.string(),
+    // clerkId: v.string(),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { clerkId, limit = 10 }) => {
+  handler: async (ctx, { limit = 10 }) => {
+    const clerkId = await getClerkId(ctx.auth);
     const listens: Doc<'user_playback'>[] = await ctx.runQuery(
       internal.playback.getAllByClerkId,
       {
@@ -159,18 +173,14 @@ export const getPersonalizedRecommendations = action({
     //   .query("episodeEmbeddings")
     //   .withIndex("by_episodeConvexId", q => q.in("episodeConvexId", episodeIds))
     //   .collect();
-    const embRows = await asyncMap(listens, async (listen) => {
-      return await ctx.runQuery(
-        internal.episodeEmbeddings.getEpEmbByEpGuid({
+    const embRows: (Doc<'episodeEmbeddings'> | null)[] = await asyncMap(
+      listens,
+      async (listen) => {
+        return await ctx.runQuery(api.episodeEmbeddings.getEpEmbByEpGuid, {
           episodeGuid: listen.episodeId,
-        })
-      );
-      // return await ctx.db
-      //   .query('episodeEmbeddings')
-      //   .withIndex('by_episodeGuid', (q) =>
-      //     q.eq('episodeGuid', listen.episodeId)
-      //   ).first()
-    });
+        });
+      }
+    );
     const filtered = embRows.filter(isNotNullish);
 
     if (!filtered || filtered.length === 0) return [];
@@ -198,41 +208,61 @@ export const getPersonalizedRecommendations = action({
       limit: limit + 5, // fetch some extras
     });
 
-    const episodes = await ctx.runQuery(internal.episodes.fetchEmbResults, {
-      ids: res.map((r) => r._id),
-    });
+    const episodes: Doc<'episodes'>[] = await ctx.runQuery(
+      internal.episodes.fetchEmbResults,
+      {
+        ids: res.map((r) => r._id),
+      }
+    );
+
+    // TODO: filter out already listened episodes
 
     // filter out episodes user already listened to, and return top limit
-    const episodeIds = listens.map((l) => l.episodeId);
-    const listenedSet = new Set(episodeIds.map(String));
-    const filteredResult = episodes
-      .filter((r) => !listenedSet.has(String(r.episodeConvexId)))
-      .slice(0, limit);
+    // TODO: not currently saving convex id to user_playback
+    // const episodeIds = listens.map((l) => l.episodeId);
+    // const listenedSet = new Set(episodeIds.map(String));
+    // const filteredResult = episodes
+    //   .filter((r) => !listenedSet.has(String(r._id)))
+    //   .slice(0, limit);
 
-    return filteredResult.map((r) => ({
-      episodeId: r.episodeId,
-      metadata: r.metadata,
-      score: r.score,
-    }));
+    // return filteredResult.map((r) => ({
+    //   episodeId: r.episodeId,
+    //   metadata: r.metadata,
+    //   score: r.score,
+    // }));
+    return episodes.slice(0, limit);
   },
 });
 
 export const getEpisodesWithoutEmbedding = internalQuery({
-  args: { podcastId: v.optional(v.string()) },
-  handler: async (ctx, { podcastId }) => {
-    let q = ctx.db
-      .query('episodes')
-      .withIndex('by_embedding', (q) => q.eq('embeddingId', undefined));
+  args: { podcastId: v.optional(v.string()), limit: v.optional(v.number()) },
+  handler: async (ctx, { podcastId, limit = 50 }) => {
+    if (podcastId) {
+      return await ctx.db
+        .query('episodes')
+        .withIndex('by_embedding', (q) => q.eq('embeddingId', undefined))
+        .filter((x) => x.eq(x.field('podcastId'), podcastId))
+        .take(limit);
+    } else {
+      return await ctx.db
+        .query('episodes')
+        .withIndex('by_embedding', (q) => q.eq('embeddingId', undefined))
+        .take(limit);
+    }
+    // let q = ctx.db
+    //   .query('episodes')
+    //   .withIndex('by_embedding', (q) => q.eq('embeddingId', undefined));
 
-    if (podcastId) q.filter((x) => x.eq(x.field('podcastId'), podcastId));
+    // if (podcastId) q.filter((x) => x.eq(x.field('podcastId'), podcastId));
 
-    let items = await q.collect();
+    // let items = await q.collect();
 
-    return items;
+    // return items;
   },
 });
 
 // run periodically (cron job) to ensure all episodes are embedded
+// TODO: change to internal & run as cron job
 export const bulkEmbedEpisodes = action({
   args: {
     podcastId: v.optional(v.string()),
@@ -240,10 +270,11 @@ export const bulkEmbedEpisodes = action({
   },
   handler: async (ctx, { podcastId, batchSize = 10 }) => {
     // fetch episodes that don't have embeddings yet
-    const episodes = await ctx.runQuery(
+    const episodes: Doc<'episodes'>[] = await ctx.runQuery(
       internal.episodeEmbeddings.getEpisodesWithoutEmbedding,
-      { podcastId }
+      { podcastId, limit: batchSize }
     );
+    console.log('EMBEDDING EPISODES: ', episodes.length);
 
     // fetch existing embedding episodeIds
     // const existing = await ctx.db.query("episodeEmbeddings").collect();
