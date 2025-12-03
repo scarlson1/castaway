@@ -201,7 +201,6 @@ export function TrendingCard({
   );
 
   let isRow = orientation === 'horizontal';
-  console.log('isRow: ', isRow, feed);
 
   return (
     <div ref={ref}>
