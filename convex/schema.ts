@@ -131,7 +131,7 @@ export default defineSchema({
     feedUrl: v.union(v.string(), v.null()),
     feedImage: v.union(v.string(), v.null()),
     feedItunesId: v.union(v.number(), v.null()),
-    summary: v.string(),
+    summary: v.string(), // = description
     enclosureType: v.string(),
     season: v.optional(v.union(v.number(), v.null())),
     episode: v.optional(v.union(v.number(), v.null())),
@@ -139,6 +139,8 @@ export default defineSchema({
     explicit: v.union(v.boolean(), v.null()),
     language: v.union(v.string(), v.null()),
     retrievedAt: v.number(), // ms
+    embeddingId: v.optional(v.id('episodeEmbeddings')),
+    chaptersUrl: v.optional(v.union(v.string(), v.null())),
     transcripts: v.optional(
       v.array(v.object({ url: v.string(), type: v.string() }))
     ),
@@ -172,12 +174,28 @@ export default defineSchema({
     .index('by_podId_pub', ['podcastId', 'publishedAt'])
     .index('by_podId_episode', ['podcastId', 'episode'])
     .index('by_publishedAt', ['publishedAt'])
+    .index('by_embedding', ['embeddingId'])
     .searchIndex('search_body', {
       searchField: 'title',
       filterFields: ['podcastId'],
       // staged: false,
     }),
-  // TODO: add vector search for description to find similar podcasts ??
+
+  episodeEmbeddings: defineTable({
+    episodeConvexId: v.id('episodes'),
+    episodeGuid: v.string(),
+    podcastId: v.string(),
+    embedding: v.array(v.float64()),
+    metadata: v.any(),
+    createdAt: v.number(),
+  })
+    .index('by_episodeConvexId', ['episodeConvexId'])
+    .index('by_episodeGuid', ['episodeGuid'])
+    .vectorIndex('by_embedding', {
+      vectorField: 'embedding',
+      dimensions: 1536,
+      filterFields: ['podcastId', 'episodeGuid'],
+    }),
 
   user_playback: defineTable({
     // id: v.string(), // "play:user:abc:episode:yyyy", // or fields userId + episodeId as keys
@@ -227,6 +245,7 @@ export default defineSchema({
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
       dimensions: 1536, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
+      filterFields: ['podcastId'],
     })
     .index('by_episodeId', ['episodeId']),
 

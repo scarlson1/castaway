@@ -17,6 +17,11 @@ import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesList } from '~/components/EpisodesList';
 import { FollowingButtons } from '~/components/FollowingButtons';
+import { TranscriptSearch } from '~/components/TranscriptSearch';
+import {
+  podchaserPodcast,
+  type PodcastIdentifierType,
+} from '~/serverFn/podchaser';
 import { getRootDomain } from '~/utils/getDomain';
 
 export const Route = createFileRoute('/_authed/podcasts_/$podId')({
@@ -45,11 +50,12 @@ function RouteComponent() {
         </Suspense>
       </ErrorBoundary>
       <Outlet />
+      <ErrorBoundary fallback={<div>search error</div>}>
+        <WrappedTranscriptSearch podId={podId} />
+      </ErrorBoundary>
     </>
   );
 }
-
-// TODO: move to components/
 
 function PodDetails({ podId }: { podId: string }) {
   const { data } = useSuspenseQuery(
@@ -83,7 +89,31 @@ function PodDetails({ podId }: { podId: string }) {
             </ErrorBoundary>
           ) : null}
         </Stack>
-        <Rating name='rating' value={5} readOnly size='small' />
+        {data?.itunesId ? (
+          <ErrorBoundary
+            fallback={
+              <Rating name='rating' value={5} disabled readOnly size='small' />
+            }
+          >
+            <Suspense
+              fallback={
+                <Rating
+                  name='rating'
+                  value={0}
+                  disabled
+                  readOnly
+                  size='small'
+                />
+              }
+            >
+              <PodcastRating
+                podId={`${data?.itunesId}`}
+                type='APPLE_PODCASTS'
+              />
+            </Suspense>
+          </ErrorBoundary>
+        ) : null}
+
         <Divider sx={{ my: 1 }} />
         <Stack direction='row' spacing={2}>
           <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
@@ -123,5 +153,51 @@ function PodDetails({ podId }: { podId: string }) {
         </Typography>
       </Box>
     </Stack>
+  );
+}
+
+function PodcastRating({
+  podId,
+  type,
+}: {
+  podId: string;
+  type: PodcastIdentifierType;
+}) {
+  const { data } = useSuspenseQuery({
+    queryKey: ['rating', podId],
+    queryFn: () => podchaserPodcast({ data: { id: podId, type } }),
+  });
+
+  return (
+    <Stack direction='row' spacing={1}>
+      <Rating
+        name='rating'
+        value={data?.podcast?.ratingAverage ?? 0}
+        precision={0.05}
+        readOnly
+        size='small'
+        sx={{ display: 'inline-flex' }}
+      />
+      <Typography
+        variant='body2'
+        fontSize={'0.775rem'}
+        color='textSecondary'
+      >{`(${data?.podcast?.reviewCount || 0} reviews)`}</Typography>
+    </Stack>
+  );
+}
+
+function WrappedTranscriptSearch({ podId }: { podId: string }) {
+  const { data } = useSuspenseQuery(
+    convexQuery(api.podcasts.getPodByGuid, { id: podId })
+  );
+  if (!data?.itunesId) return null;
+
+  return (
+    <TranscriptSearch
+      filters={{
+        identifiers: [{ id: `${data.itunesId}`, type: 'APPLE_PODCASTS' }],
+      }}
+    />
   );
 }

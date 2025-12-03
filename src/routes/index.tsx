@@ -1,29 +1,21 @@
 import { SignedIn } from '@clerk/tanstack-react-start';
-import { convexQuery } from '@convex-dev/react-query';
-import { PlayArrowRounded } from '@mui/icons-material';
-import {
-  Box,
-  Divider,
-  Grid,
-  IconButton,
-  Stack,
-  styled,
-  Typography,
-} from '@mui/material';
+import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
+import { Box, Divider, Grid, Stack, styled, Typography } from '@mui/material';
+import { ErrorBoundary } from '@sentry/tanstackstart-react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { useCallback, useRef, type RefObject } from 'react';
 import { CategoryCard } from '~/components/CategoryCard';
+import { EpisodeCard } from '~/components/EpisodeCard';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
-import { useHover } from '~/hooks/useHover';
-import { useQueueStore } from '~/hooks/useQueueStore';
+import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import {
   categoryQueryOptions,
   randomEpisodesQueryOptions,
   recentEpisodesQueryOptions,
 } from '~/queries';
+import { podchaserPodcasts } from '~/serverFn/podchaser';
 
 // spotify inspo: https://open.spotify.com/genre/0JQ5DArNBzkmxXHCqFLx2J
 
@@ -32,6 +24,7 @@ export const Route = createFileRoute('/')({
 });
 
 function Home() {
+  const { isAuthenticated } = useConvexAuth();
   return (
     <Stack alignItems='center' spacing={{ xs: 4, sm: 5, md: 6 }}>
       {/* <Typography variant='h1' marginBlockEnd={4}>
@@ -44,9 +37,10 @@ function Home() {
             alignItems: 'center',
             justifyContent: 'space-between',
             pb: 2,
+            width: '100%',
           }}
         >
-          <Typography variant='h5'>Episode you won't want to miss</Typography>
+          <Typography variant='h5'>Episodes you won't want to miss</Typography>
           <SignedIn>
             <MuiButtonLink to='/podcasts/feed'>See more</MuiButtonLink>
           </SignedIn>
@@ -65,12 +59,27 @@ function Home() {
 
       <Divider flexItem />
 
+      {isAuthenticated ? (
+        <Box sx={{ width: '100%' }}>
+          <Typography variant='h5' gutterBottom>
+            You might also like
+          </Typography>
+          <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
+            <RecommendedEpisodes limit={8} />
+          </ErrorBoundary>
+        </Box>
+      ) : null}
+
+      <Divider flexItem />
+
       <Box>
         <Typography variant='h5' gutterBottom>
           Find something new
         </Typography>
         <RandomEpisodes />
       </Box>
+
+      {/* TODO: get most recent listened episode and use to generate recommendations */}
 
       <Divider flexItem />
 
@@ -81,23 +90,21 @@ function Home() {
         <PodcastGenreCards />
       </Box>
 
-      {/* <button
-        onClick={() => {
-          fetch('/api/search', {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            // body: JSON.stringify({ name: 'Spencer' }),
-          })
-            .then((res) => res.json())
-            .then((data) => console.log(data));
-        }}
-      >
-        Say Hello
-      </button> */}
+      <TestGraphQL />
     </Stack>
   );
+}
+
+function TestGraphQL() {
+  const { data } = useQuery({
+    queryKey: ['test', 'graphql'],
+    queryFn: () => podchaserPodcasts({ data: { first: 2 } }),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  console.log(data);
+
+  return null;
 }
 
 function RecentSubscribedEpisodes() {
@@ -110,7 +117,7 @@ function RecentSubscribedEpisodes() {
     <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
       {data?.map((ep) => (
         <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={ep._id}>
-          <EpisodeVerticalCard
+          <EpisodeCard
             title={ep.title}
             podName={ep.podcastTitle}
             imgSrc={ep.feedImage || ''}
@@ -122,107 +129,6 @@ function RecentSubscribedEpisodes() {
         </Grid>
       ))}
     </Grid>
-  );
-}
-
-const ClampedTypography = styled(Typography)({
-  overflow: 'hidden',
-  display: '-webkit-box',
-  // lineClamp: 2,
-  '-webkit-line-clamp': '2',
-  '-webkit-box-orient': 'vertical',
-  // boxOrient: 'vertical',
-  textOverflow: 'ellipsis',
-});
-
-// TODO: generalize card in trending.tsx / components/TrendingCard
-function EpisodeVerticalCard({
-  imgSrc,
-  title,
-  podName,
-  episodeId,
-  podId,
-  audioUrl,
-  publishedAt,
-}: {
-  imgSrc: string;
-  title: string;
-  podName: string;
-  episodeId: string;
-  podId: string;
-  audioUrl: string;
-  publishedAt: number;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isHovering] = useHover<HTMLDivElement>(
-    ref as RefObject<HTMLDivElement>
-  );
-
-  const playEpisode = useQueueStore((state) => state.setPlaying);
-
-  const handlePlay = useCallback(() => {
-    playEpisode({
-      podcastId: podId,
-      image: imgSrc || '',
-      episodeId: episodeId,
-      title,
-      audioUrl,
-      releaseDateMs: publishedAt,
-      podName,
-    });
-  }, [episodeId, podId, imgSrc, title, podName, publishedAt, audioUrl]);
-
-  return (
-    <div ref={ref}>
-      <Stack direction='column' spacing={0.5}>
-        <Box sx={{ position: 'relative' }}>
-          <Box
-            sx={{
-              width: '100%', // { xs: 52, sm: 64 },
-              height: 'auto',
-              // height: { xs: 52, sm: 64 },
-              // flex: '0 0 60px',
-              objectFit: 'cover',
-              overflow: 'hidden',
-              flexShrink: 0,
-              borderRadius: 1,
-              backgroundColor: 'rgba(0,0,0,0.08)',
-              '& > img': {
-                width: '100%',
-              },
-            }}
-          >
-            <img src={imgSrc} alt={podName} />
-          </Box>
-          <SignedIn>
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                opacity: isHovering ? 1 : 0,
-                transition: 'opacity 0.3s ease-in-out',
-                position: 'absolute',
-                bottom: 8,
-                right: 4,
-              }}
-            >
-              <IconButton size='small' onClick={() => handlePlay()}>
-                <PlayArrowRounded fontSize='inherit' />
-              </IconButton>
-              {/* <SubscribeIconButton
-              podcastId={(feed as PodcastFeed).podcastGuid}
-            /> */}
-            </Box>
-          </SignedIn>
-        </Box>
-        <ClampedTypography variant='body1' color='textPrimary'>
-          {title}
-        </ClampedTypography>
-        <ClampedTypography variant='body2' color='textSecondary'>
-          {podName}
-        </ClampedTypography>
-      </Stack>
-    </div>
   );
 }
 
@@ -243,7 +149,7 @@ function getRandomColor() {
 function PodcastGenreCards() {
   const { data } = useQuery(categoryQueryOptions());
 
-  let slicedData = data?.slice(0, 20);
+  let slicedData = data?.slice(0, 36);
 
   return (
     <Grid container spacing={3}>
@@ -376,19 +282,3 @@ function EpisodeItem({
     </Stack>
   );
 }
-
-// function Test() {
-//   const { data } = useQuery({
-//     queryKey: ['test', 'charts'],
-//     queryFn: () => fetchMusicChartsStats(),
-//   });
-//   console.log('TEST: ', data);
-
-//   return (
-//     <>
-//       <Typography component='div'>
-//         <pre>{JSON.stringify(data, null, 2)}</pre>
-//       </Typography>
-//     </>
-//   );
-// }
