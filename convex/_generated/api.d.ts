@@ -20,6 +20,7 @@ import type * as adPipeline_transcribe from "../adPipeline/transcribe.js";
 import type * as adSegments from "../adSegments.js";
 import type * as clerk from "../clerk.js";
 import type * as crons from "../crons.js";
+import type * as episodeEmbeddings from "../episodeEmbeddings.js";
 import type * as episodes from "../episodes.js";
 import type * as http from "../http.js";
 import type * as node from "../node.js";
@@ -55,6 +56,7 @@ declare const fullApi: ApiFromModules<{
   adSegments: typeof adSegments;
   clerk: typeof clerk;
   crons: typeof crons;
+  episodeEmbeddings: typeof episodeEmbeddings;
   episodes: typeof episodes;
   http: typeof http;
   node: typeof node;
