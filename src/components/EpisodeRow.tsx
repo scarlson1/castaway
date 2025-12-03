@@ -40,7 +40,7 @@ export function EpisodeRow({ playback, episode }: EpisodeRowProps) {
             flex: '1 1 60%',
           }}
         >
-          {episode.podcastTitle}
+          {episode.title}
         </Typography>
       </MuiLink>
       <Typography

@@ -28,7 +28,6 @@ export interface MergedAdSegment {
   confidence: number;
 }
 
-// new implementation
 export const saveAdDoc = internalMutation({
   args: {
     // sourceId: v.string(),
@@ -53,16 +52,18 @@ export const saveAdDoc = internalMutation({
 
 export const searchAds = query({
   args: {
-    embedding: v.array(v.number()),
+    // embedding: v.array(v.number()),
+    searchQuery: v.string(),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, args) => {
-    return await ctx.db
-      .query('ads') // @ts-ignore TODO: fix type error
-      .vectorSearch('by_embedding', args.embedding, {
-        limit: args.limit ?? 5,
-      })
-      .collect();
+  handler: async (ctx, { limit, searchQuery }) => {
+    // chatgpt ?? use node.searchAds instead
+    // return await ctx.db
+    //   .query('ads')
+    //   .vectorSearch('by_embedding', args.embedding, {
+    //     limit: args.limit ?? 5,
+    //   })
+    //   .collect();
   },
 });
 

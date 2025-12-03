@@ -24,6 +24,7 @@ import {
   randomEpisodesQueryOptions,
   recentEpisodesQueryOptions,
 } from '~/queries';
+import { podchaserPodcasts } from '~/serverFn/podchaser';
 
 // spotify inspo: https://open.spotify.com/genre/0JQ5DArNBzkmxXHCqFLx2J
 
@@ -44,6 +45,7 @@ function Home() {
             alignItems: 'center',
             justifyContent: 'space-between',
             pb: 2,
+            width: '100%',
           }}
         >
           <Typography variant='h5'>Episode you won't want to miss</Typography>
@@ -81,6 +83,8 @@ function Home() {
         <PodcastGenreCards />
       </Box>
 
+      <TestGraphQL />
+
       {/* <button
         onClick={() => {
           fetch('/api/search', {
@@ -98,6 +102,18 @@ function Home() {
       </button> */}
     </Stack>
   );
+}
+
+function TestGraphQL() {
+  const { data } = useQuery({
+    queryKey: ['test', 'graphql'],
+    queryFn: () => podchaserPodcasts({ data: { first: 2 } }),
+    staleTime: 1000 * 60 * 10,
+  });
+
+  console.log(data);
+
+  return null;
 }
 
 function RecentSubscribedEpisodes() {
@@ -179,8 +195,8 @@ function EpisodeVerticalCard({
           <Box
             sx={{
               width: '100%', // { xs: 52, sm: 64 },
-              height: 'auto',
-              // height: { xs: 52, sm: 64 },
+              // height: 'auto',
+              height: { xs: 120, sm: 180, md: 128 },
               // flex: '0 0 60px',
               objectFit: 'cover',
               overflow: 'hidden',
@@ -189,6 +205,9 @@ function EpisodeVerticalCard({
               backgroundColor: 'rgba(0,0,0,0.08)',
               '& > img': {
                 width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                display: 'block',
               },
             }}
           >
@@ -243,7 +262,7 @@ function getRandomColor() {
 function PodcastGenreCards() {
   const { data } = useQuery(categoryQueryOptions());
 
-  let slicedData = data?.slice(0, 20);
+  let slicedData = data?.slice(0, 36);
 
   return (
     <Grid container spacing={3}>

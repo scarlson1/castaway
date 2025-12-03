@@ -1,7 +1,7 @@
 'use node';
 
 import { internal } from 'convex/_generated/api';
-import { internalAction } from 'convex/_generated/server';
+import { action, internalAction } from 'convex/_generated/server';
 import { v } from 'convex/values';
 import OpenAI from 'openai';
 
@@ -20,12 +20,13 @@ export const saveAdSegment = internalAction({
     confidence: v.number(),
   },
   handler: async (ctx, args) => {
-    const emb = await openai.embeddings.create({
-      model: 'text-embedding-3-small', // 'text-embedding-3-large',
-      input: args.transcript,
-    });
+    // const emb = await openai.embeddings.create({
+    //   model: 'text-embedding-3-small', // 'text-embedding-3-large',
+    //   input: args.transcript,
+    // });
 
-    const embedding = emb.data[0].embedding;
+    // const embedding = emb.data[0].embedding;
+    const embedding = await embed(args.transcript);
 
     await ctx.runMutation(internal.adSegments.saveAdDoc, {
       // sourceId: args.sourceId,
@@ -44,3 +45,35 @@ export const saveAdSegment = internalAction({
     return { ok: true };
   },
 });
+
+// use to identify probable ad segments before sending to chatgpt ?? or to aid ??
+export const searchAds = action({
+  args: {
+    // embedding: v.array(v.number()),
+    searchQuery: v.string(),
+    limit: v.optional(v.number()),
+    podcastId: v.optional(v.string()),
+  },
+  handler: async (ctx, { limit, searchQuery, podcastId }) => {
+    // https://docs.convex.dev/search/vector-search
+    const embedding = await embed(searchQuery);
+
+    const args = {
+      vector: embedding,
+      limit,
+    };
+    if (podcastId) args['filter'] = (q) => q.eq('podcastId', podcastId);
+
+    return await ctx.vectorSearch('ads', 'by_embedding', args);
+  },
+});
+
+async function embed(input: string, model = 'text-embedding-3-small') {
+  // 'text-embedding-3-large',
+  const emb = await openai.embeddings.create({
+    model,
+    input,
+  });
+
+  return emb.data[0].embedding;
+}

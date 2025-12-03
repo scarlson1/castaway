@@ -244,6 +244,82 @@ export const saveEpisodesToDb = internalMutation({
   },
 });
 
+export const getEpEmbByEpId = internalQuery({
+  args: { episodeId: v.id('episodes') },
+  handler: async ({ db }, { episodeId }) => {
+    return await db
+      .query('episodeEmbeddings')
+      .filter((q) => q.eq(q.field('episodeId'), episodeId))
+      .first();
+  },
+});
+
+export const fetchEpResults = internalQuery({
+  args: { ids: v.array(v.id('episodeEmbeddings')) },
+  handler: async (ctx, args) => {
+    const results: Doc<'episodes'>[] = [];
+    for (const id of args.ids) {
+      // const doc = await ctx.db.get(id);
+      const doc = await ctx.db
+        .query('episodes')
+        .withIndex('by_embedding', (q) => q.eq('embeddingId', id))
+        .unique();
+      if (doc === null) {
+        continue;
+      }
+      results.push(doc);
+    }
+    return results;
+  },
+});
+
+// TODO: vector based recommendations
+// https://chatgpt.com/s/t_692fd481cc7881918ad60b3b51630c84
+export const getSimilarEpisodes = action({
+  args: { episodeId: v.id('episodes'), limit: v.optional(v.number()) },
+  handler: async (ctx, { episodeId, limit = 4 }) => {
+    // const row = await ctx.db
+    //   .query('episodeEmbeddings')
+    //   .filter((q) => q.eq(q.field('episodeId'), episodeId))
+    //   .unique();
+    const row: Doc<'episodeEmbeddings'> = await ctx.runQuery(
+      internal.episodes.getEpEmbByEpId,
+      {
+        episodeId,
+      }
+    );
+
+    // TODO: handle embedding not found
+    if (!row?.embedding) return [];
+
+    let results = await ctx.vectorSearch('episodeEmbeddings', 'by_embedding', {
+      vector: row.embedding,
+      limit: limit + 1, // include itself
+    });
+
+    // let results = await ctx.db
+    //   .query('episodeEmbeddings')
+    //   .withIndex('by_embedding', (q) => q.nearest('vector', row.embedding))
+    //   .take(limit + 1); // include itself
+
+    // const documentIds = filtered.map((r) => r._id);
+    // const similarDocuments = await Promise.all(
+    //   documentIds.map((id) => ctx.db.get(id))
+    // );
+
+    const similarDocuments = await ctx.runQuery(
+      internal.episodes.fetchEpResults,
+      { ids: results.map((result) => result._id) }
+    );
+
+    let filtered = similarDocuments
+      .filter((r) => r?.episodeId !== episodeId)
+      .slice(0, limit);
+
+    return filtered; // TODO: filter out null ??
+  },
+});
+
 // TODO: appears to be duplicating episodes ??
 export const refreshByPodId = action({
   args: { podId: v.string() },
