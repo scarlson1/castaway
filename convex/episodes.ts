@@ -1,3 +1,4 @@
+import { getAll } from 'convex-helpers/server/relationships';
 import { internal } from 'convex/_generated/api';
 import { Doc, type Id } from 'convex/_generated/dataModel';
 import {
@@ -16,6 +17,7 @@ import {
 } from 'convex/server';
 import { getUserSubscriptions } from 'convex/subscribe';
 import { getClerkId, getClerkIdIfExists } from 'convex/utils/auth';
+import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
 import type {
   EpisodeItem,
@@ -205,6 +207,13 @@ export const getById = internalQuery({
   },
 });
 
+export const getMultipleById = internalQuery({
+  args: { convexIds: v.array(v.id('episodes')) },
+  handler: async ({ db }, { convexIds }) => {
+    return await getAll(db, convexIds);
+  },
+});
+
 export const getByGuid = query({
   args: { id: v.string() },
   handler: async ({ db }, { id }) => {
@@ -219,7 +228,7 @@ export const getByGuid = query({
 export const saveEpisodesToDb = internalMutation({
   // args: { episodes: Doc<"episodes"> },
   handler: async (
-    { db },
+    { db, scheduler },
     {
       episodes,
       podcastTitle, // not required in case episodes are from multiple podcasts
@@ -233,34 +242,52 @@ export const saveEpisodesToDb = internalMutation({
     console.log(
       `adding ${episodes.length} episodes to the database [${podcastTitle}]`
     );
+    const episodeIds: Id<'episodes'>[] = [];
     for (const episode of episodes) {
       const id = await db.insert('episodes', {
         ...podIndexEpToConvexEp(episode, podcastTitle),
       });
+      episodeIds.push(id);
     }
     console.log(
       `finished adding ${episodes.length} episodes of ${podcastTitle}`
     );
+
+    if (episodeIds.length) {
+      await scheduler.runAfter(0, internal.episodeEmbeddings.embedNewEpisodes, {
+        episodeIds,
+      });
+    }
   },
 });
 
-// TODO: promise all ??
 export const fetchEmbResults = internalQuery({
   args: { ids: v.array(v.id('episodeEmbeddings')) },
   handler: async (ctx, args) => {
-    const results: Doc<'episodes'>[] = [];
+    // const results: Doc<'episodes'>[] = [];
+    // for (const id of args.ids) {
+    //   // const doc = await ctx.db.get(id);
+    //   const doc = await ctx.db
+    //     .query('episodes')
+    //     .withIndex('by_embedding', (q) => q.eq('embeddingId', id))
+    //     .unique();
+    //   if (doc === null) {
+    //     continue;
+    //   }
+    //   results.push(doc);
+    // }
+    // return results;
+    const promises: Promise<Doc<'episodes'> | null>[] = [];
     for (const id of args.ids) {
-      // const doc = await ctx.db.get(id);
-      const doc = await ctx.db
-        .query('episodes')
-        .withIndex('by_embedding', (q) => q.eq('embeddingId', id))
-        .unique();
-      if (doc === null) {
-        continue;
-      }
-      results.push(doc);
+      promises.push(
+        ctx.db
+          .query('episodes')
+          .withIndex('by_embedding', (q) => q.eq('embeddingId', id))
+          .first()
+      );
     }
-    return results;
+    const results = await Promise.all(promises);
+    return results.filter(isNotNullish);
   },
 });
 

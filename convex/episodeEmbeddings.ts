@@ -3,6 +3,7 @@ import { api, internal } from 'convex/_generated/api';
 import { Doc } from 'convex/_generated/dataModel';
 import {
   action,
+  internalAction,
   internalMutation,
   internalQuery,
   query,
@@ -58,16 +59,7 @@ export const generateEpisodeEmbedding = action({
     });
     if (!episode) throw new Error('Episode not found');
 
-    // build text to embed — tune fields and length
-    const text = [
-      episode.title,
-      episode.summary,
-      // episode.showNotes ?? ""
-    ]
-      .filter(Boolean)
-      .join('\n\n');
-
-    const embedding = await createEmbedding(text);
+    const embedding = await generateEmbedding(episode.title, episode.summary);
 
     // optional normalization step for better vector search stability
     // normalizeVector(vector)
@@ -103,16 +95,6 @@ export const getEpEmbByEpGuid = query({
       .first();
   },
 });
-
-// export const test = query({
-//   args: { episodeGuid: v.id('episodes') },
-//   handler: async ({ db }, { episodeGuid }) => {
-//     return await db
-//       .query('episodeEmbeddings')
-//       .withIndex('by_episodeGuid', (q) => q.eq('episodeGuid', episodeGuid))
-//       .first();
-//   },
-// });
 
 export const getSimilarEpisodes = action({
   args: { episodeConvexId: v.id('episodes'), limit: v.optional(v.number()) },
@@ -284,9 +266,8 @@ export const bulkEmbedEpisodes = action({
     const toProcess = episodes.slice(0, batchSize);
 
     for (const ep of toProcess) {
-      const text = [ep.title, ep.summary ?? ''].join('\n\n'); // move to helper fn
       try {
-        const embedding = await createEmbedding(text);
+        const embedding = await generateEmbedding(ep.title, ep.summary);
         await ctx.runMutation(internal.episodeEmbeddings.saveEpisodeEmbedding, {
           episodeConvexId: ep._id,
           embedding,
@@ -300,3 +281,39 @@ export const bulkEmbedEpisodes = action({
     return { processed: toProcess.length };
   },
 });
+
+// called after new episodes imported
+export const embedNewEpisodes = internalAction({
+  args: {
+    episodeIds: v.array(v.id('episodes')),
+  },
+  handler: async (ctx, { episodeIds }) => {
+    const episodes: (Doc<'episodes'> | null)[] = await ctx.runQuery(
+      internal.episodes.getMultipleById,
+      {
+        convexIds: episodeIds,
+      }
+    );
+    const filtered = episodes.filter(isNotNullish);
+
+    for (const ep of filtered) {
+      try {
+        const embedding = await generateEmbedding(ep.title, ep.summary);
+        await ctx.runMutation(internal.episodeEmbeddings.saveEpisodeEmbedding, {
+          episodeConvexId: ep._id,
+          embedding,
+        });
+      } catch (err) {
+        // log and continue — robust to API hiccups (TODO: report to sentry)
+        console.error('embed fail', ep._id, err);
+      }
+    }
+
+    return { processed: filtered.length };
+  },
+});
+
+async function generateEmbedding(title: string, summary: string) {
+  const text = [title, summary ?? ''].join('\n\n');
+  return createEmbedding(text);
+}
