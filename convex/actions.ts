@@ -1,6 +1,7 @@
 import type { Id } from 'convex/_generated/dataModel';
 import { fetchPodEpisodesFromIndex } from 'convex/episodes';
 import { v } from 'convex/values';
+import type { PodcastsByFeedIdResult } from '~/lib/podcastIndexTypes';
 import { internal } from './_generated/api';
 import { action, type ActionCtx } from './_generated/server';
 
@@ -15,6 +16,7 @@ export const subscribe = action({
       podcastId,
     });
     let id: Id<'podcasts'> | null = convexId;
+    let iTunesId: number | null | undefined;
 
     if (!exists) {
       // const podClient = getPodClient();
@@ -31,37 +33,21 @@ export const subscribe = action({
       console.log(`fetched pod by guid: $${feed.id}`);
 
       // add to db
-      const { id: newId } = await ctx.runMutation(internal.podcasts.add, {
-        podcastId,
-        itunesId: feed.itunesId || null,
-        feedUrl: feed.url,
-        link: feed.link || null,
-        title: feed.title,
-        author: feed.author,
-        ownerName: feed.ownerName || '',
-        description: feed.description,
-        imageUrl: feed.image || feed.artwork || '',
-        lastFetchedAt: 0,
-        language: feed.language || 'en',
-        episodeCount: feed.episodeCount || null, // update when episodes are fetched ??
-        mostRecentEpisode: feed.mostRecentEpisode || 0,
-        categories: feed.categories || {},
-        categoryArray: Object.values(feed.categories || {}) as string[],
-        explicit: feed.explicit ?? null,
-      });
-      console.log(`Added podcast to DB ${podcastId} ${newId}`);
+      const newId = await saveNewPod(ctx, feed);
       id = newId as Id<'podcasts'>;
+      iTunesId = feed.itunesId;
 
-      const episodes = await fetchPodEpisodesFromIndex(podcastId);
-      console.log(`${episodes?.length} episodes found - scheduling job`);
+      // const episodes = await fetchPodEpisodesFromIndex(podcastId);
+      // console.log(`${episodes?.length} episodes found - scheduling job`);
 
-      // trigger fetch episodes job
-      if (episodes.length) {
-        await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
-          episodes,
-          podcastTitle: feed.title,
-        });
-      }
+      // // trigger fetch episodes job
+      // if (episodes.length) {
+      //   await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+      //     episodes,
+      //     podcastTitle: feed.title,
+      //   });
+      // }
+      await fetchNewEpisodes(ctx, feed);
     } else {
       console.log('podcast already in DB');
     }
@@ -71,11 +57,93 @@ export const subscribe = action({
     await ctx.runMutation(internal.subscribe.add, {
       podId: podcastId,
       podConvexId: id,
+      iTunesId: iTunesId || null,
     });
 
-    // return { success: true, subscriptionId };
+    return { subscriptionId: id };
   },
 });
+
+export const subscribeitunesId = action({
+  args: { itunesId: v.number() },
+  handler: async (ctx, { itunesId }) => {
+    const feed = await fetchPodIndexByitunesId(ctx, {
+      itunesId: String(itunesId),
+    });
+
+    // check if exists
+    const { exists, convexId } = await ctx.runQuery(internal.podcasts.exists, {
+      podcastId: feed.podcastGuid,
+    });
+    let id: Id<'podcasts'> | null = convexId;
+
+    if (!exists) {
+      console.log(`fetched pod by guid: $${feed.podcastGuid}`);
+
+      const newId = await saveNewPod(ctx, feed);
+      id = newId as Id<'podcasts'>;
+
+      await fetchNewEpisodes(ctx, feed);
+    } else {
+      console.log('podcast already in DB');
+    }
+    if (!id) throw Error('internal error');
+
+    // create subscription
+    await ctx.runMutation(internal.subscribe.add, {
+      podId: feed.podcastGuid,
+      podConvexId: id,
+      itunesId,
+    });
+
+    return { subscriptionId: id };
+  },
+});
+
+async function saveNewPod(
+  ctx: ActionCtx,
+  feed: PodcastsByFeedIdResult['feed']
+) {
+  // add to db
+  const { id: newId } = await ctx.runMutation(internal.podcasts.add, {
+    podcastId: feed.podcastGuid,
+    itunesId: feed.itunesId || null,
+    feedUrl: feed.url,
+    link: feed.link || null,
+    title: feed.title,
+    author: feed.author,
+    ownerName: feed.ownerName || '',
+    description: feed.description,
+    imageUrl: feed.image || feed.artwork || '',
+    lastFetchedAt: 0,
+    language: feed.language || 'en',
+    episodeCount: feed.episodeCount || null, // update when episodes are fetched ??
+    // @ts-ignore TODO: remove or fix type
+    mostRecentEpisode: feed.mostRecentEpisode || 0,
+    categories: feed.categories || {},
+    categoryArray: Object.values(feed.categories || {}) as string[],
+    explicit: Boolean(feed.explicit) ?? null,
+  });
+  console.log(`Added podcast to DB ${feed.podcastGuid} ${newId}`);
+
+  return newId;
+}
+
+async function fetchNewEpisodes(
+  ctx: ActionCtx,
+  feed: PodcastsByFeedIdResult['feed']
+) {
+  const episodes = await fetchPodEpisodesFromIndex(feed.podcastGuid);
+  console.log(`${episodes?.length} episodes found - scheduling job`);
+
+  // trigger fetch episodes job
+  if (episodes.length) {
+    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+      episodes,
+      podcastTitle: feed.title,
+    });
+  }
+}
 
 const BASE_API_URL = 'https://api.podcastindex.org/api/1.0'; // replace with your base URL
 const key = process.env.PODCAST_INDEX_KEY;
@@ -149,13 +217,33 @@ export async function fetchPodIndex(
     // const params = new URLSearchParams();
     // params.append('guid', podcastId);
     const params = new URLSearchParams({ guid: podcastId });
-    const res = await api<{ feed: Record<string, any> }>(
-      `podcasts/byguid?${params}`
-    );
+    const res = await api<PodcastsByFeedIdResult>(`podcasts/byguid?${params}`);
     console.log('res: ', JSON.stringify(res, null, 2));
 
     if (typeof res.body === 'string' || !res.body.feed)
       throw new Error(`podcast not found with ID ${podcastId}`);
+    return res.body.feed;
+  } catch (err) {
+    console.log(err);
+    throw err;
+  }
+}
+
+export async function fetchPodIndexByitunesId(
+  ctx: ActionCtx,
+  { itunesId }: { itunesId: string }
+) {
+  try {
+    // const params = new URLSearchParams();
+    // params.append('guid', podcastId);
+    const params = new URLSearchParams({ id: itunesId });
+    const res = await api<PodcastsByFeedIdResult>(
+      `podcasts/byitunesid?${params}`
+    );
+    console.log('res: ', JSON.stringify(res, null, 2));
+
+    if (typeof res.body === 'string' || !res.body.feed)
+      throw new Error(`podcast not found with iTunes ID ${itunesId}`);
     return res.body.feed;
   } catch (err) {
     console.log(err);
