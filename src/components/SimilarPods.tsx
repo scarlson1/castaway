@@ -2,8 +2,8 @@ import { Grid, type GridProps } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useAction } from 'convex/react';
+import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
-import { TrendingCard } from '~/routes/trending';
 
 export function SimilarPodcasts({
   podId,
@@ -30,7 +30,7 @@ export function SimilarPodcasts({
           key={pod._id}
           {...gridItemProps}
         >
-          <TrendingCard
+          <TrendingCardPodIndex
             feed={
               // TODO: fix TrendingCard type
               {

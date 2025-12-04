@@ -70,7 +70,7 @@ const trendingFeed = z.object({
   image: z.string(),
   artwork: z.string(),
   newestItemPublishTime: z.string(),
-  itunesId: z.string(),
+  itunesId: z.int(),
   trendScore: z.string(),
   language: z.string(),
   categories: z.record(z.string(), z.string()),

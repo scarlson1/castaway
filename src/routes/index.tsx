@@ -6,8 +6,10 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense } from 'react';
+import { Authed } from '~/components/Authed';
 import { CategoryCard } from '~/components/CategoryCard';
 import { EpisodeCard } from '~/components/EpisodeCard';
+import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
@@ -17,9 +19,6 @@ import {
   randomEpisodesQueryOptions,
   recentEpisodesQueryOptions,
 } from '~/queries';
-import { podchaserPodcasts } from '~/serverFn/podchaser';
-
-// spotify inspo: https://open.spotify.com/genre/0JQ5DArNBzkmxXHCqFLx2J
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -28,10 +27,14 @@ export const Route = createFileRoute('/')({
 function Home() {
   const { isAuthenticated } = useConvexAuth();
   return (
-    <Stack alignItems='center' spacing={{ xs: 4, sm: 5, md: 6 }}>
+    <Stack direction='column' spacing={{ xs: 4, sm: 5, md: 6 }}>
       {/* <Typography variant='h1' marginBlockEnd={4}>
         Castaway
       </Typography> */}
+      <Featured />
+
+      <Divider flexItem />
+
       <Box>
         <Box
           sx={{
@@ -85,7 +88,7 @@ function Home() {
 
       <Divider flexItem />
 
-      {isAuthenticated ? (
+      <Authed>
         <Box sx={{ width: '100%' }}>
           <Box>
             <Typography
@@ -104,7 +107,7 @@ function Home() {
             <RecommendedEpisodes limit={8} />
           </ErrorBoundary>
         </Box>
-      ) : null}
+      </Authed>
 
       <Divider flexItem />
 
@@ -126,22 +129,22 @@ function Home() {
         <PodcastGenreCards />
       </Box>
 
-      <TestGraphQL />
+      {/* <TestGraphQL /> */}
     </Stack>
   );
 }
 
-function TestGraphQL() {
-  const { data } = useQuery({
-    queryKey: ['test', 'graphql'],
-    queryFn: () => podchaserPodcasts({ data: { first: 2 } }),
-    staleTime: 1000 * 60 * 10,
-  });
+// function TestGraphQL() {
+//   const { data } = useQuery({
+//     queryKey: ['test', 'graphql'],
+//     queryFn: () => podchaserPodcasts({ data: { first: 2 } }),
+//     staleTime: 1000 * 60 * 10,
+//   });
 
-  console.log(data);
+//   console.log(data);
 
-  return null;
-}
+//   return null;
+// }
 
 function RecentSubscribedEpisodes() {
   const { data } = useQuery(

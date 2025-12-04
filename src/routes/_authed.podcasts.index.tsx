@@ -13,8 +13,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { sortBy } from 'lodash-es';
 import { useMemo, useState } from 'react';
+import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
-import { TrendingCard } from '~/routes/trending';
 
 export const Route = createFileRoute('/_authed/podcasts/')({
   component: RouteComponent,
@@ -69,7 +69,7 @@ function RouteComponent() {
       >
         {sorted.map((pod, i) => (
           <Grid key={pod._id} size={{ xs: 6, sm: 3, md: 2 }}>
-            <TrendingCard
+            <TrendingCardPodIndex
               feed={
                 // TODO: fix TrendingCard type
                 {
@@ -77,6 +77,7 @@ function RouteComponent() {
                   artwork: pod.imageUrl || '',
                   title: pod.title,
                   author: pod.author,
+                  itunesId: pod.itunesId,
                 } as PodcastFeed
               }
               orientation='vertical'

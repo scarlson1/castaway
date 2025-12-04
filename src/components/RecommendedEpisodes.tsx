@@ -12,27 +12,6 @@ export const RecommendedEpisodes = ({ limit = 8 }: { limit?: number }) => {
     queryKey: ['recs', 'episodes', { limit }],
     queryFn: () => getPersonalizedRecommendations({ limit: 8 }),
   });
-  // const [recs, setRecs] = useState<Doc<'episodes'>[]>([]);
-
-  // const { mutate, isPending } = useMutation({
-  //   mutationFn: useConvexAction(
-  //     api.episodeEmbeddings.getPersonalizedRecommendations
-  //   ),
-  //   // onMutate: () => toast.loading(`checking for new episodes`),
-  //   onSuccess: (result) => {
-  //     console.log('RECS: ', result);
-  //     setRecs(result as Doc<'episodes'>[]);
-  //   },
-  //   onError: (err) => console.log(err),
-  // });
-
-  // useEffect(() => {
-  //   mutate({ limit });
-  // }, [mutate]);
-
-  // if (isPending && !recs.length) return <CircularProgress />;
-
-  // if (!recs.length) return null;
 
   return (
     <Grid container columnSpacing={2} rowSpacing={1} columns={16}>

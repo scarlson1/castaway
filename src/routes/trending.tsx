@@ -6,28 +6,16 @@ import {
   MenuItem,
   Select,
   Stack,
-  styled,
   Typography,
   type SelectChangeEvent,
 } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { createFileRoute, type LinkProps } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { zodValidator } from '@tanstack/zod-adapter';
 import { startOfDay, sub } from 'date-fns';
-import {
-  Suspense,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  type RefObject,
-} from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { MuiStackLink } from '~/components/MuiStackLink';
-import { SubscribeIconButton } from '~/components/SubscribeIconButton';
-import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
-import { useHover } from '~/hooks/useHover';
-import type { PodcastFeed, TrendingFeed } from '~/lib/podcastIndexTypes';
+import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
 import { trendingQueryOptions } from '~/queries';
 import {
   fetchTrendingOptions,
@@ -56,16 +44,6 @@ export const Route = createFileRoute('/trending')({
       })
     );
   },
-});
-
-const ClampedTypography = styled(Typography)({
-  overflow: 'hidden',
-  display: '-webkit-box',
-  // lineClamp: 2,
-  '-webkit-line-clamp': '2',
-  '-webkit-box-orient': 'vertical',
-  // boxOrient: 'vertical',
-  textOverflow: 'ellipsis',
 });
 
 function weekToSeconds(weeks: number) {
@@ -167,7 +145,7 @@ function TrendingCardsGrid({
     >
       {data.feeds.map((f, i) => (
         <Grid key={f.id} size={{ xs: 6, sm: 3, md: 2 }}>
-          <TrendingCard
+          <TrendingCardPodIndex
             feed={f}
             orientation='vertical'
             rank={i + 1}
@@ -176,119 +154,6 @@ function TrendingCardsGrid({
         </Grid>
       ))}
     </Grid>
-  );
-}
-
-interface TrendingCardProps {
-  feed: PodcastFeed | TrendingFeed;
-  orientation?: 'vertical' | 'horizontal';
-  rank?: number;
-  linkProps?: LinkProps;
-}
-
-// use clsx for orientation styling ??
-// TODO: finish support for orientation
-// TODO: support subscribe button with TrendFeed (need to look up podcastGUID)
-
-export function TrendingCard({
-  feed,
-  orientation = 'horizontal',
-  rank,
-  linkProps,
-}: TrendingCardProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isHovering] = useHover<HTMLDivElement>(
-    ref as RefObject<HTMLDivElement>
-  );
-
-  let isRow = orientation === 'horizontal';
-
-  return (
-    <div ref={ref}>
-      <MuiStackLink
-        direction={isRow ? 'row' : 'column'}
-        spacing={isRow ? 2 : 0.5}
-        to={'/podcast/$podId'}
-        params={{ podId: `${feed.id || ''}` }}
-        sx={{
-          textDecoration: 'none',
-          '&:visited': { color: 'textPrimary' },
-          '&:hover': { color: 'textPrimary' },
-        }}
-        {...linkProps}
-      >
-        {rank !== undefined ? (
-          <Typography
-            variant='overline'
-            color='textSecondary'
-            sx={{ lineHeight: '1.4', textAlign: 'center' }}
-          >
-            {rank || ''}
-          </Typography>
-        ) : null}
-
-        <Box sx={{ position: 'relative' }}>
-          <Box
-            component='img'
-            src={feed.artwork || feed.image}
-            alt={`${feed.title} cover img`}
-            sx={{ width: '100%', borderRadius: 1 }}
-          />
-          {!isRow && (feed as PodcastFeed).podcastGuid ? (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                opacity: isHovering ? 1 : 0,
-                transition: 'opacity 0.3s ease-in-out',
-                position: 'absolute',
-                bottom: 8,
-                right: 4,
-              }}
-            >
-              <SubscribeIconButton
-                podcastId={(feed as PodcastFeed).podcastGuid}
-              />
-            </Box>
-          ) : !isRow && feed.itunesId ? (
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                opacity: isHovering ? 1 : 0,
-                transition: 'opacity 0.3s ease-in-out',
-                position: 'absolute',
-                bottom: 8,
-                right: 4,
-              }}
-            >
-              <SubscribeIconButtonITunes itunesId={feed.itunesId as number} />
-            </Box>
-          ) : null}
-        </Box>
-
-        <ClampedTypography variant='body1' color='textPrimary'>
-          {feed.title}
-        </ClampedTypography>
-        <ClampedTypography variant='body2' color='textSecondary'>
-          {feed.author}
-        </ClampedTypography>
-        {isRow && (feed as PodcastFeed).podcastGuid ? (
-          <Box
-            sx={{
-              display: 'flex',
-              alignItems: 'center',
-              opacity: isHovering ? 1 : 0,
-              transition: 'opacity 0.3s ease-in-out',
-            }}
-          >
-            <SubscribeIconButton
-              podcastId={(feed as PodcastFeed).podcastGuid}
-            />
-          </Box>
-        ) : null}
-      </MuiStackLink>
-    </div>
   );
 }
 
