@@ -123,6 +123,7 @@ function Trending() {
             feed={
               {
                 id: p.id,
+                // podcastGuid: p.podcastId,
                 artwork: p.artwork,
                 title: p.title,
                 author: p.author,

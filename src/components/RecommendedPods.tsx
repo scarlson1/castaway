@@ -23,6 +23,7 @@ export const RecommendedPods = ({ limit = 8 }: { limit?: number }) => {
               // TODO: fix TrendingCard type
               {
                 id: pod.podcastId as unknown as number,
+                podcastGuid: pod.podcastId,
                 artwork: pod.imageUrl || '',
                 title: pod.title,
                 author: pod.author,
