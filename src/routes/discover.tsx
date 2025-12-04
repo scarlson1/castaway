@@ -299,16 +299,18 @@ function SimilarToLastListened() {
 
   return (
     <>
-      {data.podcastTitle ? (
-        <Typography
-          variant='overline'
-          lineHeight={1.2}
-          color='textSecondary'
-        >{`because you listened to ${data.podcastTitle}`}</Typography>
-      ) : null}
-      <Typography variant='h6' gutterBottom>
-        You might like
-      </Typography>
+      <Box>
+        {data.podcastTitle ? (
+          <Typography
+            variant='overline'
+            lineHeight={1.2}
+            color='textSecondary'
+          >{`because you listened to ${data.podcastTitle}`}</Typography>
+        ) : null}
+        <Typography variant='h6' gutterBottom>
+          You might like
+        </Typography>
+      </Box>
 
       <SimilarPodcasts podId={data.podcastId} />
     </>
