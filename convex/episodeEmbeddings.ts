@@ -145,10 +145,6 @@ export const getPersonalizedRecommendations = action({
         clerkId,
       }
     );
-    // const listens = await ctx.db
-    //   .query('user_playback')
-    //   .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
-    //   .collect();
 
     if (!listens || listens.length === 0) return [];
 

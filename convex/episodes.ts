@@ -325,13 +325,36 @@ export const refreshByPodId = action({
   },
 });
 
+export const updatePods = internalMutation({
+  args: {
+    updates: v.array(
+      v.object({
+        podId: v.id('podcasts'),
+        lastUpdatedAt: v.number(),
+        mostRecentEpisode: v.optional(v.number()),
+      })
+    ),
+  },
+  handler: async ({ db }, { updates }) => {
+    for (const update of updates) {
+      const { podId, ...rest } = update;
+      await db.patch(podId, {
+        ...rest,
+        // lastUpdatedAt: update.lastUpdatedAt,
+      });
+    }
+  },
+});
+
 const POLL_INTERVAL = 1000 * 60 * 30; // 30 minutes
 
 // run by cron job every X amount of time
 export const fetchNewEpisodes = internalAction({
   handler: async (ctx) => {
     // fetch podcasts with a last updated date of less than X
-    const pods = await ctx.runQuery(internal.episodes.fetchPodcastForRefresh);
+    const pods: Doc<'podcasts'>[] = await ctx.runQuery(
+      internal.episodes.fetchPodcastForRefresh
+    );
 
     let newEpisodesQueue: (EpisodeItem & { podcastTitle: string })[] = [];
 
@@ -373,6 +396,12 @@ export const fetchNewEpisodes = internalAction({
           update['mostRecentEpisode'] = mostRecentEpisode * 1000;
         podLastUpdated.push(update);
       }
+    }
+
+    if (podLastUpdated.length) {
+      await ctx.scheduler.runAfter(0, internal.episodes.updatePods, {
+        updates: podLastUpdated,
+      });
     }
 
     if (podLastUpdated.length) {

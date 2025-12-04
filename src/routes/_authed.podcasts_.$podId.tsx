@@ -1,7 +1,8 @@
-import { convexQuery } from '@convex-dev/react-query';
+import { convexQuery, useConvexAction } from '@convex-dev/react-query';
 import { ExplicitRounded, LinkRounded, MicRounded } from '@mui/icons-material';
 import {
   Box,
+  Button,
   Divider,
   Link,
   Rating,
@@ -9,15 +10,14 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import type { Id } from 'convex/_generated/dataModel';
 import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesList } from '~/components/EpisodesList';
 import { FollowingButtons } from '~/components/FollowingButtons';
-import { TranscriptSearch } from '~/components/TranscriptSearch';
+import { SimilarPodcasts } from '~/components/SimilarPods';
 import {
   podchaserPodcast,
   type PodcastIdentifierType,
@@ -40,7 +40,7 @@ function RouteComponent() {
     <>
       <ErrorBoundary fallback={<div>Error loading podcast details</div>}>
         <Suspense>
-          <PodDetails podId={podId as Id<'podcasts'>} />
+          <PodDetails podId={podId} />
         </Suspense>
       </ErrorBoundary>
       <Divider sx={{ my: 3 }} />
@@ -49,10 +49,21 @@ function RouteComponent() {
           <EpisodesList podId={podId} />
         </Suspense>
       </ErrorBoundary>
-      <Outlet />
-      <ErrorBoundary fallback={<div>search error</div>}>
-        <WrappedTranscriptSearch podId={podId} />
+      {/* TODO: error boundary fallback / sentry */}
+      <ErrorBoundary fallback={null}>
+        <Suspense>
+          <>
+            <Typography variant='h6' gutterBottom>
+              Similar Pods
+            </Typography>
+            <SimilarPodcasts podId={podId} />
+          </>
+        </Suspense>
       </ErrorBoundary>
+      <Outlet />
+      {/* <ErrorBoundary fallback={<div>search error</div>}>
+        <WrappedTranscriptSearch podId={podId} />
+      </ErrorBoundary> */}
     </>
   );
 }
@@ -61,6 +72,10 @@ function PodDetails({ podId }: { podId: string }) {
   const { data } = useSuspenseQuery(
     convexQuery(api.podcasts.getPodByGuid, { id: podId })
   );
+
+  const { mutate: embedPod, isPending } = useMutation({
+    mutationFn: useConvexAction(api.podcasts.embedPod),
+  });
 
   return (
     <Stack direction='row' spacing={2}>
@@ -81,6 +96,16 @@ function PodDetails({ podId }: { podId: string }) {
           sx={{ justifyContent: 'space-between', alignItems: 'center' }}
         >
           <Typography variant='h5'>{data?.title}</Typography>
+          {data?._id && !data?.embedding ? (
+            <Button
+              loading={isPending}
+              onClick={() => embedPod({ convexId: data._id })}
+              sx={{ ml: 'auto' }}
+            >
+              Embed
+            </Button>
+          ) : null}
+
           {data?.podcastId ? (
             <ErrorBoundary fallback={<div />}>
               <Suspense>
@@ -187,17 +212,17 @@ function PodcastRating({
   );
 }
 
-function WrappedTranscriptSearch({ podId }: { podId: string }) {
-  const { data } = useSuspenseQuery(
-    convexQuery(api.podcasts.getPodByGuid, { id: podId })
-  );
-  if (!data?.itunesId) return null;
+// function WrappedTranscriptSearch({ podId }: { podId: string }) {
+//   const { data } = useSuspenseQuery(
+//     convexQuery(api.podcasts.getPodByGuid, { id: podId })
+//   );
+//   if (!data?.itunesId) return null;
 
-  return (
-    <TranscriptSearch
-      filters={{
-        identifiers: [{ id: `${data.itunesId}`, type: 'APPLE_PODCASTS' }],
-      }}
-    />
-  );
-}
+//   return (
+//     <TranscriptSearch
+//       filters={{
+//         identifiers: [{ id: `${data.itunesId}`, type: 'APPLE_PODCASTS' }],
+//       }}
+//     />
+//   );
+// }

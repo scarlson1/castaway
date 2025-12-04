@@ -5,11 +5,13 @@ import { ErrorBoundary } from '@sentry/tanstackstart-react';
 import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
+import { Suspense } from 'react';
 import { CategoryCard } from '~/components/CategoryCard';
 import { EpisodeCard } from '~/components/EpisodeCard';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
+import { RecommendedPods } from '~/components/RecommendedPods';
 import {
   categoryQueryOptions,
   randomEpisodesQueryOptions,
@@ -62,7 +64,22 @@ function Home() {
       {isAuthenticated ? (
         <Box sx={{ width: '100%' }}>
           <Typography variant='h5' gutterBottom>
-            You might also like
+            Podcasts you might like
+          </Typography>
+          <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
+            <Suspense>
+              <RecommendedPods limit={8} />
+            </Suspense>
+          </ErrorBoundary>
+        </Box>
+      ) : null}
+
+      <Divider flexItem />
+
+      {isAuthenticated ? (
+        <Box sx={{ width: '100%' }}>
+          <Typography variant='h5' gutterBottom>
+            Episodes you might like
           </Typography>
           <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
             <RecommendedEpisodes limit={8} />
@@ -149,7 +166,7 @@ function getRandomColor() {
 function PodcastGenreCards() {
   const { data } = useQuery(categoryQueryOptions());
 
-  let slicedData = data?.slice(0, 36);
+  let slicedData = data?.slice(0, 40);
 
   return (
     <Grid container spacing={3}>

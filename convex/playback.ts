@@ -49,6 +49,7 @@ export const update = mutation({
       let values = {
         clerkId,
         episodeId,
+        podcastId: ep?.podcastId || '',
         positionSeconds,
         completed: false,
         lastUpdatedAt: getTimestamp(),
@@ -177,6 +178,19 @@ export const inProgress = query({
     });
 
     return { page: merged.filter(isNotNullish), ...rest };
+  },
+});
+
+export const lastListened = query({
+  handler: async ({ db, auth }) => {
+    const clerkId = await getClerkIdIfExists(auth);
+    if (!clerkId) return null;
+
+    return await db
+      .query('user_playback')
+      .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
+      .order('desc')
+      .first();
   },
 });
 
