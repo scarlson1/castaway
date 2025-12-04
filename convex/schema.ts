@@ -108,6 +108,7 @@ export default defineSchema({
 
   subscriptions: defineTable({
     clerkId: v.string(),
+    itunesId: v.optional(v.union(v.number(), v.null())),
     podcastId: v.string(), // guid
     subscribedAt: v.float64(),
     // settings: v.object({

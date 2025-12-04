@@ -25,6 +25,7 @@ import {
 import { ErrorBoundary } from 'react-error-boundary';
 import { MuiStackLink } from '~/components/MuiStackLink';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
+import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
 import { useHover } from '~/hooks/useHover';
 import type { PodcastFeed, TrendingFeed } from '~/lib/podcastIndexTypes';
 import { trendingQueryOptions } from '~/queries';
@@ -248,6 +249,20 @@ export function TrendingCard({
               <SubscribeIconButton
                 podcastId={(feed as PodcastFeed).podcastGuid}
               />
+            </Box>
+          ) : !isRow && feed.itunesId ? (
+            <Box
+              sx={{
+                display: 'flex',
+                alignItems: 'center',
+                opacity: isHovering ? 1 : 0,
+                transition: 'opacity 0.3s ease-in-out',
+                position: 'absolute',
+                bottom: 8,
+                right: 4,
+              }}
+            >
+              <SubscribeIconButtonITunes itunesId={feed.itunesId as number} />
             </Box>
           ) : null}
         </Box>

@@ -60,12 +60,19 @@ export const add = internalMutation({
   args: {
     podId: v.string(),
     podConvexId: v.id('podcasts'), // v.optional(v.union(v.id('podcasts'), v.null())),
+    itunesId: v.union(v.number(), v.null()),
     autoDownload: v.optional(v.boolean()),
     notificationNew: v.optional(v.boolean()),
   },
   handler: async (
     { auth, db },
-    { podId, podConvexId, autoDownload = false, notificationNew = false }
+    {
+      podId,
+      podConvexId,
+      itunesId,
+      autoDownload = false,
+      notificationNew = false,
+    }
   ) => {
     const clerkId = await getClerkId(auth);
 
@@ -81,6 +88,7 @@ export const add = internalMutation({
       clerkId,
       podcastId: podId,
       podConvexId,
+      itunesId,
       subscribedAt: getTimestamp(),
       autoDownload,
       notificationNew,
