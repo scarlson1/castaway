@@ -17,9 +17,6 @@ import {
   randomEpisodesQueryOptions,
   recentEpisodesQueryOptions,
 } from '~/queries';
-import { podchaserPodcasts } from '~/serverFn/podchaser';
-
-// spotify inspo: https://open.spotify.com/genre/0JQ5DArNBzkmxXHCqFLx2J
 
 export const Route = createFileRoute('/')({
   component: Home,
@@ -126,22 +123,22 @@ function Home() {
         <PodcastGenreCards />
       </Box>
 
-      <TestGraphQL />
+      {/* <TestGraphQL /> */}
     </Stack>
   );
 }
 
-function TestGraphQL() {
-  const { data } = useQuery({
-    queryKey: ['test', 'graphql'],
-    queryFn: () => podchaserPodcasts({ data: { first: 2 } }),
-    staleTime: 1000 * 60 * 10,
-  });
+// function TestGraphQL() {
+//   const { data } = useQuery({
+//     queryKey: ['test', 'graphql'],
+//     queryFn: () => podchaserPodcasts({ data: { first: 2 } }),
+//     staleTime: 1000 * 60 * 10,
+//   });
 
-  console.log(data);
+//   console.log(data);
 
-  return null;
-}
+//   return null;
+// }
 
 function RecentSubscribedEpisodes() {
   const { data } = useQuery(

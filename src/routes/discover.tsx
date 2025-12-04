@@ -1,4 +1,4 @@
-import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
+import { convexQuery } from '@convex-dev/react-query';
 import { ArrowForwardIos } from '@mui/icons-material';
 import {
   Alert,
@@ -15,6 +15,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense, useId } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { Authed } from '~/components/Authed';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { SimilarPodcasts } from '~/components/SimilarPods';
 import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
@@ -33,8 +34,6 @@ export const Route = createFileRoute('/discover')({
 });
 
 function RouteComponent() {
-  const { isAuthenticated } = useConvexAuth();
-
   return (
     <Stack direction='column' spacing={2}>
       <Typography variant='h4' component='h2' gutterBottom>
@@ -72,34 +71,9 @@ function RouteComponent() {
 
       <Divider />
 
-      {isAuthenticated ? <SimilarToLastListened /> : null}
-
-      {/* <Box>
-        <Divider />
-        <Stack
-          direction='row'
-          spacing={2}
-          sx={{ justifyContent: 'space-between', alignItems: 'center', my: 3 }}
-        >
-          <Typography variant='h4' fontWeight='medium' gutterBottom>
-            Apple Top Charts
-          </Typography>
-          <MuiButtonLink
-            to='/trending/apple'
-            size='small'
-            endIcon={<ArrowForwardIos fontSize='small' />}
-          >
-            See more
-          </MuiButtonLink>
-        </Stack>
-        <Box>
-          <ErrorBoundary fallback={<div>Something went wrong</div>}>
-            <Suspense fallback={<TrendingSectionSkeleton />}>
-              <AppleCharts />
-            </Suspense>
-          </ErrorBoundary>
-        </Box> 
-      </Box>*/}
+      <Authed>
+        <SimilarToLastListened />
+      </Authed>
     </Stack>
   );
 }
