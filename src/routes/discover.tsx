@@ -1,22 +1,15 @@
 import { convexQuery } from '@convex-dev/react-query';
 import { ArrowForwardIos } from '@mui/icons-material';
-import {
-  Alert,
-  AlertTitle,
-  Box,
-  Divider,
-  Grid,
-  Skeleton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Divider, Grid, Skeleton, Stack, Typography } from '@mui/material';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense, useId } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Authed } from '~/components/Authed';
+import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
+import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import { SimilarPodcasts } from '~/components/SimilarPods';
 import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
@@ -35,14 +28,11 @@ export const Route = createFileRoute('/discover')({
 
 function RouteComponent() {
   return (
-    <Stack direction='column' spacing={2}>
+    <Stack direction='column' spacing={3}>
       <Typography variant='h4' component='h2' gutterBottom>
         Discover
       </Typography>
-      <Alert severity='warning' sx={{ maxWidth: 600, my: 2 }}>
-        <AlertTitle>TODO: Featured</AlertTitle>
-        featured section (carousel cards)
-      </Alert>
+      <Featured />
 
       <Divider />
 
@@ -51,7 +41,7 @@ function RouteComponent() {
         spacing={2}
         sx={{ justifyContent: 'space-between', alignItems: 'center', my: 3 }}
       >
-        <Typography variant='h4' fontWeight='medium' gutterBottom>
+        <Typography variant='h6' gutterBottom>
           Trending
         </Typography>
         <MuiButtonLink
@@ -74,6 +64,29 @@ function RouteComponent() {
       <Authed>
         <SimilarToLastListened />
       </Authed>
+
+      <Divider />
+
+      <Authed>
+        <Box sx={{ width: '100%' }}>
+          <Box>
+            <Typography
+              variant='overline'
+              lineHeight={1.2}
+              color='textSecondary'
+            >
+              Based on your listening
+            </Typography>
+            <Typography variant='h6' gutterBottom>
+              Episodes you might like
+            </Typography>
+          </Box>
+
+          <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
+            <RecommendedEpisodes limit={8} />
+          </ErrorBoundary>
+        </Box>
+      </Authed>
     </Stack>
   );
 }
@@ -88,22 +101,22 @@ function Trending() {
       container
       rowSpacing={1}
       columnSpacing={3}
-      sx={{
-        display: 'grid',
-        gridTemplateRows: 'repeat(4, 1fr)',
-        gridTemplateColumns: {
-          xs: 'repeat(1, minmax(0px, 1fr))',
-          sm: 'repeat(2, minmax(0px, 1fr))',
-        },
-        gridAutoRows: 0,
-        overflow: 'hidden',
-        rowGap: 0, // add margin bottom to child grid container
-      }}
+      // sx={{
+      //   display: 'grid',
+      //   gridTemplateRows: 'repeat(4, 1fr)',
+      //   gridTemplateColumns: {
+      //     xs: 'repeat(1, minmax(0px, 1fr))',
+      //     sm: 'repeat(2, minmax(0px, 1fr))',
+      //   },
+      //   gridAutoRows: 0,
+      //   overflow: 'hidden',
+      //   rowGap: 0, // add margin bottom to child grid container
+      // }}
     >
       {feeds.map((p) => (
         <Grid
           size={{ xs: 12, sm: 6 }}
-          sx={{ width: 'unset !important', mb: 1 }}
+          // sx={{ width: 'unset !important', mb: 1 }}
           key={p.id}
         >
           <TrendingCardPodIndex

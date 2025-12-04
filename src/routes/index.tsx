@@ -6,6 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense } from 'react';
+import { Authed } from '~/components/Authed';
 import { CategoryCard } from '~/components/CategoryCard';
 import { EpisodeCard } from '~/components/EpisodeCard';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
@@ -25,7 +26,7 @@ export const Route = createFileRoute('/')({
 function Home() {
   const { isAuthenticated } = useConvexAuth();
   return (
-    <Stack alignItems='center' spacing={{ xs: 4, sm: 5, md: 6 }}>
+    <Stack direction='column' spacing={{ xs: 4, sm: 5, md: 6 }}>
       {/* <Typography variant='h1' marginBlockEnd={4}>
         Castaway
       </Typography> */}
@@ -82,7 +83,7 @@ function Home() {
 
       <Divider flexItem />
 
-      {isAuthenticated ? (
+      <Authed>
         <Box sx={{ width: '100%' }}>
           <Box>
             <Typography
@@ -101,7 +102,7 @@ function Home() {
             <RecommendedEpisodes limit={8} />
           </ErrorBoundary>
         </Box>
-      ) : null}
+      </Authed>
 
       <Divider flexItem />
 

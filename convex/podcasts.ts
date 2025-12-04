@@ -103,6 +103,17 @@ export const getAllById = internalQuery({
   },
 });
 
+export const recentlyUpdated = query({
+  args: { limit: v.optional(v.number()) },
+  handler: async ({ db }, { limit = 8 }) => {
+    return db
+      .query('podcasts')
+      .withIndex('by_lastFetched')
+      .order('desc')
+      .take(limit);
+  },
+});
+
 async function checkExisting(db: QueryCtx['db'], podId: string) {
   return await db
     .query('podcasts')

@@ -97,6 +97,7 @@ export default defineSchema({
   })
     .index('by_podId', ['podcastId'])
     .index('by_itunesId', ['itunesId'])
+    .index('by_lastFetched', ['lastFetchedAt'])
     .index('by_podId_lastFetched', ['podcastId', 'lastFetchedAt'])
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
