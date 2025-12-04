@@ -63,9 +63,18 @@ function Home() {
 
       {isAuthenticated ? (
         <Box sx={{ width: '100%' }}>
-          <Typography variant='h5' gutterBottom>
-            Podcasts you might like
-          </Typography>
+          <Box>
+            <Typography
+              variant='overline'
+              lineHeight={1.2}
+              color='textSecondary'
+            >
+              Based on your listening
+            </Typography>
+            <Typography variant='h5' gutterBottom>
+              Podcasts you might like
+            </Typography>
+          </Box>
           <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
             <Suspense>
               <RecommendedPods limit={8} />
@@ -78,9 +87,19 @@ function Home() {
 
       {isAuthenticated ? (
         <Box sx={{ width: '100%' }}>
-          <Typography variant='h5' gutterBottom>
-            Episodes you might like
-          </Typography>
+          <Box>
+            <Typography
+              variant='overline'
+              lineHeight={1.2}
+              color='textSecondary'
+            >
+              Based on your listening
+            </Typography>
+            <Typography variant='h5' gutterBottom>
+              Episodes you might like
+            </Typography>
+          </Box>
+
           <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
             <RecommendedEpisodes limit={8} />
           </ErrorBoundary>
