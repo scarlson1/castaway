@@ -32,6 +32,7 @@ interface TrendingCardProps {
 }
 
 // TODO: reusable component (not working in vertical orientation)
+// currently only used to display episode in DB in row format
 export function TrendingCard({
   title,
   secondaryText,
@@ -77,9 +78,10 @@ TrendingCardProps) {
           sx={{
             width: 52,
             height: 52,
-            objectFit: 'cover',
-            overflow: 'hidden',
             flex: '0 0 52px',
+            objectFit: 'cover',
+            aspectRatio: '1/1',
+            overflow: 'hidden',
             borderRadius: 1,
             backgroundColor: 'rgba(0,0,0,0.08)',
             '& > img': {
