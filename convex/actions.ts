@@ -16,7 +16,7 @@ export const subscribe = action({
       podcastId,
     });
     let id: Id<'podcasts'> | null = convexId;
-    let iTunesId: number | null | undefined;
+    let itunesId: number | null | undefined;
 
     if (!exists) {
       // const podClient = getPodClient();
@@ -35,7 +35,7 @@ export const subscribe = action({
       // add to db
       const newId = await saveNewPod(ctx, feed);
       id = newId as Id<'podcasts'>;
-      iTunesId = feed.itunesId;
+      itunesId = feed.itunesId;
 
       // const episodes = await fetchPodEpisodesFromIndex(podcastId);
       // console.log(`${episodes?.length} episodes found - scheduling job`);
@@ -57,7 +57,7 @@ export const subscribe = action({
     await ctx.runMutation(internal.subscribe.add, {
       podId: podcastId,
       podConvexId: id,
-      iTunesId: iTunesId || null,
+      itunesId: itunesId || null,
     });
 
     return { subscriptionId: id };
