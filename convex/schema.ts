@@ -218,19 +218,19 @@ export default defineSchema({
     .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt'])
     .index('by_clerk_episode', ['clerkId', 'episodeId']),
 
-  adSegmentsOld: defineTable({
-    podcastId: v.string(),
-    episodeId: v.string(),
-    convexEpId: v.id('episodes'),
-    audioUrl: v.string(),
-    ads: v.array(
-      v.object({
-        start: v.number(),
-        end: v.number(),
-      })
-    ),
-    createdAt: v.number(),
-  }).index('by_episodeId', ['episodeId']),
+  // adSegmentsOld: defineTable({
+  //   podcastId: v.string(),
+  //   episodeId: v.string(),
+  //   convexEpId: v.id('episodes'),
+  //   audioUrl: v.string(),
+  //   ads: v.array(
+  //     v.object({
+  //       start: v.number(),
+  //       end: v.number(),
+  //     })
+  //   ),
+  //   createdAt: v.number(),
+  // }).index('by_episodeId', ['episodeId']),
 
   ads: defineTable({
     podcastId: v.string(),
@@ -259,7 +259,7 @@ export default defineSchema({
     status: v.string(),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
-    audioStorageId: v.optional(v.string()),
+    // audioStorageId: v.optional(v.string()),
     transcript: v.optional(v.any()), // TODO: type
     segments: v.optional(
       v.array(
