@@ -162,18 +162,3 @@ export async function fetchPodIndex(
     throw err;
   }
 }
-
-// TODO: wrap function so it can be called using api.actions.transcribeAndClassify
-// export const transcribeAndClassify = action({
-//   args: {
-//     audioUrl: v.string(),
-//     episodeId: v.string(),
-//     convexEpId: v.id('episodes'),
-//     podcastId: v.string(),
-//   },
-//   handler: async (
-//     ctx,
-//     { audioUrl, episodeId, convexEpId, podcastId }
-//   ): Promise<{ resultId: Id<'adSegments'>; ads: WindowTime[] }> => {
-//     return
-//   })

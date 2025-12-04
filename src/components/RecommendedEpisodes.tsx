@@ -9,7 +9,7 @@ export const RecommendedEpisodes = ({ limit = 8 }: { limit?: number }) => {
     api.episodeEmbeddings.getPersonalizedRecommendations
   );
   const { data } = useSuspenseQuery({
-    queryKey: ['recommendations', { limit }],
+    queryKey: ['recs', 'episodes', { limit }],
     queryFn: () => getPersonalizedRecommendations({ limit: 8 }),
   });
   // const [recs, setRecs] = useState<Doc<'episodes'>[]>([]);

@@ -1,3 +1,4 @@
+import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
 import { AddRounded, ArrowForwardIos } from '@mui/icons-material';
 import {
   Alert,
@@ -10,12 +11,14 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { useSuspenseQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, type LinkProps } from '@tanstack/react-router';
+import { api } from 'convex/_generated/api';
 import { Suspense, useCallback, useId, useRef, type RefObject } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiStackLink } from '~/components/MuiStackLink';
+import { SimilarPodcasts } from '~/components/SimilarPods';
 import { useHover } from '~/hooks/useHover';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 import { trendingQueryOptions } from '~/queries';
@@ -32,8 +35,10 @@ export const Route = createFileRoute('/discover')({
 });
 
 function RouteComponent() {
+  const { isAuthenticated } = useConvexAuth();
+
   return (
-    <>
+    <Stack direction='column' spacing={2}>
       <Typography variant='h4' component='h2' gutterBottom>
         Discover
       </Typography>
@@ -43,6 +48,7 @@ function RouteComponent() {
       </Alert>
 
       <Divider />
+
       <Stack
         direction='row'
         spacing={2}
@@ -66,11 +72,10 @@ function RouteComponent() {
         </Suspense>
       </ErrorBoundary>
 
-      <Divider sx={{ my: 3 }} />
-      <Alert severity='warning' sx={{ maxWidth: 600, my: 2 }}>
-        <AlertTitle>TODO: suggested pods</AlertTitle>
-        vectorized db & ML suggested posts
-      </Alert>
+      <Divider />
+
+      {isAuthenticated ? <SimilarToLastListened /> : null}
+
       {/* <Box>
         <Divider />
         <Stack
@@ -97,7 +102,7 @@ function RouteComponent() {
           </ErrorBoundary>
         </Box> 
       </Box>*/}
-    </>
+    </Stack>
   );
 }
 
@@ -144,65 +149,6 @@ function Trending() {
     </Grid>
   );
 }
-
-// export const appleChartsQueryOptions = (
-//   options: FetchAppleChartsOptions = {}
-// ) =>
-//   queryOptions({
-//     queryKey: ['trending', 'apple', options],
-//     queryFn: () => fetchAppleCharts({ data: options }),
-//     staleTime: Infinity, // Or a suitable value for your use case
-//     gcTime: 1000 * 1000,
-//   });
-
-// function AppleCharts() {
-//   const { data } = useSuspenseQuery(appleChartsQueryOptions({ limit: 10 }));
-//   // console.log('APPLE CHART DATA: ', data);
-
-//   return (
-//     <Box>
-//       <Grid
-//         container
-//         rowSpacing={1}
-//         columnSpacing={3}
-//         sx={{
-//           display: 'grid',
-//           gridTemplateRows: 'repeat(4, 1fr)',
-//           gridTemplateColumns: {
-//             xs: 'repeat(1, minmax(0px, 1fr))',
-//             sm: 'repeat(2, minmax(0px, 1fr))',
-//           },
-//           gridAutoRows: 0,
-//           overflow: 'hidden',
-//           rowGap: 0, // add margin bottom to child grid container
-//         }}
-//       >
-//         {data.feed.results.map((p) => (
-//           <Grid
-//             size={{ xs: 12, sm: 6 }}
-//             sx={{ width: 'unset !important', mb: 1 }}
-//             key={p.id}
-//           >
-//             <TrendingCard
-//               feed={
-//                 {
-//                   id: '',
-//                   artwork: p.artworkUrl100,
-//                   title: p.name,
-//                   author: p.artistName,
-//                 } as unknown as PodcastFeed
-//               }
-//               linkProps={{
-//                 to: '/podcast/apple/$itunesId',
-//                 params: { itunesId: `${p.id || ''}` },
-//               }}
-//             />
-//           </Grid>
-//         ))}
-//       </Grid>
-//     </Box>
-//   );
-// }
 
 interface TrendingCardProps {
   feed: PodcastFeed; // | TrendingResult
@@ -343,5 +289,28 @@ function TrendingSectionSkeleton() {
         </Grid>
       ))}
     </Grid>
+  );
+}
+
+function SimilarToLastListened() {
+  const { data } = useQuery(convexQuery(api.playback.lastListened, {}));
+
+  if (!data?.podcastId) return null;
+
+  return (
+    <>
+      {data.podcastTitle ? (
+        <Typography
+          variant='overline'
+          lineHeight={1.2}
+          color='textSecondary'
+        >{`because you listened to ${data.podcastTitle}`}</Typography>
+      ) : null}
+      <Typography variant='h6' gutterBottom>
+        You might like
+      </Typography>
+
+      <SimilarPodcasts podId={data.podcastId} />
+    </>
   );
 }

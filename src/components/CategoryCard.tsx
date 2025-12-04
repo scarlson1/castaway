@@ -15,7 +15,7 @@ export function CategoryCard({
 }) {
   const navigate = useNavigate();
   const { data } = useQuery(
-    trendingQueryOptions({ cat: category, lang: 'en', max: 2 })
+    trendingQueryOptions({ cat: category, lang: 'en', max: 1 })
   );
   const top = data?.feeds?.[0];
 

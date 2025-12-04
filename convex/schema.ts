@@ -93,6 +93,7 @@ export default defineSchema({
       v.object({ url: v.union(v.string(), v.null()), message: v.string() })
     ),
     embedding: v.optional(v.array(v.number())),
+    // embeddingId: v.optional(v.id('episodeEmbeddings')),
   })
     .index('by_podId', ['podcastId'])
     .index('by_itunesId', ['itunesId'])
@@ -202,6 +203,7 @@ export default defineSchema({
     clerkId: v.string(), // v.id('users'),
     // podcastId: v.optional(v.string()),
     episodeId: v.string(), // TODO: make userId:episodeId unique
+    podcastId: v.string(),
     positionSeconds: v.float64(),
     duration: v.optional(v.number()),
     completed: v.boolean(),
