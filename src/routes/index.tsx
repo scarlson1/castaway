@@ -9,6 +9,7 @@ import { Suspense } from 'react';
 import { Authed } from '~/components/Authed';
 import { CategoryCard } from '~/components/CategoryCard';
 import { EpisodeCard } from '~/components/EpisodeCard';
+import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
@@ -30,6 +31,10 @@ function Home() {
       {/* <Typography variant='h1' marginBlockEnd={4}>
         Castaway
       </Typography> */}
+      <Featured />
+
+      <Divider flexItem />
+
       <Box>
         <Box
           sx={{
