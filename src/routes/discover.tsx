@@ -68,24 +68,18 @@ function RouteComponent() {
       <Divider />
 
       <Authed>
-        <Box sx={{ width: '100%' }}>
-          <Box>
-            <Typography
-              variant='overline'
-              lineHeight={1.2}
-              color='textSecondary'
-            >
-              Based on your listening
-            </Typography>
-            <Typography variant='h6' gutterBottom>
-              Episodes you might like
-            </Typography>
-          </Box>
-
-          <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
-            <RecommendedEpisodes limit={8} />
-          </ErrorBoundary>
+        <Box>
+          <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
+            Based on your listening
+          </Typography>
+          <Typography variant='h6' gutterBottom>
+            Episodes you might like
+          </Typography>
         </Box>
+
+        <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
+          <RecommendedEpisodes limit={8} />
+        </ErrorBoundary>
       </Authed>
     </Stack>
   );

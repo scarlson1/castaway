@@ -1,4 +1,5 @@
 import { asyncMap } from 'convex-helpers';
+import { internal } from 'convex/_generated/api';
 import { paginationOptsValidator } from 'convex/server';
 import { getClerkIdIfExists } from 'convex/utils/auth';
 import { isNotNullish } from 'convex/utils/helpers';
@@ -11,10 +12,8 @@ export const update = mutation({
     positionSeconds: v.float64(),
     completed: v.optional(v.boolean()),
   },
-  handler: async (
-    { auth, db },
-    { episodeId, positionSeconds, completed = false }
-  ) => {
+  handler: async (ctx, { episodeId, positionSeconds, completed = false }) => {
+    const { auth, db } = ctx;
     // const user = await mustGetCurrentUser(ctx);
     // await ctx.db.patch(user._id, { color });
     const identity = await auth.getUserIdentity();
@@ -36,6 +35,7 @@ export const update = mutation({
       )
       .first();
 
+    // create new playback doc if it doesn't exists & add to aggregate table (aggregateByListen)
     if (!doc) {
       console.log(
         `CREATING PLAYBACK DOC ${episodeId} [${identity.subject}]...`
@@ -65,7 +65,16 @@ export const update = mutation({
         );
       }
 
-      await db.insert('user_playback', values);
+      const id = await db.insert('user_playback', values);
+
+      // TODO: trigger stats runAfter
+      // TODO: handle user streaming same episode multiple times ??
+      await ctx.scheduler.runAfter(0, internal.stats.episodes.incrementPlayed, {
+        playbackId: id,
+      });
+      await ctx.scheduler.runAfter(0, internal.stats.podcasts.incrementPlayed, {
+        playbackId: id,
+      });
     } else {
       console.log(`UPDATING PLAYBACK ${episodeId}`);
 

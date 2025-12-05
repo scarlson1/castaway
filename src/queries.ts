@@ -15,7 +15,7 @@ import { fetchTrending, type FetchTrendingOptions } from '~/serverFn/trending';
 
 export const podDetailsQueryOptions = (id: number) =>
   queryOptions({
-    queryKey: ['podcast', id],
+    queryKey: ['podIndex', 'podcasts', id],
     queryFn: () => fetchPodDetailsByPodIndexId({ data: { id } }),
     staleTime: Infinity, // Or a suitable value for your use case
   });
@@ -25,21 +25,21 @@ export const episodesQueryOptions = (
   options: { max?: number } = {}
 ) =>
   queryOptions({
-    queryKey: ['podcast', id, 'episodes', options],
+    queryKey: ['podIndex', 'podcasts', id, 'episodes', options],
     queryFn: () => fetchEpisodesByPodGuid({ data: { id, ...options } }),
     staleTime: Infinity, // Or a suitable value for your use case
   });
 
 export const trendingQueryOptions = (options: FetchTrendingOptions) =>
   queryOptions({
-    queryKey: ['trending', options],
+    queryKey: ['podIndex', 'podcasts', 'trending', options],
     queryFn: () => fetchTrending({ data: options }),
     staleTime: Infinity, // Or a suitable value for your use case
   });
 
 export const podDetailsITunesQueryOptions = (id: number) =>
   queryOptions({
-    queryKey: ['podcast', id],
+    queryKey: ['podIndex', 'itunes', id],
     queryFn: () => fetPodDetailsByITunes({ data: { id } }),
     staleTime: Infinity,
   });
@@ -53,14 +53,14 @@ export const categoryQueryOptions = () =>
 
 export const recentEpisodesQueryOptions = (opts: FetchRecentEpisodesOptions) =>
   queryOptions({
-    queryKey: ['recent', 'episodes', opts],
+    queryKey: ['podIndex', 'episodes', opts],
     queryFn: () => fetchRecentEpisodes({ data: opts }),
     staleTime: 1000 * 60 * 30,
   });
 
 export const randomEpisodesQueryOptions = (opts: RandomEpisodesOptions) =>
   queryOptions({
-    queryKey: ['episodes', 'random', opts],
+    queryKey: ['podIndex', 'episodes', 'random', opts],
     queryFn: () => fetchRandomEpisodes({ data: opts }),
     staleTime: 1000 * 60 * 5,
   });

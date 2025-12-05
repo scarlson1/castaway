@@ -191,6 +191,7 @@ export default defineSchema({
     embedding: v.array(v.float64()),
     metadata: v.any(),
     createdAt: v.number(),
+    // categories: v.optional(v.array(v.string())) // add categories for filtering ??
   })
     .index('by_episodeConvexId', ['episodeConvexId'])
     .index('by_episodeGuid', ['episodeGuid'])
@@ -218,19 +219,21 @@ export default defineSchema({
     .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt'])
     .index('by_clerk_episode', ['clerkId', 'episodeId']),
 
-  // adSegmentsOld: defineTable({
-  //   podcastId: v.string(),
-  //   episodeId: v.string(),
-  //   convexEpId: v.id('episodes'),
-  //   audioUrl: v.string(),
-  //   ads: v.array(
-  //     v.object({
-  //       start: v.number(),
-  //       end: v.number(),
-  //     })
-  //   ),
-  //   createdAt: v.number(),
-  // }).index('by_episodeId', ['episodeId']),
+  podcastStats: defineTable({
+    podcastId: v.string(),
+    // podConvexId: v.id('podcasts'),
+    playCount: v.number(),
+    updatedAt: v.number(),
+  }).index('by_podcastId', ['podcastId']),
+
+  episodeStats: defineTable({
+    episodeId: v.string(),
+    // epConvexId: v.id('episodes'),
+    podcastId: v.string(),
+    // podConvexId: v.id('podcasts'),
+    playCount: v.number(),
+    updatedAt: v.number(),
+  }).index('by_episodeId', ['episodeId']),
 
   ads: defineTable({
     podcastId: v.string(),
@@ -259,8 +262,22 @@ export default defineSchema({
     status: v.string(),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
-    // audioStorageId: v.optional(v.string()),
-    transcript: v.optional(v.any()), // TODO: type
+    audioStorageId: v.optional(v.string()), // not used - throws if removed (extra field error)
+    transcript: v.optional(
+      v.object({
+        text: v.string(),
+        segments: v.optional(
+          v.array(
+            v.object({
+              end: v.number(),
+              id: v.union(v.number(), v.string()),
+              start: v.number(),
+              text: v.string(),
+            })
+          )
+        ),
+      })
+    ), // TODO: type
     segments: v.optional(
       v.array(
         v.object({

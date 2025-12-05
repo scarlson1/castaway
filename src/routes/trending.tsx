@@ -1,5 +1,6 @@
 import {
-  Box,
+  Chip,
+  Divider,
   FormControl,
   Grid,
   InputLabel,
@@ -7,6 +8,8 @@ import {
   Select,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
   type SelectChangeEvent,
 } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -15,6 +18,10 @@ import { zodValidator } from '@tanstack/zod-adapter';
 import { startOfDay, sub } from 'date-fns';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import {
+  StatsMostPlayedEpisodes,
+  StatsMostPlayedPodcasts,
+} from '~/components/StatsMostPlayedEpisodes';
 import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
 import { trendingQueryOptions } from '~/queries';
 import {
@@ -51,6 +58,7 @@ function weekToSeconds(weeks: number) {
 }
 
 function RouteComponent() {
+  const navigate = Route.useNavigate();
   const {
     max = 100,
     lang = 'en',
@@ -66,26 +74,31 @@ function RouteComponent() {
     setWeeks(event.target.value);
   }, []);
 
+  const clearCategory = useCallback(() => {
+    navigate({
+      to: '/trending',
+    });
+  }, []);
+
   return (
     <>
       <Stack
         direction='row'
         sx={{ justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Box>
-          {cat ? (
-            <Typography
-              variant='overline'
-              lineHeight={1.2}
-              color='textSecondary'
-            >
-              {cat}
-            </Typography>
-          ) : null}
+        <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
           <Typography variant='h4' gutterBottom>
             Trending
           </Typography>
-        </Box>
+          {cat ? (
+            <Chip
+              label={cat}
+              variant='outlined'
+              // onClick={handleClick}
+              onDelete={clearCategory}
+            />
+          ) : null}
+        </Stack>
         <FormControl sx={{ width: 180, ml: 'auto' }} size='small'>
           <InputLabel id='demo-simple-select-label'>Trending</InputLabel>
           <Select
@@ -100,6 +113,51 @@ function RouteComponent() {
           </Select>
         </FormControl>
       </Stack>
+
+      {cat ? (
+        <ErrorBoundary
+          fallback={<div>failed to load category most popular</div>}
+        >
+          <Suspense>
+            <CategoryMostPopular category={cat} lang='en' since={since} />
+          </Suspense>
+        </ErrorBoundary>
+      ) : null}
+
+      {!cat ? (
+        <Stack direction='column' spacing={3} sx={{ py: 3 }}>
+          <Divider flexItem />
+          <Typography variant='h6' fontWeight={500}>
+            Most streamed episodes
+          </Typography>
+          <ErrorBoundary
+            fallback={<div>Error loading most played episodes</div>}
+          >
+            <Suspense>
+              <StatsMostPlayedEpisodes
+                pageSize={2}
+                podcastId={'6007cced-b61d-5005-b01b-6c4e7b5f1987'}
+              />
+            </Suspense>
+          </ErrorBoundary>
+          <Divider flexItem />
+        </Stack>
+      ) : null}
+
+      {!cat ? (
+        <Stack direction='column' spacing={3} sx={{ py: 3 }}>
+          <Divider flexItem />
+          <Typography variant='h6' fontWeight={500}>
+            Most streamed podcasts
+          </Typography>
+          <ErrorBoundary fallback={<div>Error loading most played pods</div>}>
+            <Suspense>
+              <StatsMostPlayedPodcasts pageSize={2} />
+            </Suspense>
+          </ErrorBoundary>
+          <Divider flexItem />
+        </Stack>
+      ) : null}
 
       <ErrorBoundary fallback={<div>something went wrong</div>}>
         <Suspense>
@@ -157,31 +215,46 @@ function TrendingCardsGrid({
   );
 }
 
-// import { createFileRoute, Outlet } from '@tanstack/react-router';
-// import { Suspense } from 'react';
-// import { ErrorBoundary } from 'react-error-boundary';
+function CategoryMostPopular({
+  category,
+  lang = 'en',
+  since,
+}: {
+  category: string | number;
+  lang?: string;
+  since?: number;
+}) {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-// export const Route = createFileRoute('/trending')({
-//   component: RouteComponent,
-//   // validateSearch: zodValidator(trendingSearchOptions),
-// });
+  const { data } = useSuspenseQuery(
+    trendingQueryOptions({ max: 8, lang, cat: category, since })
+  );
 
-// function RouteComponent() {
-//   // TODO: reuse card on discover page ?? pass prop for orientation --> flexDirection: 'column-reverse' or 'row' ??
+  const items = useMemo(
+    () => data?.feeds?.slice(0, isSmallScreen ? 4 : 8),
+    [data, isSmallScreen]
+  );
 
-//   return (
-//     <>
-//       {/* <Typography variant='h4' gutterBottom>
-//           Trending
-//         </Typography> */}
+  return (
+    <Stack spacing={3} sx={{ py: { xs: 3, md: 5 } }}>
+      <Divider flexItem />
 
-//       {/* <MuiButtonLink to='/trending'>Podcast Index</MuiButtonLink> */}
-//       {/* <MuiButtonLink to='/trending/apple'>Apple Charts</MuiButtonLink> */}
-//       <ErrorBoundary fallback={<div>An error occurred</div>}>
-//         <Suspense>
-//           <Outlet />
-//         </Suspense>
-//       </ErrorBoundary>
-//     </>
-//   );
-// }
+      <Typography
+        variant='h5'
+        gutterBottom
+        fontWeight='medium'
+      >{`Most popular in ${category}`}</Typography>
+
+      <Grid container columnSpacing={1.5} rowSpacing={2} columns={16}>
+        {items.map((f) => (
+          <Grid key={`${f.id}-cat`} size={{ xs: 8, sm: 4, md: 2 }}>
+            <TrendingCardPodIndex feed={f} orientation='vertical' />
+          </Grid>
+        ))}
+      </Grid>
+
+      <Divider flexItem />
+    </Stack>
+  );
+}

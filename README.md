@@ -25,6 +25,10 @@ See `.env.example` for required environment variables.
 
 ![feed](docs/images/feed.png)
 
+![pod details](docs/images/pod-details.png)
+
+![episode details](docs/images/episode-details.png)
+
 ![discover](docs/images/discover.png)
 
 ---

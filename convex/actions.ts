@@ -19,13 +19,8 @@ export const subscribe = action({
     let itunesId: number | null | undefined;
 
     if (!exists) {
-      // const podClient = getPodClient();
-      // const { feed } = await podClient.podcastsByGUID(podcastId);
-
-      // const feed = await ctx.runAction(internal.actions.fetchPodIndex, {
-      //   podcastId,
-      // });
       // https://docs.convex.dev/understanding/best-practices/#use-runaction-only-when-using-a-different-runtime (prefer not to use runAction in same runtime)
+      // uses fetch so 'use node' not required
       const feed = await fetchPodIndex(ctx, {
         podcastId,
       });
@@ -37,17 +32,15 @@ export const subscribe = action({
       id = newId as Id<'podcasts'>;
       itunesId = feed.itunesId;
 
-      // const episodes = await fetchPodEpisodesFromIndex(podcastId);
-      // console.log(`${episodes?.length} episodes found - scheduling job`);
-
-      // // trigger fetch episodes job
-      // if (episodes.length) {
-      //   await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
-      //     episodes,
-      //     podcastTitle: feed.title,
-      //   });
-      // }
-      await fetchNewEpisodes(ctx, feed);
+      try {
+        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
+        await fetchNewEpisodes(ctx, feed);
+      } catch (err) {
+        console.error(
+          'failed to fetch episodes for newly created pod subscription',
+          err
+        );
+      }
     } else {
       console.log('podcast already in DB');
     }
@@ -83,7 +76,15 @@ export const subscribeitunesId = action({
       const newId = await saveNewPod(ctx, feed);
       id = newId as Id<'podcasts'>;
 
-      await fetchNewEpisodes(ctx, feed);
+      try {
+        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
+        await fetchNewEpisodes(ctx, feed);
+      } catch (err) {
+        console.error(
+          'failed to fetch episodes for newly created pod subscription',
+          err
+        );
+      }
     } else {
       console.log('podcast already in DB');
     }

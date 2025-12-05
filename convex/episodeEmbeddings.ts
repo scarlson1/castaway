@@ -134,7 +134,6 @@ export const getSimilarEpisodes = action({
 
 export const getPersonalizedRecommendations = action({
   args: {
-    // clerkId: v.string(),
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit = 10 }) => {
