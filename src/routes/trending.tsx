@@ -1,5 +1,6 @@
 import {
-  Box,
+  Chip,
+  Divider,
   FormControl,
   Grid,
   InputLabel,
@@ -7,6 +8,8 @@ import {
   Select,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
   type SelectChangeEvent,
 } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -15,7 +18,10 @@ import { zodValidator } from '@tanstack/zod-adapter';
 import { startOfDay, sub } from 'date-fns';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
+import { Card } from '~/components/Card';
+import { StatsMostPlayedPodcasts } from '~/components/MostStreamedPodcasts';
+import { StatsMostPlayedEpisodes } from '~/components/StatsMostPlayedEpisodes';
+import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
 import { trendingQueryOptions } from '~/queries';
 import {
   fetchTrendingOptions,
@@ -51,6 +57,7 @@ function weekToSeconds(weeks: number) {
 }
 
 function RouteComponent() {
+  const navigate = Route.useNavigate();
   const {
     max = 100,
     lang = 'en',
@@ -66,26 +73,31 @@ function RouteComponent() {
     setWeeks(event.target.value);
   }, []);
 
+  const clearCategory = useCallback(() => {
+    navigate({
+      to: '/trending',
+    });
+  }, []);
+
   return (
     <>
       <Stack
         direction='row'
         sx={{ justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Box>
-          {cat ? (
-            <Typography
-              variant='overline'
-              lineHeight={1.2}
-              color='textSecondary'
-            >
-              {cat}
-            </Typography>
-          ) : null}
+        <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
           <Typography variant='h4' gutterBottom>
             Trending
           </Typography>
-        </Box>
+          {cat ? (
+            <Chip
+              label={cat}
+              variant='outlined'
+              // onClick={handleClick}
+              onDelete={clearCategory}
+            />
+          ) : null}
+        </Stack>
         <FormControl sx={{ width: 180, ml: 'auto' }} size='small'>
           <InputLabel id='demo-simple-select-label'>Trending</InputLabel>
           <Select
@@ -101,17 +113,65 @@ function RouteComponent() {
         </FormControl>
       </Stack>
 
-      <ErrorBoundary fallback={<div>something went wrong</div>}>
-        <Suspense>
-          <TrendingCardsGrid
-            max={max}
-            lang={lang}
-            cat={cat}
-            notcat={notcat}
-            since={since}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      <Stack direction='column' spacing={3} sx={{ py: 3 }}>
+        {cat ? (
+          <>
+            <Typography variant='h6' fontWeight={500}>
+              {`Popular in ${cat}`}
+            </Typography>
+            <ErrorBoundary
+              fallback={<div>failed to load category most popular</div>}
+            >
+              <Suspense>
+                <CategoryMostPopular category={cat} lang='en' since={since} />
+              </Suspense>
+            </ErrorBoundary>
+            <Divider flexItem />
+          </>
+        ) : null}
+
+        {!cat ? (
+          <>
+            <Typography variant='h6' fontWeight={500}>
+              Most streamed episodes
+            </Typography>
+            <ErrorBoundary
+              fallback={<div>Error loading most played episodes</div>}
+            >
+              <Suspense>
+                <StatsMostPlayedEpisodes pageSize={8} />
+              </Suspense>
+            </ErrorBoundary>
+            <Divider flexItem />
+          </>
+        ) : null}
+
+        {!cat ? (
+          <>
+            <Typography variant='h6' fontWeight={500}>
+              Most streamed podcasts
+            </Typography>
+            <ErrorBoundary fallback={<div>Error loading most played pods</div>}>
+              <Suspense>
+                <StatsMostPlayedPodcasts pageSize={8} />
+              </Suspense>
+            </ErrorBoundary>
+            <Divider flexItem />
+          </>
+        ) : null}
+
+        <ErrorBoundary fallback={<div>something went wrong</div>}>
+          <Suspense>
+            <TrendingCardsGrid
+              max={max}
+              lang={lang}
+              cat={cat}
+              notcat={notcat}
+              since={since}
+            />
+          </Suspense>
+        </ErrorBoundary>
+      </Stack>
     </>
   );
 }
@@ -143,45 +203,78 @@ function TrendingCardsGrid({
       columnSpacing={{ xs: 2, sm: 1.5, md: 2 }}
       rowSpacing={{ xs: 2, sm: 3, md: 4 }}
     >
-      {data.feeds.map((f, i) => (
-        <Grid key={f.id} size={{ xs: 6, sm: 3, md: 2 }}>
-          <TrendingCardPodIndex
-            feed={f}
+      {data.feeds.map((pod, i) => (
+        <Grid key={pod.id} size={{ xs: 6, sm: 3, md: 2 }}>
+          <Card
             orientation='vertical'
+            imgSrc={pod.image}
+            title={pod.title}
+            subtitle={pod.author}
             rank={i + 1}
-            // following={subscribedPodIds.includes(f.podcastGuid)}
-          />
+            linkProps={{
+              to: '/podcast/$podId',
+              params: { podId: `${pod.id}` },
+            }}
+          >
+            <SubscribeIconButtonITunes itunesId={pod.itunesId} />
+          </Card>
         </Grid>
       ))}
     </Grid>
   );
 }
 
-// import { createFileRoute, Outlet } from '@tanstack/react-router';
-// import { Suspense } from 'react';
-// import { ErrorBoundary } from 'react-error-boundary';
+function CategoryMostPopular({
+  category,
+  lang = 'en',
+  since,
+}: {
+  category: string | number;
+  lang?: string;
+  since?: number;
+}) {
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
-// export const Route = createFileRoute('/trending')({
-//   component: RouteComponent,
-//   // validateSearch: zodValidator(trendingSearchOptions),
-// });
+  const { data } = useSuspenseQuery(
+    trendingQueryOptions({ max: 8, lang, cat: category, since })
+  );
 
-// function RouteComponent() {
-//   // TODO: reuse card on discover page ?? pass prop for orientation --> flexDirection: 'column-reverse' or 'row' ??
+  const items = useMemo(
+    () => data?.feeds?.slice(0, isSmallScreen ? 4 : 8),
+    [data, isSmallScreen]
+  );
 
-//   return (
-//     <>
-//       {/* <Typography variant='h4' gutterBottom>
-//           Trending
-//         </Typography> */}
+  return (
+    <Stack spacing={3} sx={{ py: { xs: 3, md: 5 } }}>
+      <Divider flexItem />
 
-//       {/* <MuiButtonLink to='/trending'>Podcast Index</MuiButtonLink> */}
-//       {/* <MuiButtonLink to='/trending/apple'>Apple Charts</MuiButtonLink> */}
-//       <ErrorBoundary fallback={<div>An error occurred</div>}>
-//         <Suspense>
-//           <Outlet />
-//         </Suspense>
-//       </ErrorBoundary>
-//     </>
-//   );
-// }
+      <Typography
+        variant='h5'
+        gutterBottom
+        fontWeight='medium'
+      >{`Most popular in ${category}`}</Typography>
+
+      <Grid container columnSpacing={1.5} rowSpacing={2} columns={16}>
+        {items.map((pod) => (
+          <Grid key={`${pod.id}-cat`} size={{ xs: 8, sm: 4, md: 2 }}>
+            <Card
+              orientation='vertical'
+              imgSrc={pod.image || pod.artwork}
+              title={pod.title}
+              subtitle={pod.author}
+              linkProps={{
+                to: '/podcast/$podId',
+                params: { podId: `${pod.id}` },
+              }}
+            >
+              <SubscribeIconButtonITunes itunesId={pod.itunesId} />
+            </Card>
+          </Grid>
+        ))}
+      </Grid>
+
+      <Divider flexItem />
+    </Stack>
+  );
+}

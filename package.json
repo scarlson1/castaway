@@ -22,6 +22,8 @@
   "dependencies": {
     "@clerk/backend": "^2.21.0",
     "@clerk/tanstack-react-start": "^0.26.9",
+    "@convex-dev/aggregate": "^0.2.0",
+    "@convex-dev/migrations": "^0.3.1",
     "@convex-dev/react-query": "0.0.0-alpha.11",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",

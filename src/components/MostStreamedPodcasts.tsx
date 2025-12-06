@@ -1,23 +1,30 @@
+import { convexQuery } from '@convex-dev/react-query';
 import { Grid } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
-import { useAction } from 'convex/react';
 import { Card } from '~/components/Card';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
-export const RecommendedPods = ({ limit = 8 }: { limit?: number }) => {
-  const getPersonalizedRecommendations = useAction(
-    api.podcasts.getPersonalizedRecommendations
+export const StatsMostPlayedPodcasts = ({
+  pageSize = 8,
+  offset = 0,
+}: {
+  podcastId?: string;
+  pageSize?: number;
+  offset?: number;
+}) => {
+  // const { isAuthenticated } = useConvexAuth();
+  const { data } = useSuspenseQuery(
+    convexQuery(api.stats.podcasts.mostPlayed, {
+      numItems: pageSize,
+      offset,
+    })
   );
-  const { data } = useSuspenseQuery({
-    queryKey: ['recs', 'podcasts', { limit }],
-    queryFn: () => getPersonalizedRecommendations({ limit: 8 }),
-  });
 
   return (
-    <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
-      {data.map((pod) => (
-        <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={pod._id}>
+    <Grid container spacing={2}>
+      {data.page.map((pod) => (
+        <Grid key={pod._id} size={{ xs: 6, sm: 3, md: 2 }}>
           <Card
             orientation='vertical'
             imgSrc={pod.imageUrl || ''}

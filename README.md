@@ -1,14 +1,12 @@
 # Castaway Podcast App
 
----
-
 ## Directory Structure
 
 TODO
 
 ## Development
 
-Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the rood directory.
+See `.env.example` for required environment variables.
 
 ## Features
 
@@ -17,14 +15,27 @@ Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the
 - trending / discovery
 - notifications
 
+---
+
+## UI
+
+![Home](docs/images/index-screenshot.png)
+
+![podcasts](docs/images/podcasts.png)
+
+![feed](docs/images/feed.png)
+
+![pod details](docs/images/pod-details.png)
+
+![episode details](docs/images/episode-details.png)
+
+![discover](docs/images/discover.png)
+
+---
+
 ## TODO
 
-- database
-- optimized caching
 - subscription notifications
-- auto-skip ads
-- search
-- vector search to find similar podcasts (combine with metadata (category, people, etc.) to produce score) ??
 - fingerprint ad detection (repeated segments across episodes)
   - Use audio fingerprints (Chromaprint/AcoustID-like, or embeddings hashed + approximate nearest neighbors).
 - Rule / heuristic based ad detection
@@ -64,38 +75,7 @@ Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the
 | Auto-tag sponsors                  | 💡            | Nearest neighbor classification |
 | Auto-detect ad start/end           | ⚠️ partial    | Useful as a signal              |
 
-- recommending podcasts to users
-  - compute embedding for each podcast episode - Use title + description + show notes
-- when user listens to or likes/saves an episode
-
-  - compute their interest vector
-
-  ```typescript
-    userInterest = average(embedding of listened episodes)
-  ```
-
-  - then vector search like:
-
-  ```typescript
-  // db.episodes.vectorSearch("embedding", userInterest, { limit: 20 })
-
-  export const getSimilarEpisodes = query({
-    args: { episodeId: v.id('episodes') },
-    handler: async (ctx, { episodeId }) => {
-      const row = await ctx.db
-        .query('episodeEmbeddings')
-        .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
-        .unique();
-
-      return await ctx.db
-        .query('episodeEmbeddings')
-        .vectorSearch('vector', row.vector, { limit: 10 })
-        .collect();
-    },
-  });
-  ```
-
-## Subscription flow
+---
 
 ### Collections / tables
 
@@ -104,11 +84,21 @@ Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the
   {
     "_id": "podcast:xxxxx",
     "feedUrl": "https://feeds.example.com/show.xml", // canonical feed URL
-    "title": "Show Title",
+    "link": "https://podsite.com",
+    "title": "The Daily",
     "description": "short blurb",
+    "author": "New York Times",
     "imageUrl": "https://...",
     "itunesId": 12345, // if available
-    "lastFetchedAt": 1699999999 // unix epoch ms
+    "lastFetchedAt": 1699999999, // unix epoch ms
+    "mostRecentEpisode": 20394809238, // ms
+    "language": "en",
+    "episodeCount": 2898,
+    "categories": { "86": "news" },
+    "categoryArray": ["news"],
+    "explicit": false,
+    "funding": {},
+    "embedding": [0.23234, 0.3498]
   }
   ```
 - `episodes` - canonical episode references (one doc per episode GUID)
@@ -124,7 +114,39 @@ Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the
     "sizeBytes": 12345678,
     "summary": "...",
     "enclosureType": "audio/mpeg",
-    "retrievedAt": 1699999999
+    "retrievedAt": 1699999999,
+    "feedUrl": "https://feed.com",
+    "feedImage": "https://image.com",
+    "feedItunesId": 12345,
+    "summary": "description of episode",
+    "enclosureType": "",
+    "season": 2,
+    "episode": 23,
+    "episodeType": "full",
+    "explicit": false,
+    "language": "en",
+    "retrievedAt": 10293809182,
+    "embeddingId": "2l3k4-2l3kj4",
+    "chaptersUrl": "https://chapters.com",
+    "transcripts": [],
+    "persons": [],
+    "socialInteract": []
+  }
+  ```
+- `episodeEmbedding` - vector embedding for episodes
+  ```json
+  {
+    "episodeConvexId": "2l3k4j",
+    "episodeGuid": "2lk34jl2k34j",
+    "podcastId": "2l3k4j34",
+    "embedding": [0.23345, 0.293847],
+    "metadata": {
+      "title": "Episode Title",
+      "podcastTitle": "The Daily",
+      "publishedAt": 20934098234,
+      "duration": 8270
+    },
+    "createdAt": 29348002
   }
   ```
 - `subscriptions` - user subscribes to a podcast
@@ -144,15 +166,74 @@ Add `PODCAST_INDEX_KEY` and `PODCAST_INDEX_SECRET` to .env.local file within the
 - `user_playback` - per (user, episode) progress & state
   ```json
   {
-    "_id": "play:user:abc:episode:yyyy", // or fields userId + episodeId as keys
-    "userId": "user:abc",
-    "episodeId": "episode:yyyy",
+    "_id": "0293848sslksdjfl",
+    "userId": "clerkId",
+    "episodeId": "episodeGuid",
     "positionSeconds": 120.5,
+    "duration": 8920,
     "completed": false,
     "lastUpdatedAt": 1699999999,
-    "playedPercentage": 0.033 // optional redundant field for UI fast-read
+    "playedPercentage": 0.033, // optional redundant field for UI fast-read
+    "episodeTitle": "Ep Title",
+    "podcastTitle": "Pod Title"
   }
   ```
+- `ads` - ad segments
+  ```json
+  {
+    "_id": "0293848sslksdjfl",
+    "podcastId": "podGuid",
+    "episodeId": "episodeGuid",
+    "convexEpId": "convexId",
+    "audioUrl": "https://episode.com",
+    "start": 0,
+    "end": 120,
+    "duration": 120,
+    "transcript": "The show is brought to you by...",
+    "confidence": 0.9,
+    "embedding": [0.234, 0.8374],
+    "createdAt": 293840293849
+  }
+  ```
+- `adJobs` - ad job workflow
+  ```json
+  {
+    "_id": "0293848sslksdjfl",
+    "episodeId": "episodeGuid",
+    "audioUrl": "https://episodeAudio.com",
+    "status": "transcribed",
+    "createdAt": 9834573274,
+    "completedAt": 2934809234,
+    "transcript": "The show is brought to you by...",
+    "segments": [
+      {
+        "start": 0,
+        "end": 80,
+        "duration": 80,
+        "transcript": "The show is brought to you by...",
+        "confidence": 0.9
+      }
+    ]
+  }
+  ```
+- `adJobWindows` - ad job windows - intermediate step in workflow - sent to classifier before being stitched into ad segments if determined to be an ad
+
+  ```json
+  {
+    "_id": "0293848sslksdjfl",
+    "jobId": "convexId",
+    "classified": true,
+    "text": "transcript snippet",
+    "start": 0,
+    "end": 120,
+    "is_ad": true,
+    "confidence": 0.9,
+    "reason": "promoting product"
+  }
+  ```
+
+### Tables not implemented yet (TODO: playlist/queue features):
+
 - `user_queues` - per-user queue (ordered list of items)
   - option A: queue as ordered list
     ```json

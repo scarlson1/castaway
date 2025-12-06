@@ -13,8 +13,8 @@ import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { sortBy } from 'lodash-es';
 import { useMemo, useState } from 'react';
-import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
-import type { PodcastFeed } from '~/lib/podcastIndexTypes';
+import { Card } from '~/components/Card';
+import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
 export const Route = createFileRoute('/_authed/podcasts/')({
   component: RouteComponent,
@@ -69,25 +69,18 @@ function RouteComponent() {
       >
         {sorted.map((pod, i) => (
           <Grid key={pod._id} size={{ xs: 6, sm: 3, md: 2 }}>
-            <TrendingCardPodIndex
-              feed={
-                // TODO: fix TrendingCard type
-                {
-                  id: pod.podcastId as unknown as number,
-                  podcastGuid: pod.podcastId,
-                  artwork: pod.imageUrl || '',
-                  title: pod.title,
-                  author: pod.author,
-                  itunesId: pod.itunesId,
-                } as PodcastFeed
-              }
+            <Card
               orientation='vertical'
-              // TODO: switch to using guid ?? or add podIndexId
+              imgSrc={pod.imageUrl || ''}
+              title={pod.title}
+              subtitle={pod.author}
               linkProps={{
                 to: '/podcasts/$podId',
                 params: { podId: pod.podcastId },
               }}
-            />
+            >
+              <SubscribeIconButton podcastId={pod.podcastId} />
+            </Card>
           </Grid>
         ))}
       </Grid>
