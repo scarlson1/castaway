@@ -18,11 +18,10 @@ import { zodValidator } from '@tanstack/zod-adapter';
 import { startOfDay, sub } from 'date-fns';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import {
-  StatsMostPlayedEpisodes,
-  StatsMostPlayedPodcasts,
-} from '~/components/StatsMostPlayedEpisodes';
-import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
+import { Card } from '~/components/Card';
+import { StatsMostPlayedPodcasts } from '~/components/MostStreamedPodcasts';
+import { StatsMostPlayedEpisodes } from '~/components/StatsMostPlayedEpisodes';
+import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
 import { trendingQueryOptions } from '~/queries';
 import {
   fetchTrendingOptions,
@@ -114,62 +113,65 @@ function RouteComponent() {
         </FormControl>
       </Stack>
 
-      {cat ? (
-        <ErrorBoundary
-          fallback={<div>failed to load category most popular</div>}
-        >
+      <Stack direction='column' spacing={3} sx={{ py: 3 }}>
+        {cat ? (
+          <>
+            <Typography variant='h6' fontWeight={500}>
+              {`Popular in ${cat}`}
+            </Typography>
+            <ErrorBoundary
+              fallback={<div>failed to load category most popular</div>}
+            >
+              <Suspense>
+                <CategoryMostPopular category={cat} lang='en' since={since} />
+              </Suspense>
+            </ErrorBoundary>
+            <Divider flexItem />
+          </>
+        ) : null}
+
+        {!cat ? (
+          <>
+            <Typography variant='h6' fontWeight={500}>
+              Most streamed episodes
+            </Typography>
+            <ErrorBoundary
+              fallback={<div>Error loading most played episodes</div>}
+            >
+              <Suspense>
+                <StatsMostPlayedEpisodes pageSize={8} />
+              </Suspense>
+            </ErrorBoundary>
+            <Divider flexItem />
+          </>
+        ) : null}
+
+        {!cat ? (
+          <>
+            <Typography variant='h6' fontWeight={500}>
+              Most streamed podcasts
+            </Typography>
+            <ErrorBoundary fallback={<div>Error loading most played pods</div>}>
+              <Suspense>
+                <StatsMostPlayedPodcasts pageSize={8} />
+              </Suspense>
+            </ErrorBoundary>
+            <Divider flexItem />
+          </>
+        ) : null}
+
+        <ErrorBoundary fallback={<div>something went wrong</div>}>
           <Suspense>
-            <CategoryMostPopular category={cat} lang='en' since={since} />
+            <TrendingCardsGrid
+              max={max}
+              lang={lang}
+              cat={cat}
+              notcat={notcat}
+              since={since}
+            />
           </Suspense>
         </ErrorBoundary>
-      ) : null}
-
-      {!cat ? (
-        <Stack direction='column' spacing={3} sx={{ py: 3 }}>
-          <Divider flexItem />
-          <Typography variant='h6' fontWeight={500}>
-            Most streamed episodes
-          </Typography>
-          <ErrorBoundary
-            fallback={<div>Error loading most played episodes</div>}
-          >
-            <Suspense>
-              <StatsMostPlayedEpisodes
-                pageSize={2}
-                podcastId={'6007cced-b61d-5005-b01b-6c4e7b5f1987'}
-              />
-            </Suspense>
-          </ErrorBoundary>
-          <Divider flexItem />
-        </Stack>
-      ) : null}
-
-      {!cat ? (
-        <Stack direction='column' spacing={3} sx={{ py: 3 }}>
-          <Divider flexItem />
-          <Typography variant='h6' fontWeight={500}>
-            Most streamed podcasts
-          </Typography>
-          <ErrorBoundary fallback={<div>Error loading most played pods</div>}>
-            <Suspense>
-              <StatsMostPlayedPodcasts pageSize={2} />
-            </Suspense>
-          </ErrorBoundary>
-          <Divider flexItem />
-        </Stack>
-      ) : null}
-
-      <ErrorBoundary fallback={<div>something went wrong</div>}>
-        <Suspense>
-          <TrendingCardsGrid
-            max={max}
-            lang={lang}
-            cat={cat}
-            notcat={notcat}
-            since={since}
-          />
-        </Suspense>
-      </ErrorBoundary>
+      </Stack>
     </>
   );
 }
@@ -201,14 +203,21 @@ function TrendingCardsGrid({
       columnSpacing={{ xs: 2, sm: 1.5, md: 2 }}
       rowSpacing={{ xs: 2, sm: 3, md: 4 }}
     >
-      {data.feeds.map((f, i) => (
-        <Grid key={f.id} size={{ xs: 6, sm: 3, md: 2 }}>
-          <TrendingCardPodIndex
-            feed={f}
+      {data.feeds.map((pod, i) => (
+        <Grid key={pod.id} size={{ xs: 6, sm: 3, md: 2 }}>
+          <Card
             orientation='vertical'
+            imgSrc={pod.image}
+            title={pod.title}
+            subtitle={pod.author}
             rank={i + 1}
-            // following={subscribedPodIds.includes(f.podcastGuid)}
-          />
+            linkProps={{
+              to: '/podcast/$podId',
+              params: { podId: `${pod.id}` },
+            }}
+          >
+            <SubscribeIconButtonITunes itunesId={pod.itunesId} />
+          </Card>
         </Grid>
       ))}
     </Grid>
@@ -247,9 +256,20 @@ function CategoryMostPopular({
       >{`Most popular in ${category}`}</Typography>
 
       <Grid container columnSpacing={1.5} rowSpacing={2} columns={16}>
-        {items.map((f) => (
-          <Grid key={`${f.id}-cat`} size={{ xs: 8, sm: 4, md: 2 }}>
-            <TrendingCardPodIndex feed={f} orientation='vertical' />
+        {items.map((pod) => (
+          <Grid key={`${pod.id}-cat`} size={{ xs: 8, sm: 4, md: 2 }}>
+            <Card
+              orientation='vertical'
+              imgSrc={pod.image || pod.artwork}
+              title={pod.title}
+              subtitle={pod.author}
+              linkProps={{
+                to: '/podcast/$podId',
+                params: { podId: `${pod.id}` },
+              }}
+            >
+              <SubscribeIconButtonITunes itunesId={pod.itunesId} />
+            </Card>
           </Grid>
         ))}
       </Grid>

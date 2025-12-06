@@ -17,8 +17,19 @@ const StyledIconButton = styled(IconButton)({
   minWidth: iconButtonSize,
 });
 
+type EpisodeRequired = Pick<
+  Doc<'episodes'>,
+  | 'audioUrl'
+  | 'episodeId'
+  | 'feedImage'
+  | 'podcastId'
+  | 'podcastTitle'
+  | 'title'
+  | 'publishedAt'
+> & { [key: string]: any };
+
 export interface PlaybackButtonProps {
-  episode: Doc<'episodes'>;
+  episode: EpisodeRequired;
 }
 
 export function PlaybackButton({ episode }: PlaybackButtonProps) {
@@ -48,7 +59,7 @@ export function PlaybackButton({ episode }: PlaybackButtonProps) {
   }, [p, isPlaying]);
 
   const handleSetPlaying = useCallback(
-    (ep: Doc<'episodes'>) => {
+    (ep: EpisodeRequired) => {
       setPlaying({
         podcastId: ep.podcastId,
         image: ep.feedImage || ep.image || '',

@@ -2,8 +2,8 @@ import { Grid } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useAction } from 'convex/react';
-import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
-import type { PodcastFeed } from '~/lib/podcastIndexTypes';
+import { Card } from '~/components/Card';
+import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
 export const RecommendedPods = ({ limit = 8 }: { limit?: number }) => {
   const getPersonalizedRecommendations = useAction(
@@ -18,24 +18,18 @@ export const RecommendedPods = ({ limit = 8 }: { limit?: number }) => {
     <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
       {data.map((pod) => (
         <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={pod._id}>
-          <TrendingCardPodIndex
-            feed={
-              // TODO: fix TrendingCard type
-              {
-                id: pod.podcastId as unknown as number,
-                podcastGuid: pod.podcastId,
-                artwork: pod.imageUrl || '',
-                title: pod.title,
-                author: pod.author,
-              } as PodcastFeed
-            }
+          <Card
             orientation='vertical'
-            // TODO: switch to using guid ?? or add podIndexId
+            imgSrc={pod.imageUrl || ''}
+            title={pod.title}
+            subtitle={pod.author}
             linkProps={{
               to: '/podcasts/$podId',
               params: { podId: pod.podcastId },
             }}
-          />
+          >
+            <SubscribeIconButton podcastId={pod.podcastId} />
+          </Card>
         </Grid>
       ))}
     </Grid>

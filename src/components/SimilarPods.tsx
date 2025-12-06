@@ -2,8 +2,8 @@ import { Grid, type GridProps } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useAction } from 'convex/react';
-import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
-import type { PodcastFeed } from '~/lib/podcastIndexTypes';
+import { Card } from '~/components/Card';
+import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
 export function SimilarPodcasts({
   podId,
@@ -30,24 +30,18 @@ export function SimilarPodcasts({
           key={pod._id}
           {...gridItemProps}
         >
-          <TrendingCardPodIndex
-            feed={
-              // TODO: fix TrendingCard type
-              {
-                id: pod.podcastId as unknown as number,
-                podcastGuid: pod.podcastId,
-                artwork: pod.imageUrl || '',
-                title: pod.title,
-                author: pod.author,
-              } as PodcastFeed
-            }
+          <Card
             orientation='vertical'
-            // TODO: switch to using guid ?? or add podIndexId
+            imgSrc={pod.imageUrl || ''}
+            title={pod.title}
+            subtitle={pod.author}
             linkProps={{
               to: '/podcasts/$podId',
               params: { podId: pod.podcastId },
             }}
-          />
+          >
+            <SubscribeIconButton podcastId={pod.podcastId} />
+          </Card>
         </Grid>
       ))}
     </Grid>

@@ -1,21 +1,21 @@
 import { convexQuery } from '@convex-dev/react-query';
-import { Grid, Typography } from '@mui/material';
+import { Grid } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { EpisodeCard } from '~/components/EpisodeCard';
 
 export const StatsMostPlayedEpisodes = ({
-  podcastId,
+  // podcastId,
   pageSize = 8,
   offset = 0,
 }: {
-  podcastId?: string;
+  // podcastId?: string;
   pageSize?: number;
   offset?: number;
 }) => {
   const { data } = useSuspenseQuery(
     convexQuery(api.stats.episodes.mostPlayed, {
-      podcastId,
+      // podcastId,
       numItems: pageSize,
       offset,
     })
@@ -37,27 +37,5 @@ export const StatsMostPlayedEpisodes = ({
         </Grid>
       ))}
     </Grid>
-  );
-};
-
-export const StatsMostPlayedPodcasts = ({
-  pageSize = 8,
-  offset = 0,
-}: {
-  podcastId?: string;
-  pageSize?: number;
-  offset?: number;
-}) => {
-  const { data } = useSuspenseQuery(
-    convexQuery(api.stats.podcasts.mostPlayed, {
-      numItems: pageSize,
-      offset,
-    })
-  );
-
-  return (
-    <Typography variant='body2' component='div'>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </Typography>
   );
 };

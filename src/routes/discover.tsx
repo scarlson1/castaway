@@ -7,12 +7,12 @@ import { api } from 'convex/_generated/api';
 import { Suspense, useId } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Authed } from '~/components/Authed';
+import { Card } from '~/components/Card';
 import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import { SimilarPodcasts } from '~/components/SimilarPods';
-import { TrendingCardPodIndex } from '~/components/TrendingCardPodIndex';
-import type { PodcastFeed } from '~/lib/podcastIndexTypes';
+import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
 import { trendingQueryOptions } from '~/queries';
 
 // TODO: add category selection at top of page
@@ -107,24 +107,24 @@ function Trending() {
       //   rowGap: 0, // add margin bottom to child grid container
       // }}
     >
-      {feeds.map((p) => (
+      {feeds.map((pod) => (
         <Grid
           size={{ xs: 12, sm: 6 }}
           // sx={{ width: 'unset !important', mb: 1 }}
-          key={p.id}
+          key={pod.id}
         >
-          <TrendingCardPodIndex
-            feed={
-              {
-                id: p.id,
-                // podcastGuid: p.podcastId,
-                artwork: p.artwork,
-                title: p.title,
-                author: p.author,
-                itunesId: p.itunesId,
-              } as PodcastFeed
-            }
-          />
+          <Card
+            orientation='horizontal'
+            imgSrc={pod.artwork || ''}
+            title={pod.title}
+            subtitle={pod.author}
+            linkProps={{
+              to: '/podcast/$podId',
+              params: { podId: `${pod.id}` },
+            }}
+          >
+            <SubscribeIconButtonITunes itunesId={pod.itunesId} />
+          </Card>
         </Grid>
       ))}
     </Grid>
