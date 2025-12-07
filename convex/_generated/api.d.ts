@@ -39,6 +39,7 @@ import type * as utils_helpers from "../utils/helpers.js";
 import type * as utils_llmBatchClassifier from "../utils/llmBatchClassifier.js";
 import type * as utils_mergeWindows from "../utils/mergeWindows.js";
 import type * as utils_transcribeUrl from "../utils/transcribeUrl.js";
+import type * as utils_types from "../utils/types.js";
 
 import type {
   ApiFromModules,
@@ -78,6 +79,7 @@ declare const fullApi: ApiFromModules<{
   "utils/llmBatchClassifier": typeof utils_llmBatchClassifier;
   "utils/mergeWindows": typeof utils_mergeWindows;
   "utils/transcribeUrl": typeof utils_transcribeUrl;
+  "utils/types": typeof utils_types;
 }>;
 
 /**

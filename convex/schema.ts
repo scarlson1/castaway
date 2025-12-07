@@ -96,9 +96,9 @@ export default defineSchema({
     // embeddingId: v.optional(v.id('episodeEmbeddings')),
   })
     .index('by_podId', ['podcastId'])
-    .index('by_itunesId', ['itunesId'])
+    // .index('by_itunesId', ['itunesId'])
     .index('by_lastFetched', ['lastFetchedAt'])
-    .index('by_podId_lastFetched', ['podcastId', 'lastFetchedAt'])
+    // .index('by_podId_lastFetched', ['podcastId', 'lastFetchedAt'])
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
       dimensions: 1536,
@@ -117,9 +117,8 @@ export default defineSchema({
     notificationNew: v.boolean(),
     podConvexId: v.id('podcasts'), // v.optional(v.union(v.id('podcasts'), v.null())),
     // }),
-  })
-    .index('by_clerkId', ['clerkId'])
-    .index('by_user_podId', ['clerkId', 'podcastId']),
+  }).index('by_clerkId', ['clerkId']),
+  // .index('by_user_podId', ['clerkId', 'podcastId']),
 
   episodes: defineTable({
     episodeId: v.string(),
@@ -175,7 +174,6 @@ export default defineSchema({
     .index('by_podId', ['podcastId'])
     .index('by_episodeId', ['episodeId'])
     .index('by_podId_pub', ['podcastId', 'publishedAt'])
-    .index('by_podId_episode', ['podcastId', 'episode'])
     .index('by_publishedAt', ['publishedAt'])
     .index('by_embedding', ['embeddingId'])
     .searchIndex('search_body', {
@@ -215,9 +213,9 @@ export default defineSchema({
     episodeTitle: v.optional(v.string()),
     podcastTitle: v.optional(v.string()),
   })
-    .index('by_clerkId', ['clerkId'])
-    .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt'])
-    .index('by_clerk_episode', ['clerkId', 'episodeId']),
+    // .index('by_clerkId', ['clerkId'])
+    .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt']),
+  // .index('by_clerk_episode', ['clerkId', 'episodeId']),
 
   podcastStats: defineTable({
     podcastId: v.string(),
@@ -262,7 +260,7 @@ export default defineSchema({
     status: v.string(),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
-    audioStorageId: v.optional(v.string()), // not used - throws if removed (extra field error)
+    // audioStorageId: v.optional(v.string()), // not used - throws if removed (extra field error)
     transcript: v.optional(
       v.object({
         text: v.string(),
@@ -301,7 +299,6 @@ export default defineSchema({
     is_ad: v.optional(v.boolean()),
     confidence: v.optional(v.number()),
     reason: v.optional(v.string()),
-  })
-    .index('by_jobId_classified', ['jobId', 'classified'])
-    .index('by_jobId', ['jobId']),
+  }).index('by_jobId_classified', ['jobId', 'classified']),
+  // .index('by_jobId', ['jobId']),
 });

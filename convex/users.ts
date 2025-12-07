@@ -145,10 +145,6 @@ export const deleteUser = internalMutation({
 
 // Helpers
 
-type Optional<T> = {
-  [P in keyof T]?: T[P];
-};
-
 export async function userByClerkId(
   ctx: QueryCtx,
   clerkUserId: string
@@ -170,14 +166,14 @@ export async function userById(
 
 async function getCurrentUser(ctx: QueryCtx): Promise<Doc<'users'> | null> {
   const identity = await ctx.auth.getUserIdentity();
-  if (identity === null) {
-    return null;
-  }
+  if (identity === null) return null;
+
   return await userByClerkId(ctx, identity.subject);
 }
 
 export async function mustGetCurrentUser(ctx: QueryCtx): Promise<Doc<'users'>> {
   const userRecord = await getCurrentUser(ctx);
   if (!userRecord) throw new Error("Can't get current user");
+
   return userRecord;
 }

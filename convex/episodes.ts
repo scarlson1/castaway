@@ -6,15 +6,19 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
+  mutation,
   query,
   type QueryCtx,
 } from 'convex/_generated/server';
 import { api } from 'convex/actions';
-import { getTimestamp } from 'convex/playback';
+import { getAdJobsByEpisodeId } from 'convex/adJobs';
+import { getAdsByEpisodeId } from 'convex/adSegments';
+import { getPlaybackByEpisodeId, getTimestamp } from 'convex/playback';
 import {
   paginationOptsValidator,
   type WithoutSystemFields,
 } from 'convex/server';
+import { getEpisodeWithPlayCount } from 'convex/stats/episodes';
 import { getUserSubscriptions } from 'convex/subscribe';
 import { getClerkId, getClerkIdIfExists } from 'convex/utils/auth';
 import { isNotNullish } from 'convex/utils/helpers';
@@ -37,7 +41,7 @@ export const getByPodcast = query({
   },
 });
 
-// TODO: support infinite scroll
+// delete ?? used getRecentFeed instead ??
 export const feed = query({
   args: { numItems: v.optional(v.number()) },
   handler: async ({ db, auth }, { numItems = 50 }) => {
@@ -72,6 +76,7 @@ export const feed = query({
   },
 });
 
+// user's feed - get subscribed pods --> get recent episodes
 export const getRecentFeed = query({
   args: {
     pageSize: v.optional(v.number()),
@@ -188,18 +193,6 @@ export const unauthedRecentEpisodes = query({
   },
 });
 
-async function getRecentEpisodes(
-  db: QueryCtx['db'],
-  podId: string,
-  limit = 10
-) {
-  return await db
-    .query('episodes')
-    .withIndex('by_podId_pub', (q) => q.eq('podcastId', podId))
-    .order('desc')
-    .take(limit);
-}
-
 export const getById = internalQuery({
   args: { convexId: v.id('episodes') },
   handler: async ({ db }, { convexId }) => {
@@ -291,7 +284,7 @@ export const fetchEmbResults = internalQuery({
   },
 });
 
-// TODO: appears to be duplicating episodes ??
+// get episodes published after most recent found in DB
 export const refreshByPodId = action({
   args: { podId: v.string() },
   handler: async (ctx, { podId }) => {
@@ -460,6 +453,77 @@ export const getMostRecentEpisode = internalQuery({
   },
 });
 
+const start2025 = 1735689600000;
+export const deleteOldEpisodes = mutation({
+  args: { since: v.optional(v.number()), count: v.optional(v.number()) },
+  handler: async (ctx, { since = start2025, count = 25 }) => {
+    const episodes = await ctx.db
+      .query('episodes')
+      .withIndex('by_publishedAt')
+      .filter((q) => q.gte(q.field('publishedAt'), since))
+      .order('asc')
+      .take(count);
+
+    if (episodes.length) {
+      const promises: Promise<void>[] = [];
+      const episodeIds: string[] = []; // to delete ads/adJobs/episodeStats/playback
+
+      for (let ep of episodes) {
+        episodeIds.push(ep.episodeId);
+        promises.push(ctx.db.delete(ep._id));
+        if (ep.embeddingId) promises.push(ctx.db.delete(ep.embeddingId));
+      }
+
+      await Promise.all(promises);
+      console.log(`deleted ${episodes.length} episodes`);
+    } else {
+      console.log(
+        `no episodes found older than ${new Date(since).toDateString()}`
+      );
+    }
+  },
+});
+
+export const cleanUpEpisodeDelete = mutation({
+  args: { episodeGuids: v.array(v.string()) },
+  handler: async (ctx, { episodeGuids }) => {
+    const promises: Promise<void>[] = [];
+
+    for (let episodeId of episodeGuids) {
+      const ads = await getAdsByEpisodeId(ctx.db, episodeId);
+      if (ads.length) for (let ad of ads) promises.push(ctx.db.delete(ad._id));
+
+      const adJobs = await getAdJobsByEpisodeId(ctx.db, episodeId);
+      if (adJobs.length)
+        for (let adJob of adJobs) promises.push(ctx.db.delete(adJob._id));
+
+      const episodeStats = await getEpisodeWithPlayCount(ctx.db, episodeId, 0);
+      if (episodeStats?._id) promises.push(ctx.db.delete(episodeStats._id));
+
+      const playbacks = await getPlaybackByEpisodeId(ctx.db, episodeId);
+      if (playbacks.length)
+        for (let p of playbacks) promises.push(ctx.db.delete(p._id));
+    }
+    console.log(
+      `cleaning up ${promises.length} related records for ${episodeGuids.length} deleted episodes`
+    );
+
+    await Promise.all(promises);
+  },
+});
+
+async function getRecentEpisodes(
+  db: QueryCtx['db'],
+  podId: string,
+  limit = 10
+) {
+  return await db
+    .query('episodes')
+    .withIndex('by_podId_pub', (q) => q.eq('podcastId', podId))
+    .order('desc')
+    .take(limit);
+}
+
 export async function fetchPodEpisodesFromIndex(
   podcastId: string,
   options: { max?: string; since?: string; fullText?: string } = {}
@@ -467,7 +531,7 @@ export async function fetchPodEpisodesFromIndex(
   const params = new URLSearchParams({
     guid: podcastId,
     max: '1000',
-    fullText: '',
+    fullText: 'true', // '',
     ...options,
   });
   const res = await api<EpisodesByPodGuidResult>(

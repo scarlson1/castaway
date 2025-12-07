@@ -4,7 +4,12 @@ import { paginationOptsValidator } from 'convex/server';
 import { getClerkIdIfExists } from 'convex/utils/auth';
 import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
-import { internalQuery, mutation, query } from './_generated/server';
+import {
+  internalQuery,
+  mutation,
+  query,
+  type QueryCtx,
+} from './_generated/server';
 
 export const update = mutation({
   args: {
@@ -28,12 +33,7 @@ export const update = mutation({
 
     // alternatively create a getUserById function and call db
 
-    let doc = await db
-      .query('user_playback')
-      .withIndex('by_clerk_episode', (q) =>
-        q.eq('clerkId', clerkId).eq('episodeId', episodeId)
-      )
-      .first();
+    let doc = await getUserPlaybackByEpisodeId(db, clerkId, episodeId);
 
     // create new playback doc if it doesn't exists & add to aggregate table (aggregateByListen)
     if (!doc) {
@@ -107,24 +107,14 @@ export const getAllForUser = query({
     let clerkId = identity?.subject;
     if (!clerkId) return [];
 
-    let playback = await db
-      .query('user_playback')
-      .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
-      .order('desc')
-      .collect();
-
-    return playback;
+    return await getAllPlaybackByUser(db, clerkId);
   },
 });
 
 export const getAllByClerkId = internalQuery({
   args: { clerkId: v.string() },
   handler: async ({ db }, { clerkId }) => {
-    return await db
-      .query('user_playback')
-      .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
-      .order('desc')
-      .collect();
+    return await getAllPlaybackByUser(db, clerkId);
   },
 });
 
@@ -133,9 +123,8 @@ export const getById = query({
   handler: async ({ db }, { id }) => {
     // const identity = await auth.getUserIdentity();
     // let clerkId = identity?.subject;
-    if (!id) {
-      return null;
-    }
+    if (!id) return null;
+
     return await db.get(id);
   },
 });
@@ -147,12 +136,7 @@ export const getByEpisodeId = query({
 
     if (!clerkId) return null;
 
-    return await db
-      .query('user_playback')
-      .withIndex('by_clerk_episode', (q) =>
-        q.eq('clerkId', clerkId).eq('episodeId', episodeId)
-      )
-      .first();
+    return await getUserPlaybackByEpisodeId(db, clerkId, episodeId);
   },
 });
 
@@ -203,12 +187,40 @@ export const lastListened = query({
   },
 });
 
-// mutation("updatePlayback", async ({ db, user }, { episodeId, positionSeconds }) => {
-//   await db.patch("user_playback", { userId: user._id, episodeId }, {
-//     positionSeconds,
-//     lastUpdatedAt: Date.now(),
-//   });
-// });
+async function getUserPlaybackByEpisodeId(
+  db: QueryCtx['db'],
+  clerkId: string,
+  episodeId: string
+) {
+  return await db
+    .query('user_playback')
+    .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
+    .filter((q) => q.eq(q.field('episodeId'), episodeId))
+    .first();
+}
+
+async function getAllPlaybackByUser(
+  db: QueryCtx['db'],
+  clerkId: string,
+  order: 'asc' | 'desc' = 'desc'
+) {
+  return await db
+    .query('user_playback')
+    .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
+    .order(order)
+    .collect();
+}
+
+// bulk episode delete --> clean up playback for all users
+export async function getPlaybackByEpisodeId(
+  db: QueryCtx['db'],
+  episodeId: string
+) {
+  return await db
+    .query('user_playback')
+    .filter((q) => q.eq(q.field('episodeId'), episodeId))
+    .collect();
+}
 
 export function getTimestamp() {
   return new Date().getTime();
