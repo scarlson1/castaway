@@ -8,6 +8,8 @@ import { action, type ActionCtx } from './_generated/server';
 // ALTERNATIVELY: SCHEDULE FN TO RUN AFTER TO FETCH POD * EPISODES
 // https://docs.convex.dev/tutorial/actions#hooking-it-up-to-your-app
 
+const IMPORT_EPISODE_LIMIT = parseInt(process.env.DB_MAX_CONNECTIONS || '25');
+
 export const subscribe = action({
   args: { podcastId: v.string() },
   handler: async (ctx, { podcastId }) => {
@@ -34,7 +36,7 @@ export const subscribe = action({
 
       try {
         // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
-        await fetchNewEpisodes(ctx, feed);
+        await fetchNewEpisodes(ctx, feed, IMPORT_EPISODE_LIMIT);
       } catch (err) {
         console.error(
           'failed to fetch episodes for newly created pod subscription',
@@ -78,7 +80,7 @@ export const subscribeitunesId = action({
 
       try {
         // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
-        await fetchNewEpisodes(ctx, feed);
+        await fetchNewEpisodes(ctx, feed, IMPORT_EPISODE_LIMIT);
       } catch (err) {
         console.error(
           'failed to fetch episodes for newly created pod subscription',
