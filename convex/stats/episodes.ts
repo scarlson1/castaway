@@ -110,7 +110,7 @@ async function getPaginatedEpisodes(
   };
 }
 
-async function getEpisodeWithPlayCount(
+export async function getEpisodeWithPlayCount(
   db: QueryCtx['db'],
   episodeId: string,
   playCount: number

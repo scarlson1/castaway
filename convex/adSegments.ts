@@ -1,4 +1,8 @@
-import { internalMutation, query } from 'convex/_generated/server';
+import {
+  internalMutation,
+  query,
+  type QueryCtx,
+} from 'convex/_generated/server';
 import { v } from 'convex/values';
 
 interface WindowTime {
@@ -70,14 +74,18 @@ export const searchAds = query({
 export const getByEpisodeId = query({
   args: { id: v.string() },
   handler: async ({ db }, { id }) => {
-    let ads = await db
-      .query('ads')
-      .withIndex('by_episodeId', (q) => q.eq('episodeId', id))
-      .collect();
+    let ads = await getAdsByEpisodeId(db, id);
 
     return ads.map(({ embedding, ...a }) => ({ ...a }));
   },
 });
+
+export async function getAdsByEpisodeId(db: QueryCtx['db'], episodeId: string) {
+  return await db
+    .query('ads')
+    .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+    .collect();
+}
 
 export const getByConvexId = query({
   args: { convexId: v.id('ads') },

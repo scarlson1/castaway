@@ -3,6 +3,7 @@ import {
   internalMutation,
   internalQuery,
   query,
+  type QueryCtx,
 } from 'convex/_generated/server';
 import { v } from 'convex/values';
 
@@ -16,10 +17,7 @@ export const getById = query({
 export const getByEpisodeId = query({
   args: { episodeId: v.string() },
   handler: async ({ db }, { episodeId }) => {
-    return await db
-      .query('adJobs')
-      .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
-      .collect();
+    return getAdJobsByEpisodeId(db, episodeId);
   },
 });
 
@@ -66,3 +64,13 @@ export const patchWindows = internalMutation({
     }
   },
 });
+
+export async function getAdJobsByEpisodeId(
+  db: QueryCtx['db'],
+  episodeId: string
+) {
+  return await db
+    .query('adJobs')
+    .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+    .collect();
+}

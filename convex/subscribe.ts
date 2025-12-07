@@ -1,4 +1,4 @@
-import type { Doc, Id } from 'convex/_generated/dataModel';
+import type { Doc } from 'convex/_generated/dataModel';
 import {
   internalMutation,
   mutation,
@@ -15,12 +15,8 @@ export const all = query({
     // console.log('CONVEX - GET ALL SUBS CALLED');
     const clerkId = await getClerkId(auth);
 
-    let subscriptions = await db
-      .query('subscriptions')
-      .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
-      .collect(); // TODO: order ny most recent episode (updated when episodes are fetched )
-
-    return subscriptions;
+    // TODO: order by most recent episode (updated when episodes are fetched )
+    return await getUserSubscriptions(db, clerkId);
   },
 });
 
@@ -28,10 +24,7 @@ export const allDetails = query({
   handler: async ({ db, auth }) => {
     const clerkId = await getClerkId(auth);
 
-    let subscriptions = await db
-      .query('subscriptions')
-      .withIndex('by_clerkId', (q) => q.eq('clerkId', clerkId))
-      .collect(); // TODO: order ny most recent episode (updated when episodes are fetched )
+    let subscriptions = await getUserSubscriptions(db, clerkId);
 
     // TODO: catch / handle missing pods
     return Promise.all(
@@ -45,12 +38,7 @@ export const isFollowing = query({
   handler: async ({ db, auth }, { podId }) => {
     const clerkId = await getClerkId(auth);
 
-    let sub = await db
-      .query('subscriptions')
-      .withIndex('by_user_podId', (q) =>
-        q.eq('clerkId', clerkId).eq('podcastId', podId)
-      )
-      .unique();
+    let sub = await getSubscription(db, clerkId, podId);
 
     return !!sub;
   },
@@ -79,7 +67,7 @@ export const add = internalMutation({
     // TODO: need to make sure podcast exists in podcasts table ??
 
     // possible to add table constraint (userId & podId unique) ??
-    let existingSub = await checkExisting(db, clerkId, podId);
+    let existingSub = await getSubscription(db, clerkId, podId);
 
     if (existingSub)
       return { success: true, alreadySubscribed: true, id: existingSub?._id };
@@ -127,31 +115,12 @@ export const update = mutation({
     const clerkId = await getClerkId(ctx.auth);
 
     let sub = await getSubscription(ctx.db, clerkId, podId);
+    if (!sub) throw new Error('subscription not found');
+    if (sub.clerkId !== clerkId) throw new Error('unauthorized');
 
     await ctx.db.patch(sub._id, { ...updates });
   },
 });
-
-export function withoutSystemFields<
-  T extends { _creationTime: number; _id: Id<any> }
->(doc: T) {
-  const { _id, _creationTime, ...rest } = doc;
-  return rest;
-}
-
-async function checkExisting(
-  db: QueryCtx['db'],
-  clerkId: string,
-  podId: string
-) {
-  let sub = await db
-    .query('subscriptions')
-    .withIndex('by_user_podId', (q) =>
-      q.eq('clerkId', clerkId).eq('podcastId', podId)
-    )
-    .unique();
-  return sub;
-}
 
 export async function getUserSubscriptions(
   db: QueryCtx['db'],
@@ -167,17 +136,18 @@ async function getSubscription(
   db: QueryCtx['db'],
   clerkId: string,
   podId: string
-): Promise<Doc<'subscriptions'>> {
-  let sub = await db
+): Promise<Doc<'subscriptions'> | null> {
+  return await db
     .query('subscriptions')
-    .withIndex('by_user_podId', (q) =>
-      q.eq('clerkId', clerkId).eq('podcastId', podId)
+    .withIndex(
+      'by_clerkId',
+      (q) => q.eq('clerkId', clerkId) // .eq('podcastId', podId)
     )
+    .filter((q) => q.eq(q.field('podcastId'), podId))
     .unique();
 
-  if (!sub) throw new Error('subscription not found');
-
-  return sub;
+  // if (!sub) throw new Error('subscription not found');
+  // return sub;
 }
 
 async function getPod(db: QueryCtx['db'], podId: string) {

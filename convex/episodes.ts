@@ -11,11 +11,14 @@ import {
   type QueryCtx,
 } from 'convex/_generated/server';
 import { api } from 'convex/actions';
-import { getTimestamp } from 'convex/playback';
+import { getAdJobsByEpisodeId } from 'convex/adJobs';
+import { getAdsByEpisodeId } from 'convex/adSegments';
+import { getPlaybackByEpisodeId, getTimestamp } from 'convex/playback';
 import {
   paginationOptsValidator,
   type WithoutSystemFields,
 } from 'convex/server';
+import { getEpisodeWithPlayCount } from 'convex/stats/episodes';
 import { getUserSubscriptions } from 'convex/subscribe';
 import { getClerkId, getClerkIdIfExists } from 'convex/utils/auth';
 import { isNotNullish } from 'convex/utils/helpers';
@@ -462,10 +465,13 @@ export const deleteOldEpisodes = mutation({
       .take(count);
 
     if (episodes.length) {
-      const promises = [];
+      const promises: Promise<void>[] = [];
+      const episodeIds: string[] = []; // to delete ads/adJobs/episodeStats/playback
 
       for (let ep of episodes) {
-        ctx.db.delete(ep._id);
+        episodeIds.push(ep.episodeId);
+        promises.push(ctx.db.delete(ep._id));
+        if (ep.embeddingId) promises.push(ctx.db.delete(ep.embeddingId));
       }
 
       await Promise.all(promises);
@@ -475,6 +481,34 @@ export const deleteOldEpisodes = mutation({
         `no episodes found older than ${new Date(since).toDateString()}`
       );
     }
+  },
+});
+
+export const cleanUpEpisodeDelete = mutation({
+  args: { episodeGuids: v.array(v.string()) },
+  handler: async (ctx, { episodeGuids }) => {
+    const promises: Promise<void>[] = [];
+
+    for (let episodeId of episodeGuids) {
+      const ads = await getAdsByEpisodeId(ctx.db, episodeId);
+      if (ads.length) for (let ad of ads) promises.push(ctx.db.delete(ad._id));
+
+      const adJobs = await getAdJobsByEpisodeId(ctx.db, episodeId);
+      if (adJobs.length)
+        for (let adJob of adJobs) promises.push(ctx.db.delete(adJob._id));
+
+      const episodeStats = await getEpisodeWithPlayCount(ctx.db, episodeId, 0);
+      if (episodeStats?._id) promises.push(ctx.db.delete(episodeStats._id));
+
+      const playbacks = await getPlaybackByEpisodeId(ctx.db, episodeId);
+      if (playbacks.length)
+        for (let p of playbacks) promises.push(ctx.db.delete(p._id));
+    }
+    console.log(
+      `cleaning up ${promises.length} related records for ${episodeGuids.length} deleted episodes`
+    );
+
+    await Promise.all(promises);
   },
 });
 
