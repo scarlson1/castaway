@@ -2,6 +2,8 @@ import { TableAggregate } from '@convex-dev/aggregate';
 import { components } from 'convex/_generated/api';
 import type { DataModel } from 'convex/_generated/dataModel';
 
+// If your data is separated into distinct partitions, and you don't need to aggregate between partitions, then you can put each partition into its own namespace. Each namespace gets its own internal data structure.
+
 export const episodeAggregate = new TableAggregate<{
   //   Namespace: string | undefined;
   Key: [number, string];

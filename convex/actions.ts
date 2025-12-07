@@ -46,7 +46,7 @@ export const subscribe = action({
     }
     if (!id) throw Error('internal error');
 
-    // create subscription
+    // create subscription for user
     await ctx.runMutation(internal.subscribe.add, {
       podId: podcastId,
       podConvexId: id,
@@ -132,12 +132,14 @@ async function saveNewPod(
 
 async function fetchNewEpisodes(
   ctx: ActionCtx,
-  feed: PodcastsByFeedIdResult['feed']
+  feed: PodcastsByFeedIdResult['feed'],
+  limit: number = 100
 ) {
-  const episodes = await fetchPodEpisodesFromIndex(feed.podcastGuid);
+  const episodes = await fetchPodEpisodesFromIndex(feed.podcastGuid, {
+    max: `${limit}`,
+  });
   console.log(`${episodes?.length} episodes found - scheduling job`);
 
-  // trigger fetch episodes job
   if (episodes.length) {
     await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
       episodes,
