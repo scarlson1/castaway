@@ -184,30 +184,35 @@ function RouteComponent() {
           </>
         ) : null}
 
-        <ErrorBoundary fallback={<div>something went wrong</div>}>
-          <Suspense
-            fallback={
-              <SuspenseGridCards
-                numItems={8}
-                columnSpacing={{ xs: 2, sm: 1.5, md: 2 }}
-                rowSpacing={{ xs: 2, sm: 3, md: 4 }}
-                columns={12}
-                childGridProps={{
-                  size: { xs: 6, sm: 3, md: 2 },
-                }}
-                orientation='vertical'
+        <>
+          <Typography variant='h6' fontWeight={500}>
+            Podcast Index Trending
+          </Typography>
+          <ErrorBoundary fallback={<div>something went wrong</div>}>
+            <Suspense
+              fallback={
+                <SuspenseGridCards
+                  numItems={8}
+                  columnSpacing={{ xs: 2, sm: 1.5, md: 2 }}
+                  rowSpacing={{ xs: 2, sm: 3, md: 4 }}
+                  columns={12}
+                  childGridProps={{
+                    size: { xs: 6, sm: 3, md: 2 },
+                  }}
+                  orientation='vertical'
+                />
+              }
+            >
+              <TrendingCardsGrid
+                max={max}
+                lang={lang}
+                cat={cat}
+                notcat={notcat}
+                since={since}
               />
-            }
-          >
-            <TrendingCardsGrid
-              max={max}
-              lang={lang}
-              cat={cat}
-              notcat={notcat}
-              since={since}
-            />
-          </Suspense>
-        </ErrorBoundary>
+            </Suspense>
+          </ErrorBoundary>
+        </>
       </Stack>
     </>
   );

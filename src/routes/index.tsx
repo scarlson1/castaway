@@ -65,7 +65,8 @@ function Home() {
 
       <Divider flexItem />
 
-      {isAuthenticated ? (
+      {/* {isAuthenticated ? ( */}
+      <Authed>
         <Box sx={{ width: '100%' }}>
           <Box>
             <Typography
@@ -97,9 +98,10 @@ function Home() {
             </Suspense>
           </ErrorBoundary>
         </Box>
-      ) : null}
 
-      <Divider flexItem />
+        <Divider flexItem />
+      </Authed>
+      {/* ) : null} */}
 
       <Authed>
         <Box sx={{ width: '100%' }}>
@@ -120,9 +122,9 @@ function Home() {
             <RecommendedEpisodes limit={8} />
           </ErrorBoundary>
         </Box>
-      </Authed>
 
-      <Divider flexItem />
+        <Divider flexItem />
+      </Authed>
 
       <Box>
         <Typography variant='h5' gutterBottom>

@@ -75,7 +75,13 @@ function RouteComponent() {
         </MuiButtonLink>
       </Stack>
       {/* <Grid container spacing={3} sx={{ display: 'grid', gridTemplateRows: 'repeat(3, 1fr)'}}> */}
-      <ErrorBoundary fallback={<div>Something went wrong</div>}>
+      <ErrorBoundary
+        fallback={
+          <Typography color='error'>
+            Failed to load trending podcasts
+          </Typography>
+        }
+      >
         <Suspense fallback={<TrendingSectionSkeleton />}>
           <Trending />
         </Suspense>
@@ -85,9 +91,8 @@ function RouteComponent() {
 
       <Authed>
         <SimilarToLastListened />
+        <Divider />
       </Authed>
-
-      <Divider />
 
       <Authed>
         <Box>
@@ -102,9 +107,9 @@ function RouteComponent() {
         <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
           <RecommendedEpisodes limit={8} />
         </ErrorBoundary>
-      </Authed>
 
-      <Divider />
+        <Divider />
+      </Authed>
 
       <Stack
         direction='row'
@@ -271,16 +276,29 @@ function IndependentPodcastAwardWinners({
       {items?.map((t) => (
         <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={t.track.id}>
           <Card
-            title={t.track.name}
-            subtitle={<Link href={t.track.href}>{`${t.track.name}`}</Link>}
+            title={
+              <Link
+                href={t.track.external_urls.spotify}
+                target='_blank'
+                rel='noopener noreferrer'
+              >
+                {t.track.name}
+              </Link>
+            }
+            subtitle={
+              <Link
+                href={t.track.external_urls.spotify}
+                target='_blank'
+                rel='noopener noreferrer'
+              >{`${t.track.name}`}</Link>
+            }
             imgSrc={t.track.images?.[0].url}
             orientation='vertical'
-            linkProps={{
-              href: t.track.external_urls.spotify,
-            }}
             // linkProps={{
-            //   to: '/podcasts/$podId/episodes/$episodeId',
-            //   params: { podId, episodeId },
+            //   href: t.track.external_urls.spotify,
+            //   target: '_blank',
+            //   // @ts-ignore
+            //   rel: 'noopener noreferrer',
             // }}
           >
             <OpenInNewRounded
@@ -290,19 +308,6 @@ function IndependentPodcastAwardWinners({
                   : undefined
               }
             />
-            {/* <SignedIn>
-              <PlaybackButton
-                episode={{
-                  podcastId: podId,
-                  feedImage: imgSrc || '',
-                  episodeId,
-                  title,
-                  audioUrl,
-                  publishedAt,
-                  podcastTitle: podName,
-                }}
-              />
-            </SignedIn> */}
           </Card>
         </Grid>
       ))}
