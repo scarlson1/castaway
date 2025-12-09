@@ -6,6 +6,7 @@ import {
   Divider,
   Link,
   Rating,
+  Skeleton,
   Stack,
   Tooltip,
   Typography,
@@ -15,9 +16,11 @@ import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
-import { EpisodesList } from '~/components/EpisodesList';
+import { EpisodesList, EpisodesOptionsButton } from '~/components/EpisodesList';
 import { FollowingButtons } from '~/components/FollowingButtons';
 import { SimilarPodcasts } from '~/components/SimilarPods';
+import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
+import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
 import {
   podchaserPodcast,
   type PodcastIdentifierType,
@@ -39,19 +42,47 @@ function RouteComponent() {
   return (
     <>
       <ErrorBoundary fallback={<div>Error loading podcast details</div>}>
-        <Suspense>
+        <Suspense fallback={<SuspensePodDetails />}>
           <PodDetails podId={podId} />
         </Suspense>
       </ErrorBoundary>
       <Divider sx={{ my: 3 }} />
+      <Stack
+        direction='row'
+        spacing={2}
+        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
+      >
+        <Typography variant='h6' gutterBottom>
+          Episodes
+        </Typography>
+        <Box>
+          <EpisodesOptionsButton podId={podId} />
+        </Box>
+      </Stack>
+      <Divider />
       <ErrorBoundary fallback={<div>Error loading episodes</div>}>
-        <Suspense>
+        <Suspense fallback={<SuspenseEpisodeList numItems={10} />}>
           <EpisodesList podId={podId} />
         </Suspense>
       </ErrorBoundary>
       {/* TODO: error boundary fallback / sentry */}
       <ErrorBoundary fallback={null}>
-        <Suspense>
+        <Suspense
+          fallback={
+            <>
+              <Typography variant='h6' gutterBottom>
+                <Skeleton />
+                <SuspenseGridCards
+                  numItems={8}
+                  columnSpacing={2}
+                  rowSpacing={1}
+                  columns={16}
+                  childGridProps={{ size: { xs: 8, sm: 4, md: 4, lg: 2 } }}
+                />
+              </Typography>
+            </>
+          }
+        >
           <>
             <Typography variant='h6' gutterBottom>
               Similar Pods
@@ -108,7 +139,13 @@ function PodDetails({ podId }: { podId: string }) {
 
           {data?.podcastId ? (
             <ErrorBoundary fallback={<div />}>
-              <Suspense>
+              <Suspense
+                fallback={
+                  <Skeleton variant='rounded'>
+                    <Button size='small'>Follow</Button>
+                  </Skeleton>
+                }
+              >
                 <FollowingButtons podId={data?.podcastId} />
               </Suspense>
             </ErrorBoundary>
@@ -208,6 +245,55 @@ function PodcastRating({
         fontSize={'0.775rem'}
         color='textSecondary'
       >{`(${data?.podcast?.reviewCount || 0} reviews)`}</Typography>
+    </Stack>
+  );
+}
+
+function SuspensePodDetails() {
+  return (
+    <Stack direction='row' spacing={2}>
+      <Skeleton variant='rounded'>
+        <Box
+          height={{ xs: 100, sm: 160, md: 200 }}
+          width={{ xs: 100, sm: 160, md: 200 }}
+        />
+      </Skeleton>
+      <Box sx={{ flex: '1 1 auto' }}>
+        <Stack
+          direction='row'
+          sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+        >
+          <Typography variant='h5'>
+            <Skeleton />
+          </Typography>
+          <Skeleton variant='rounded'>
+            <Button size='small'>Follow</Button>
+          </Skeleton>
+        </Stack>
+        <Skeleton variant='rounded'>
+          <Rating size='small' />
+        </Skeleton>
+
+        <Divider sx={{ my: 1 }} />
+
+        <Stack direction='row' spacing={2}>
+          <Typography variant='subtitle2' color='textSecondary'>
+            <Skeleton width={80} />
+          </Typography>
+          <Typography variant='subtitle2' color='textSecondary'>
+            <Skeleton width={100} />
+          </Typography>
+        </Stack>
+
+        <Box sx={{ py: 2 }}>
+          <Typography variant='body2'>
+            <Skeleton />
+          </Typography>
+          <Typography variant='body2'>
+            <Skeleton />
+          </Typography>
+        </Box>
+      </Box>
     </Stack>
   );
 }

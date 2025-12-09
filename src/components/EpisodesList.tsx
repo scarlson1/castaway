@@ -13,14 +13,14 @@ import {
   ListItemText,
   Menu,
   MenuItem,
-  Stack,
-  Typography,
 } from '@mui/material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useCallback, useState } from 'react';
 import { EpisodeRow } from '~/components/EpisodeRow';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
+
+// TODO: separate results from episodes title ??
 
 interface EpisodesListProps {
   podId: string;
@@ -44,7 +44,7 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
 
   return (
     <>
-      <Stack
+      {/* <Stack
         direction='row'
         spacing={2}
         sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
@@ -56,7 +56,7 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
           <EpisodesOptionsButton podId={podId} />
         </Box>
       </Stack>
-      <Divider />
+      <Divider /> */}
 
       <Box>
         {results.map((e) => {
@@ -119,7 +119,7 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
 
 const ITEM_HEIGHT = 48;
 
-function EpisodesOptionsButton({ podId }: { podId: string }) {
+export function EpisodesOptionsButton({ podId }: { podId: string }) {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {

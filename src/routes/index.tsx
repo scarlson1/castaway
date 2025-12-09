@@ -14,6 +14,7 @@ import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import { RecommendedPods } from '~/components/RecommendedPods';
+import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
 import {
   categoryQueryOptions,
   randomEpisodesQueryOptions,
@@ -79,7 +80,19 @@ function Home() {
             </Typography>
           </Box>
           <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
-            <Suspense>
+            <Suspense
+              fallback={
+                <SuspenseGridCards
+                  numItems={8}
+                  columnSpacing={2}
+                  rowSpacing={1}
+                  columns={16}
+                  childGridProps={{
+                    size: { xs: 8, sm: 4, md: 4, lg: 2 },
+                  }}
+                />
+              }
+            >
               <RecommendedPods limit={8} />
             </Suspense>
           </ErrorBoundary>
@@ -180,9 +193,10 @@ const colors = [
   'primary.light',
 ];
 
-function getRandomColor() {
-  const randomIndex = Math.floor(Math.random() * colors.length);
-  return colors[randomIndex];
+function getRandomColor(i: number) {
+  // const randomIndex = Math.floor(Math.random() * colors.length);
+  const index = i < 5 ? i : i % 6;
+  return colors[index];
 }
 
 function PodcastGenreCards() {
@@ -192,12 +206,12 @@ function PodcastGenreCards() {
 
   return (
     <Grid container spacing={3}>
-      {slicedData?.map((d) => (
+      {slicedData?.map((d, i) => (
         <Grid size={{ xs: 6, sm: 4, md: 3 }} key={d.id}>
           <CategoryCard
             title={d.name}
             category={d.name}
-            color={getRandomColor()}
+            color={getRandomColor(i)}
           />
         </Grid>
       ))}

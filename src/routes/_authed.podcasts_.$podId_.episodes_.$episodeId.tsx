@@ -30,6 +30,7 @@ import { AdsTimeline } from '~/components/AdsTimeline';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { SimilarEpisodes } from '~/components/SimilarEpisodes';
+import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 import { useAudioStore } from '~/hooks/useAudioStore';
 import { useQueueStore } from '~/hooks/useQueueStore';
@@ -225,8 +226,18 @@ function RouteComponent() {
         <Typography variant='h6' gutterBottom>
           Ads Timeline
         </Typography>
-        <ErrorBoundary fallback={<div>an error occurred</div>}>
-          <Suspense>
+        <ErrorBoundary
+          fallback={
+            <Typography color='error'>Error loading ad segments</Typography>
+          }
+        >
+          <Suspense
+            fallback={
+              <Typography variant='body2' color='textSecondary'>
+                Loading ad segments...
+              </Typography>
+            }
+          >
             <AdSegments
               // ads={[]} audioUrl={data.audioUrl}
               episodeId={episodeId}
@@ -237,28 +248,50 @@ function RouteComponent() {
         <Typography variant='h6' gutterBottom>
           Ad Jobs
         </Typography>
-        <ErrorBoundary fallback={<div>an error occurred</div>}>
-          <Suspense>
+        <ErrorBoundary
+          fallback={
+            <Typography color='error'>Error loading ad jobs</Typography>
+          }
+        >
+          <Suspense
+            fallback={
+              <Typography variant='body2' color='textSecondary'>
+                Loading ad jobs...
+              </Typography>
+            }
+          >
             <AdJobs episodeId={episodeId} />
           </Suspense>
         </ErrorBoundary>
 
-        <ErrorBoundary fallback={null}>
-          <Suspense>
-            <Box sx={{ py: 3 }}>
-              <Divider sx={{ mb: 3 }} />
-              <Typography variant='h6' gutterBottom>
-                You might also like
-              </Typography>
+        <Box sx={{ py: 3 }}>
+          <Divider sx={{ mb: 3 }} />
+          <Typography variant='h6' gutterBottom>
+            You might also like
+          </Typography>
+          <ErrorBoundary
+            fallback={<Typography>Error loading similar episodes</Typography>}
+          >
+            <Suspense
+              fallback={
+                <SuspenseGridCards
+                  numItems={4}
+                  columnSpacing={2}
+                  rowSpacing={1}
+                  columns={16}
+                  childGridProps={{ size: { xs: 8, sm: 4, md: 4, lg: 2 } }}
+                />
+              }
+            >
               <SimilarEpisodes
                 limit={4}
                 episodeConvexId={data._id}
                 gridItemProps={{ size: { xs: 8, sm: 4 } }}
               />
-              <Divider sx={{ my: 3 }} />
-            </Box>
-          </Suspense>
-        </ErrorBoundary>
+            </Suspense>
+          </ErrorBoundary>
+          <Divider sx={{ my: 3 }} />
+        </Box>
       </Box>
     </>
   );

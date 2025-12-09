@@ -10,6 +10,7 @@ import {
   CssBaseline,
   InitColorSchemeScript,
   ThemeProvider,
+  Typography,
 } from '@mui/material';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { type QueryClient } from '@tanstack/react-query';
@@ -229,24 +230,25 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           <Container component='main' sx={{ paddingBlock: 4 }}>
             {children}
           </Container>
-          <ErrorBoundary fallback={<div />} onError={console.log}>
-            <Suspense>
-              <Box
-                sx={{
-                  position: 'fixed',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  zIndex: (theme) => theme.zIndex.drawer,
-                  borderTopLeftRadius: 1,
-                  borderTopRightRadius: 1,
-                }}
-              >
+
+          <Box
+            sx={{
+              position: 'fixed',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              zIndex: (theme) => theme.zIndex.drawer,
+              borderTopLeftRadius: 1,
+              borderTopRightRadius: 1,
+            }}
+          >
+            <ErrorBoundary fallback={<div />} onError={console.log}>
+              <Suspense fallback={<Typography>Loading audio...</Typography>}>
                 <WrappedPlayer />
-              </Box>
-              <AudioPlayerBottomSpacer />
-            </Suspense>
-          </ErrorBoundary>
+                <AudioPlayerBottomSpacer />
+              </Suspense>
+            </ErrorBoundary>
+          </Box>
         </Providers>
 
         <TanStackDevtools

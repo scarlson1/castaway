@@ -1,4 +1,11 @@
-import { Box, Stack, styled, Typography } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Skeleton,
+  Stack,
+  styled,
+  Typography,
+} from '@mui/material';
 import type { Doc } from 'convex/_generated/dataModel';
 import { Suspense } from 'react';
 import { MuiStackLink } from '~/components/MuiStackLink';
@@ -73,25 +80,25 @@ TrendingCardProps) {
         </Typography>
       ) : null}
 
-      <Box sx={{ position: 'relative' }}>
-        <Box
-          sx={{
-            width: 52,
-            height: 52,
-            flex: '0 0 52px',
-            objectFit: 'cover',
-            aspectRatio: '1/1',
-            overflow: 'hidden',
-            borderRadius: 1,
-            backgroundColor: 'rgba(0,0,0,0.08)',
-            '& > img': {
-              width: '100%',
-            },
-          }}
-        >
-          <img src={imgSrc} alt={`${title} cover art`} />
-        </Box>
+      {/* <Box sx={{ position: 'relative' }}> */}
+      <Box
+        sx={{
+          width: 52,
+          height: 52,
+          flex: '0 0 52px',
+          objectFit: 'cover',
+          aspectRatio: '1/1',
+          overflow: 'hidden',
+          borderRadius: 1,
+          backgroundColor: 'rgba(0,0,0,0.08)',
+          '& > img': {
+            width: '100%',
+          },
+        }}
+      >
+        <img src={imgSrc} alt={`${title} cover art`} />
       </Box>
+      {/* </Box> */}
 
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -167,7 +174,13 @@ TrendingCardProps) {
         </Box>
       </Stack>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Suspense>
+        <Suspense
+          fallback={
+            <Skeleton variant='circular'>
+              <IconButton size='small' />
+            </Skeleton>
+          }
+        >
           <PlaybackButton
             episode={
               {
@@ -180,6 +193,7 @@ TrendingCardProps) {
                 audioUrl,
               } as Doc<'episodes'>
             }
+            color='default'
           />
         </Suspense>
       </Box>

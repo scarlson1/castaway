@@ -15,7 +15,7 @@ export const RecommendedPods = ({ limit = 8 }: { limit?: number }) => {
   });
 
   return (
-    <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
+    <Grid container spacing={2}>
       {data.map((pod) => (
         <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={pod._id}>
           <Card

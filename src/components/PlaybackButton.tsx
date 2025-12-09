@@ -1,5 +1,12 @@
 import { PauseRounded, PlayArrowRounded } from '@mui/icons-material';
-import { Box, CircularProgress, IconButton, styled } from '@mui/material';
+import {
+  alpha,
+  Box,
+  CircularProgress,
+  IconButton,
+  styled,
+  type IconButtonProps,
+} from '@mui/material';
 import type { Doc } from 'convex/_generated/dataModel';
 import { useCallback, useMemo } from 'react';
 import { useAudioStore } from '~/hooks/useAudioStore';
@@ -8,6 +15,7 @@ import { useQueueStore } from '~/hooks/useQueueStore';
 import { getPlaybackPct } from '~/utils/format';
 
 const iconButtonSize = 28;
+const hoverColor = 'grey.500';
 const StyledIconButton = styled(IconButton)({
   position: 'absolute',
   top: 0,
@@ -15,6 +23,15 @@ const StyledIconButton = styled(IconButton)({
   right: 0,
   bottom: 0,
   minWidth: iconButtonSize,
+  color: '#fff',
+  backgroundColor: alpha('#363D49', 0.5),
+  '&:hover': {
+    color: '#3A4D73', // hoverColor,
+    backgroundColor: '#fff',
+  },
+  '&:hover .MuiSvgIcon-root': {
+    color: '#3A4D73', // hoverColor,
+  },
 });
 
 type EpisodeRequired = Pick<
@@ -28,11 +45,15 @@ type EpisodeRequired = Pick<
   | 'publishedAt'
 > & { [key: string]: any };
 
-export interface PlaybackButtonProps {
+export interface PlaybackButtonProps extends Omit<IconButtonProps, 'onClick'> {
   episode: EpisodeRequired;
 }
 
-export function PlaybackButton({ episode }: PlaybackButtonProps) {
+export function PlaybackButton({
+  episode,
+  color = 'default',
+  ...props
+}: PlaybackButtonProps) {
   const nowPlaying = useQueueStore((state) => state.nowPlaying);
   const setPlaying = useQueueStore((state) => state.setPlaying);
   const { isPlaying, setPlaying: p } = useAudioStore();
@@ -89,6 +110,7 @@ export function PlaybackButton({ episode }: PlaybackButtonProps) {
         size={iconButtonSize}
         thickness={2.4}
         sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+        color={color === 'default' ? 'inherit' : color}
       />
       {isPlaying && isCurrentAudio ? (
         <StyledIconButton
@@ -98,8 +120,10 @@ export function PlaybackButton({ episode }: PlaybackButtonProps) {
             e.stopPropagation();
             togglePlaying();
           }}
+          color={color}
+          {...props}
         >
-          <PauseRounded fontSize='inherit' color='primary' />
+          <PauseRounded fontSize='inherit' color='inherit' />
         </StyledIconButton>
       ) : (
         <StyledIconButton
@@ -113,8 +137,9 @@ export function PlaybackButton({ episode }: PlaybackButtonProps) {
               handleSetPlaying(episode);
             }
           }}
+          {...props}
         >
-          <PlayArrowRounded fontSize='inherit' color='primary' />
+          <PlayArrowRounded fontSize='inherit' color='inherit' />
         </StyledIconButton>
       )}
     </Box>

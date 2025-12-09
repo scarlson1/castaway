@@ -35,9 +35,11 @@ See `.env.example` for required environment variables.
 
 ## TODO
 
+- skeleton suspense loading states
 - feedback score for ad segments
 - search ad segments with embedding before sending to classifier (only send if unsure whether segment is ad)
 - subscription notifications
+- global playback/user preferences (playback speed, notifications, etc.)
 - fingerprint ad detection (repeated segments across episodes)
   - Use audio fingerprints (Chromaprint/AcoustID-like, or embeddings hashed + approximate nearest neighbors).
 - Rule / heuristic based ad detection
