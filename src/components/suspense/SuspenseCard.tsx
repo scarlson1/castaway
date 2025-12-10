@@ -1,14 +1,13 @@
-import { Box, Skeleton, Stack, Typography } from '@mui/material';
-import type { ReactNode } from 'react';
+import { Skeleton, Stack, Typography } from '@mui/material';
 
 export const SuspenseCard = ({
   orientation,
   rank,
-  children,
-}: {
+}: // children,
+{
   orientation: string;
   rank?: string | boolean;
-  children?: ReactNode;
+  // children?: ReactNode;
 }) => {
   let isRow = orientation === 'horizontal';
 
@@ -30,22 +29,21 @@ export const SuspenseCard = ({
         </Typography>
       ) : null}
 
-      <Box
+      {/* <Box
         sx={{
           width: isRow ? 60 : '100%',
-          height: isRow ? 60 : 'auto',
-          overflow: 'hidden',
-          borderRadius: 1,
-          objectFit: 'cover',
-          aspectRatio: '1/1',
-          backgroundColor: 'rgba(0,0,0,0.08)',
-          '& > img': { width: '100%' },
+          height: isRow ? 60 : { xs: 60, sm: 100, md: 140, lg: 180 }, // 'auto',
         }}
       >
         <Skeleton />
-      </Box>
+      </Box> */}
+      <Skeleton
+        variant='rounded'
+        width={isRow ? 60 : '100%'}
+        height={isRow ? 60 : 160}
+      />
 
-      {!isRow ? (
+      {/* {!isRow ? (
         <Box
           sx={{
             display: 'flex',
@@ -57,7 +55,7 @@ export const SuspenseCard = ({
         >
           {children}
         </Box>
-      ) : null}
+      ) : null} */}
 
       <Stack
         direction='column'
@@ -75,7 +73,7 @@ export const SuspenseCard = ({
         </Typography>
       </Stack>
 
-      {isRow && Boolean(children) ? (
+      {/* {isRow && Boolean(children) ? (
         <Box
           sx={{
             display: 'flex',
@@ -84,7 +82,7 @@ export const SuspenseCard = ({
         >
           {children}
         </Box>
-      ) : null}
+      ) : null} */}
     </Stack>
   );
 };

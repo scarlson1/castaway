@@ -1,4 +1,4 @@
-import { Grid, IconButton, Skeleton, type GridProps } from '@mui/material';
+import { Grid, type GridProps } from '@mui/material';
 import { useId } from 'react';
 import { SuspenseCard } from '~/components/suspense/SuspenseCard';
 
@@ -31,9 +31,9 @@ export const SuspenseGridCards = ({
           key={pod}
         >
           <SuspenseCard orientation={orientation} rank={rank}>
-            <Skeleton variant='circular'>
-              <IconButton size='small' />
-            </Skeleton>
+            {/* <Skeleton variant='circular'>
+              <IconButton size='small' sx={{ minWidth: 24 }} />
+            </Skeleton> */}
           </SuspenseCard>
         </Grid>
       ))}

@@ -92,12 +92,7 @@ function RouteComponent() {
             Trending
           </Typography>
           {cat ? (
-            <Chip
-              label={cat}
-              variant='outlined'
-              // onClick={handleClick}
-              onDelete={clearCategory}
-            />
+            <Chip label={cat} variant='outlined' onDelete={clearCategory} />
           ) : null}
         </Stack>
         <FormControl sx={{ width: 180, ml: 'auto' }} size='small'>
