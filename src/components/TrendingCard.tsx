@@ -80,7 +80,6 @@ TrendingCardProps) {
         </Typography>
       ) : null}
 
-      {/* <Box sx={{ position: 'relative' }}> */}
       <Box
         sx={{
           width: 52,
@@ -98,7 +97,6 @@ TrendingCardProps) {
       >
         <img src={imgSrc} alt={`${title} cover art`} />
       </Box>
-      {/* </Box> */}
 
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
@@ -124,14 +122,6 @@ TrendingCardProps) {
         >
           {formatRelativeTime(new Date(publishedAt))}
         </Typography>
-        {/* <Stack direction='column' spacing={0.5} sx={{ minWidth: 0, pr: 2 }}>
-          <ClampedTypography variant='body1' color='textPrimary'>
-            {title}
-          </ClampedTypography>
-          <ClampedTypography variant='body2' color='textSecondary'>
-            {secondaryText}
-          </ClampedTypography>
-        </Stack> */}
         <Box sx={{ minWidth: 0, pr: 2, width: '100%' }}>
           <ClampedTypography
             variant='body1'

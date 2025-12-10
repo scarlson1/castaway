@@ -14,23 +14,26 @@ import { useEpisodePlayback } from '~/hooks/useEpisodePlayback';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import { getPlaybackPct } from '~/utils/format';
 
-const iconButtonSize = 28;
-const hoverColor = 'grey.500';
+const iconButtonSize = 24;
+const progressThickness = 2;
+const circleSize = iconButtonSize + progressThickness * 2 - 1;
 const StyledIconButton = styled(IconButton)({
-  position: 'absolute',
+  // position: 'absolute',
   top: 0,
   left: 0,
   right: 0,
   bottom: 0,
   minWidth: iconButtonSize,
+  height: iconButtonSize,
+  width: iconButtonSize,
   color: '#fff',
   backgroundColor: alpha('#363D49', 0.5),
   '&:hover': {
-    color: '#3A4D73', // hoverColor,
+    color: '#3A4D73',
     backgroundColor: '#fff',
   },
   '&:hover .MuiSvgIcon-root': {
-    color: '#3A4D73', // hoverColor,
+    color: '#3A4D73',
   },
 });
 
@@ -99,16 +102,20 @@ export function PlaybackButton({
       sx={{
         position: 'relative',
         ml: 2,
-        height: iconButtonSize,
-        width: iconButtonSize,
+        height: circleSize, // iconButtonSize,
+        width: circleSize, // iconButtonSize,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        // color,
       }}
     >
       <CircularProgress
         enableTrackSlot
         variant='determinate'
         value={progress}
-        size={iconButtonSize}
-        thickness={2.4}
+        size={circleSize}
+        thickness={2}
         sx={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
         color={color === 'default' ? 'inherit' : color}
       />
@@ -137,6 +144,7 @@ export function PlaybackButton({
               handleSetPlaying(episode);
             }
           }}
+          color={color}
           {...props}
         >
           <PlayArrowRounded fontSize='inherit' color='inherit' />

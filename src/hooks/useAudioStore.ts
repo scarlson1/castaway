@@ -56,13 +56,16 @@ export const useAudioStore = create<AudioState>()(
         let localState = JSON.parse(
           localStorage.getItem(storageKey(episodeId)) || '{}'
         );
-        console.log('LOCAL STORAGE STATE: ', localState);
+        // console.log(`LOCAL STORAGE STATE [${getEnv()}]:`, localState);
 
         // merge server-side & local state (server wins)
         const merged = {
           ...(localState?.state || {}),
           ...serverState,
         };
+
+        console.log('MERGED: ', merged);
+        console.log('SERVER STATE: ', serverState);
 
         set({
           podcastId,
@@ -92,15 +95,16 @@ export const useAudioStore = create<AudioState>()(
     }),
     {
       name: 'audio-player-global', // ignored but required by API
+      // storage: createJSONStorage(() => audioPlaybackStorage), // as any,
       storage: {
-        getItem: (key) => {
+        getItem: (key: string) => {
           const state = useAudioStore.getState();
           if (!state.episodeId) return null;
           let val = localStorage.getItem(storageKey(state.episodeId));
           let parse = val ? JSON.parse(val) : {};
           return parse?.state || {};
         },
-        setItem: (_key, value) => {
+        setItem: (_key, value: any) => {
           const state = useAudioStore.getState();
           if (!state.episodeId || !value) return;
           // console.log('SET ITEM: ', value);
@@ -115,6 +119,11 @@ export const useAudioStore = create<AudioState>()(
           localStorage.removeItem(storageKey(state.episodeId));
         },
       } as any,
+      // SSR hydration mismatch --> must manually call hydration
+      skipHydration: true,
+      // onRehydrateStorage: () => (state) => {
+      //   state?.setHasHydrated(true)
+      // },
       partialize: (state) => ({
         position: state.position,
         volume: state.volume,

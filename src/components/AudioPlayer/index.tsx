@@ -94,6 +94,7 @@ export default function AudioPlayer({
     loadAudio(podcastId, id, src, dbPlayback);
   });
 
+  // BUG: runs before dbPlayback is ready ??
   // Load server + local state
   useEffect(() => {
     loadNewAudio(id, src);

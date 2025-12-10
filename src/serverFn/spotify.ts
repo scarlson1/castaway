@@ -58,37 +58,33 @@ export const fetchSpotifyPlaylistArgs = z.object({
   playlistId: z.string(),
   market: z.string().optional(),
   fields: z.string().optional(),
-  additional_types: z.array(z.string()).optional(),
+  // additional_types: z.array(z.string()).optional(),
 });
 export type FetchSpotifyPlaylistArgs = z.infer<typeof fetchSpotifyPlaylistArgs>;
 
 export const fetchSpotifyPlaylist = createServerFn()
   .inputValidator(fetchSpotifyPlaylistArgs)
-  .handler(
-    async ({
-      data: { playlistId, market, fields, additional_types = ['episodes'] },
-    }) => {
-      const sdk = getSpotify();
+  .handler(async ({ data: { playlistId, market, fields } }) => {
+    const sdk = getSpotify();
 
-      return (await sdk.playlists.getPlaylist<QueryAdditionalTypes>(
-        playlistId,
-        market as Market,
-        fields,
-        additional_types as QueryAdditionalTypes
-      )) as Playlist<Episode>;
+    return (await sdk.playlists.getPlaylist<QueryAdditionalTypes>(
+      playlistId,
+      market as Market,
+      fields,
+      ['episode'] // additional_types as QueryAdditionalTypes
+    )) as Playlist<Episode>;
 
-      // const token = await getSpotifyToken();
+    // const token = await getSpotifyToken();
 
-      // // https://api.spotify.com/v1/playlists/{playlist_id}
-      // const result = await ky
-      //   .get<any>(`https://api.spotify.com/v1/playlists/${playlistId}`, {
-      //     // prefixUrl: 'https://api.spotify.com/v1/',
-      //     headers: {
-      //       Authorization: `Bearer ${token}`,
-      //     },
-      //   })
-      //   .json();
+    // // https://api.spotify.com/v1/playlists/{playlist_id}
+    // const result = await ky
+    //   .get<any>(`https://api.spotify.com/v1/playlists/${playlistId}`, {
+    //     // prefixUrl: 'https://api.spotify.com/v1/',
+    //     headers: {
+    //       Authorization: `Bearer ${token}`,
+    //     },
+    //   })
+    //   .json();
 
-      // return result;
-    }
-  );
+    // return result;
+  });

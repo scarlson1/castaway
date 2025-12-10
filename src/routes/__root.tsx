@@ -1,6 +1,10 @@
 /// <reference types="vite/client" />
 import { ClerkProvider, useAuth } from '@clerk/tanstack-react-start';
-import { type ConvexQueryClient } from '@convex-dev/react-query';
+import {
+  convexQuery,
+  useConvexAuth,
+  type ConvexQueryClient,
+} from '@convex-dev/react-query';
 import createCache from '@emotion/cache';
 import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
@@ -12,7 +16,7 @@ import {
   ThemeProvider,
 } from '@mui/material';
 import { TanStackDevtools } from '@tanstack/react-devtools';
-import { type QueryClient } from '@tanstack/react-query';
+import { useQuery, type QueryClient } from '@tanstack/react-query';
 import { ReactQueryDevtoolsPanel } from '@tanstack/react-query-devtools';
 import {
   createRootRouteWithContext,
@@ -21,16 +25,18 @@ import {
   Scripts,
 } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
+import { api } from 'convex/_generated/api';
 import type { ConvexReactClient } from 'convex/react';
 import { ConvexProviderWithClerk } from 'convex/react-clerk';
 import { format } from 'date-fns';
-import { Suspense, type ReactNode } from 'react';
+import { Suspense, useMemo, type ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import castawayLogo from '~/assets/castaway-light.png';
 import { AppHeader } from '~/components/AppHeader';
 import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
 import { useQueueStore } from '~/hooks/useQueueStore';
+import { useRehydrateStore } from '~/hooks/useRehydrateAudioStore';
 import { getCachedClerkAuth } from '~/serverFn/auth';
 import { colorSchemeSelector, modeStorageKey, theme } from '~/theme/theme';
 import { env } from '~/utils/env.validation';
@@ -212,6 +218,8 @@ function Providers({ children }: { children: ReactNode }) {
 }
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
+  useRehydrateStore();
+
   return (
     <html lang='en' suppressHydrationWarning>
       <head>
@@ -232,20 +240,22 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
 
           <ErrorBoundary fallback={<div />} onError={console.log}>
             <Suspense>
-              <Box
-                sx={{
-                  position: 'fixed',
-                  bottom: 0,
-                  left: 0,
-                  right: 0,
-                  zIndex: (theme) => theme.zIndex.drawer,
-                  borderTopLeftRadius: 1,
-                  borderTopRightRadius: 1,
-                }}
-              >
-                <WrappedPlayer />
-              </Box>
-              <AudioPlayerBottomSpacer />
+              <>
+                <Box
+                  sx={{
+                    position: 'fixed',
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    zIndex: (theme) => theme.zIndex.drawer,
+                    borderTopLeftRadius: 1,
+                    borderTopRightRadius: 1,
+                  }}
+                >
+                  <WrappedPlayer />
+                </Box>
+                <AudioPlayerBottomSpacer />
+              </>
             </Suspense>
           </ErrorBoundary>
         </Providers>
@@ -270,25 +280,30 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   );
 }
 
+// TODO: merge database playback state
 function WrappedPlayer() {
-  // const userPlayback = useQuery(convexQuery(api.playback.getAllForUser, {}));
+  const { isAuthenticated } = useConvexAuth();
+  const userPlayback = useQuery({
+    ...convexQuery(api.playback.getAllForUser, {}),
+    enabled: isAuthenticated,
+  });
   const episode = useQueueStore((state) => state.nowPlaying);
 
-  // const dbPlayback = useMemo(() => {
-  //   const playbackIndex = userPlayback?.data?.findIndex(
-  //     (pb) => pb.episodeId === episode?.episodeId
-  //   );
-  //   if (!playbackIndex) return {};
+  const dbPlayback = useMemo(() => {
+    const playbackIndex = userPlayback?.data?.findIndex(
+      (pb) => pb.episodeId === episode?.episodeId
+    );
+    if (!playbackIndex || playbackIndex < 0) return {};
 
-  //   const playback = userPlayback.data?.[playbackIndex];
+    const playback = userPlayback.data?.[playbackIndex];
 
-  //   return playback?.positionSeconds
-  //     ? {
-  //         position: playback.positionSeconds,
-  //         duration: playback.duration,
-  //       }
-  //     : {};
-  // }, [episode, userPlayback]);
+    return playback?.positionSeconds
+      ? {
+          position: playback.positionSeconds,
+          duration: playback.duration,
+        }
+      : {};
+  }, [episode, userPlayback]);
 
   if (!episode) return null;
 
@@ -305,7 +320,7 @@ function WrappedPlayer() {
           : ''
       }
       podName={episode.podName}
-      // dbPlayback={dbPlayback}
+      dbPlayback={dbPlayback}
     />
   );
 }
@@ -313,6 +328,7 @@ function WrappedPlayer() {
 function AudioPlayerBottomSpacer() {
   const episode = useQueueStore((state) => state.nowPlaying);
   const show = Boolean(episode);
+
   return (
     <Box
       sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}

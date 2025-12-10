@@ -189,7 +189,7 @@ export function useAudioPlayer() {
 
     let interval: number | null = null;
 
-    if (howl.playing()) {
+    if (howl.playing() || isPlaying !== howl.playing()) {
       interval = window.setInterval(() => {
         const newPos = howl.seek() as number;
         useAudioStore.getState().setPosition(newPos);

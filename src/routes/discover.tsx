@@ -262,10 +262,10 @@ function IndependentPodcastAwardWinners({
 }) {
   const theme = useTheme();
   const { data } = useSuspenseQuery({
-    queryKey: ['spotify', { playlistId, additional_types: ['episodes'] }],
+    queryKey: ['spotify', { playlistId }],
     queryFn: () =>
       fetchSpotifyPlaylist({
-        data: { playlistId, additional_types: ['episodes'] },
+        data: { playlistId },
       }),
   });
 
