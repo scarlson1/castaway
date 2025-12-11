@@ -26,7 +26,6 @@ const ClampedTypography = styled(Typography)({
 interface TrendingCardProps {
   title: string;
   secondaryText: string;
-  // actionText?: string;
   publishedAt: number;
   orientation?: 'vertical' | 'horizontal';
   rank?: number;
@@ -183,7 +182,7 @@ TrendingCardProps) {
                 audioUrl,
               } as Doc<'episodes'>
             }
-            color='default'
+            color='primary'
           />
         </Suspense>
       </Box>

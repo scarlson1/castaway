@@ -15,7 +15,7 @@ export const fn = internalMutation({
   handler: async (ctx, { jobId }) => {
     const windows = await ctx.db
       .query('adJobWindows')
-      .withIndex('by_jobId', (q) => q.eq('jobId', jobId))
+      .withIndex('by_jobId_classified', (q) => q.eq('jobId', jobId))
       .collect();
 
     const segments = mergeAdWindows(

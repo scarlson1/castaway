@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
 export interface TranscriptSegment {
-  id: number;
+  id: number | string;
   start: number;
   end: number;
   text: string;
@@ -37,13 +37,17 @@ export interface TranscribeOptions {
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// fetches audio from url --> breaks into chunks <25MB --> transcribe --> combine transcribed chunks into array of segments ([{ id, start, end, text }])
+
 export async function transcribeUrl(
   url: string,
   options: TranscribeOptions
 ): Promise<TranscriptionResponse> {
+  // break audio into chunks of < 25MB
   const chunks = await fetchAndChunkAudio(url);
   console.log(`audio broken into ${chunks.length} chunks`);
 
+  // transcribe each chunk
   const transcripts: WhisperResponse[] = [];
   for (const c of chunks) {
     console.log(`transcribing chunk...`);
@@ -51,7 +55,7 @@ export async function transcribeUrl(
   }
   console.log(`finished transcribing chunks`);
 
-  // Merge timestamps and text
+  // Merge chunks into array of timestamps and text (transcript)
   let offset = 0;
   const merged: TranscriptSegment[] = [];
   let fullText = '';

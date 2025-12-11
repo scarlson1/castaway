@@ -233,6 +233,23 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_episodeId', ['episodeId']),
 
+  transcripts: defineTable({
+    // podcastId: v.string(),
+    episodeId: v.string(),
+    // convexEpId: v.id('episodes'),
+    audioUrl: v.string(),
+    fullText: v.string(),
+    segments: v.array(
+      v.object({
+        id: v.union(v.string(), v.number()),
+        start: v.number(),
+        end: v.number(),
+        text: v.string(),
+      })
+    ),
+    createdAt: v.number(),
+  }).index('by_episodeId', ['episodeId']),
+
   ads: defineTable({
     podcastId: v.string(),
     episodeId: v.string(),
@@ -260,22 +277,23 @@ export default defineSchema({
     status: v.string(),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
-    // audioStorageId: v.optional(v.string()), // not used - throws if removed (extra field error)
-    transcript: v.optional(
-      v.object({
-        text: v.string(),
-        segments: v.optional(
-          v.array(
-            v.object({
-              end: v.number(),
-              id: v.union(v.number(), v.string()),
-              start: v.number(),
-              text: v.string(),
-            })
-          )
-        ),
-      })
-    ), // TODO: type
+    transcriptId: v.optional(v.id('transcripts')),
+    // DELETE ?? saving to transcripts table instead
+    // transcript: v.optional(
+    //   v.object({
+    //     text: v.string(),
+    //     segments: v.optional(
+    //       v.array(
+    //         v.object({
+    //           end: v.number(),
+    //           id: v.union(v.number(), v.string()),
+    //           start: v.number(),
+    //           text: v.string(),
+    //         })
+    //       )
+    //     ),
+    //   })
+    // ), // TODO: type (and rename to adSegments ??)
     segments: v.optional(
       v.array(
         v.object({

@@ -3,7 +3,7 @@ import { fetchPodEpisodesFromIndex } from 'convex/episodes';
 import { v } from 'convex/values';
 import type { PodcastsByFeedIdResult } from '~/lib/podcastIndexTypes';
 import { internal } from './_generated/api';
-import { action, type ActionCtx } from './_generated/server';
+import { action, internalAction, type ActionCtx } from './_generated/server';
 
 // ALTERNATIVELY: SCHEDULE FN TO RUN AFTER TO FETCH POD * EPISODES
 // https://docs.convex.dev/tutorial/actions#hooking-it-up-to-your-app
@@ -36,7 +36,12 @@ export const subscribe = action({
 
       try {
         // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
-        await fetchNewEpisodes(ctx, feed, IMPORT_EPISODE_LIMIT);
+        // await fetchNewEpisodesOld(ctx, feed, IMPORT_EPISODE_LIMIT);
+        await ctx.scheduler.runAfter(0, internal.actions.fetchNewEpisodes, {
+          podcastGuid: feed.podcastGuid,
+          podcastTitle: feed.title,
+          limit: IMPORT_EPISODE_LIMIT,
+        });
       } catch (err) {
         console.error(
           'failed to fetch episodes for newly created pod subscription',
@@ -81,7 +86,12 @@ export const subscribeitunesId = action({
 
       try {
         // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
-        await fetchNewEpisodes(ctx, feed, IMPORT_EPISODE_LIMIT);
+        // await fetchNewEpisodesOld(ctx, feed, IMPORT_EPISODE_LIMIT);
+        await ctx.scheduler.runAfter(0, internal.actions.fetchNewEpisodes, {
+          podcastGuid: feed.podcastGuid,
+          podcastTitle: feed.title,
+          limit: IMPORT_EPISODE_LIMIT,
+        });
       } catch (err) {
         console.error(
           'failed to fetch episodes for newly created pod subscription',
@@ -101,6 +111,27 @@ export const subscribeitunesId = action({
     });
 
     return { subscriptionId: id };
+  },
+});
+
+export const fetchNewEpisodes = internalAction({
+  args: {
+    podcastGuid: v.string(),
+    podcastTitle: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (ctx, { podcastGuid, podcastTitle, limit = 100 }) => {
+    const episodes = await fetchPodEpisodesFromIndex(podcastGuid, {
+      max: `${limit}`,
+    });
+    console.log(`${episodes?.length} episodes found - scheduling job`);
+
+    if (episodes.length) {
+      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+        episodes,
+        podcastTitle,
+      });
+    }
   },
 });
 
@@ -133,23 +164,23 @@ async function saveNewPod(
   return newId;
 }
 
-async function fetchNewEpisodes(
-  ctx: ActionCtx,
-  feed: PodcastsByFeedIdResult['feed'],
-  limit: number = 100
-) {
-  const episodes = await fetchPodEpisodesFromIndex(feed.podcastGuid, {
-    max: `${limit}`,
-  });
-  console.log(`${episodes?.length} episodes found - scheduling job`);
+// async function fetchNewEpisodesOld(
+//   ctx: ActionCtx,
+//   feed: PodcastsByFeedIdResult['feed'],
+//   limit: number = 100
+// ) {
+//   const episodes = await fetchPodEpisodesFromIndex(feed.podcastGuid, {
+//     max: `${limit}`,
+//   });
+//   console.log(`${episodes?.length} episodes found - scheduling job`);
 
-  if (episodes.length) {
-    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
-      episodes,
-      podcastTitle: feed.title,
-    });
-  }
-}
+//   if (episodes.length) {
+//     await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+//       episodes,
+//       podcastTitle: feed.title,
+//     });
+//   }
+// }
 
 const BASE_API_URL = 'https://api.podcastindex.org/api/1.0'; // replace with your base URL
 const key = process.env.PODCAST_INDEX_KEY;

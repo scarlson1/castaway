@@ -2,6 +2,7 @@
 
 import { internal } from 'convex/_generated/api';
 import { action, internalAction } from 'convex/_generated/server';
+import { transcribeUrl } from 'convex/utils/transcribeUrl';
 import { v } from 'convex/values';
 import OpenAI from 'openai';
 
@@ -77,3 +78,29 @@ async function embed(input: string, model = 'text-embedding-3-small') {
 
   return emb.data[0].embedding;
 }
+
+export const transcribeEpisodeAndSaveTranscript = internalAction({
+  args: {
+    episodeId: v.string(),
+    // convexEpId: v.id('episodes'),
+    audioUrl: v.string(),
+  },
+  handler: async (ctx, { audioUrl, episodeId }) => {
+    const transcript = await transcribeUrl(audioUrl, {});
+
+    const transcriptId = await ctx.runMutation(internal.transcripts.save, {
+      episodeId,
+      audioUrl,
+      fullText: transcript.text,
+      segments: transcript.segments || [],
+    });
+
+    // add embedding to rag component (for episode search etc.)
+    await ctx.scheduler.runAfter(0, internal.rag.insertEpisodeTranscript, {
+      transcript: transcript.text,
+      episodeId,
+    });
+
+    return { transcript, transcriptId };
+  },
+});

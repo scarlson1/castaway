@@ -24,6 +24,10 @@ export const fn = internalAction({
       return;
     }
 
+    // TODO: check ad table for similar windows labelled as an ad ??
+    // requires creating embeddings for windows ?? (expensive/huge storage cost)
+    // if high confidence --> label as ad or not ad ??
+
     // LLM call for the batch
     const classifiedWindows = await classifyWindowsBatch(windows);
 
