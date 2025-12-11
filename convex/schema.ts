@@ -278,6 +278,7 @@ export default defineSchema({
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
     transcriptId: v.optional(v.id('transcripts')),
+    transcript: v.optional(v.any()),
     // DELETE ?? saving to transcripts table instead
     // transcript: v.optional(
     //   v.object({

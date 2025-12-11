@@ -2,11 +2,8 @@ import { RAG } from '@convex-dev/rag';
 import { components } from 'convex/_generated/api';
 import { action, internalMutation } from 'convex/_generated/server';
 import { v } from 'convex/values';
-import OpenAI from 'openai';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
-const textEmbeddingModel = 'text-embedding-3-small';
+export const textEmbeddingModel = 'text-embedding-3-small';
 const embeddingDimension = 1536;
 
 const defaultNamespace = 'global';

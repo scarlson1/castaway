@@ -210,11 +210,7 @@ export const getMultipleById = internalQuery({
 export const getByGuid = query({
   args: { id: v.string() },
   handler: async ({ db }, { id }) => {
-    return await db
-      .query('episodes')
-      .withIndex('by_episodeId', (q) => q.eq('episodeId', id))
-      .first();
-    //.unique(); // TODO: uncomment once the duplication problem is fixed
+    return getEpisodeById(db, id);
   },
 });
 
@@ -573,4 +569,11 @@ function podIndexEpToConvexEp(
     socialInteract: ep.socialInteract || [],
     chaptersUrl: ep.chaptersUrl || null,
   };
+}
+
+export async function getEpisodeById(db: QueryCtx['db'], episodeId: string) {
+  return await db
+    .query('episodes')
+    .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+    .first();
 }
