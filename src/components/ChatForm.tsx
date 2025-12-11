@@ -28,11 +28,9 @@ export const ChatForm = withForm({
             <Suspense>
               <TextField
                 id='message'
-                type='message'
                 label='Message'
                 // placeholder='your@email.com'
                 autoFocus
-                required
                 fullWidth
                 variant='outlined'
                 color={state.meta.errors.length ? 'error' : 'primary'}

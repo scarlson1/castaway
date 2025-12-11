@@ -9,9 +9,9 @@ import { v } from 'convex/values';
 
 export const save = internalMutation({
   args: {
-    podcastId: v.string(),
+    // podcastId: v.string(),
     episodeId: v.string(),
-    convexEpId: v.id('episodes'),
+    // convexEpId: v.id('episodes'),
     audioUrl: v.string(),
     fullText: v.string(),
     segments: v.array(

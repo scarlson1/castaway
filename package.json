@@ -21,6 +21,7 @@
   "license": "ISC",
   "packageManager": "pnpm@10.19.0",
   "dependencies": {
+    "@ai-sdk/openai": "^2.0.84",
     "@clerk/backend": "^2.21.0",
     "@clerk/tanstack-react-start": "^0.26.9",
     "@convex-dev/agent": "^0.3.2",

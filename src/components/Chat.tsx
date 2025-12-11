@@ -1,8 +1,6 @@
-import {
-  useConvexAction,
-  useConvexMutation,
-  useConvexPaginatedQuery,
-} from '@convex-dev/react-query';
+import type { UIMessage } from '@convex-dev/agent';
+import { toUIMessages, useThreadMessages } from '@convex-dev/agent/react';
+import { useConvexAction, useConvexMutation } from '@convex-dev/react-query';
 import {
   Avatar,
   Box,
@@ -19,7 +17,6 @@ import { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { ChatForm, chatFormOpts } from '~/components/ChatForm';
 import { useAppForm } from '~/hooks/form';
-// import { useThreadMessages } from '@convex-dev/agents/react'
 
 export const Chat = () => {
   const [threadId, setThreadId] = useState();
@@ -67,53 +64,106 @@ export const Chat = () => {
 };
 
 function MessageList({ threadId }: { threadId: string }) {
-  const { results, status, loadMore, isLoading } = useConvexPaginatedQuery(
+  // const { results, status, loadMore, isLoading } = useUIMessages(
+  //   api.chatAgent.listThreadMessages,
+  //   { threadId },
+  //   { initialNumItems: 10 /* stream: true */ }
+  // );
+  const { results, status, loadMore, isLoading } = useThreadMessages(
     api.chatAgent.listThreadMessages,
     { threadId },
     { initialNumItems: 10 }
   );
+  // console.log('THREADS: ', messages.results, toUIMessages(messages.results));
 
-  if (!results?.length)
+  if (!results?.length && !isLoading)
     return (
       <Typography variant='body2' color='textSecondary' gutterBottom>
         No messages yet. Start a conversation!
       </Typography>
     );
 
+  if (isLoading)
+    return (
+      <Typography variant='body2' fontWeight={500} color='textSecondary'>
+        Loading...
+      </Typography>
+    );
+
   return (
     <Stack spacing={2}>
-      {results.map((msg) => {
-        const isUser = msg.message?.role === 'user';
-        return (
-          <Paper
-            key={msg._id}
-            variant='outlined'
-            sx={{
-              p: 2,
-              maxWidth: '80%',
-              bgcolor: isUser ? 'gray.800' : 'gray.600',
-            }}
-          >
-            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
-              <Avatar sx={{ bgcolor: isUser ? 'primary' : 'secondary' }}>
-                {isUser ? 'U' : 'A'}
-              </Avatar>
-              <Box sx={{ flex: 1 }}>
-                <Typography
-                  variant='body2'
-                  fontWeight='medium'
-                  color='textSecondary'
-                >
-                  {isUser ? 'you' : 'agent'}
-                </Typography>
-                <Typography>{msg.text}</Typography>
-              </Box>
-            </Stack>
-          </Paper>
-        );
-      })}
+      {results?.length > 0
+        ? toUIMessages(results ?? []).map((m) => (
+            <Message key={m.key} message={m} />
+          ))
+        : null}
+      {/* {results.map((msg, i) => (
+        <Message key={msg.key} message={msg} />
+      ))} */}
     </Stack>
   );
+}
+
+function Message({ message }: { message: UIMessage }) {
+  const isUser = message.role === 'user';
+  // const isUser = msg.message?.role === 'user';
+
+  return (
+    <Paper
+      // key={msg._id}
+      // key={msg.key}
+      variant='outlined'
+      sx={[
+        () => ({
+          p: 2,
+          maxWidth: '80%',
+          // bgcolor: isUser ? 'gray.800' : 'gray.600',
+          backgroundColor: isUser ? 'info.light' : 'grey.100',
+          ml: isUser ? 'auto !important' : 0,
+          mr: isUser ? 0 : 'auto !important',
+        }),
+        (theme) =>
+          theme.applyStyles('dark', {
+            backgroundColor: isUser
+              ? theme.palette.primary.dark
+              : theme.palette.secondary.dark,
+          }),
+      ]}
+    >
+      <Stack
+        direction='row'
+        spacing={1}
+        sx={{
+          alignItems: 'center',
+        }}
+      >
+        <Avatar sx={{ bgcolor: isUser ? 'primary' : 'secondary' }}>
+          {isUser ? 'U' : 'A'}
+        </Avatar>
+        <Box
+          sx={{
+            flex: 1,
+          }}
+        >
+          <Typography variant='body2' fontWeight='medium' color='textSecondary'>
+            {isUser ? 'you' : 'agent'}
+          </Typography>
+          <Typography>{message.text || '...'}</Typography>
+        </Box>
+      </Stack>
+    </Paper>
+  );
+  // return (
+  //   <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+  //     <div
+  //       className={`rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap shadow-sm ${
+  //         isUser ? "bg-blue-100 text-blue-900" : "bg-gray-200 text-gray-800"
+  //       }`}
+  //     >
+  //       {message.text || "..."}
+  //     </div>
+  //   </div>
+  // );
 }
 
 function SendMessage({ threadId }: { threadId: string }) {
@@ -121,6 +171,7 @@ function SendMessage({ threadId }: { threadId: string }) {
   const { mutate: sendMessage, isPending } = useMutation({
     mutationFn: useConvexAction(api.chatAgent.sendMessageToAgent),
     onSuccess: (res) => {
+      console.log('mutation finished', res);
       setResponse(res);
     },
   });
@@ -130,6 +181,8 @@ function SendMessage({ threadId }: { threadId: string }) {
     onSubmit: async ({ value }) => {
       console.log(value);
       await sendMessage({ threadId, prompt: value.message });
+      console.log('resetting form...');
+      form.reset();
     },
   });
 
@@ -154,41 +207,4 @@ function SendMessage({ threadId }: { threadId: string }) {
       </Box>
     </Stack>
   );
-
-  // return (
-  //   <Stack spacing={2}>
-  //     <form
-  //       onSubmit={(e) => {
-  //         e.preventDefault();
-  //         e.stopPropagation();
-  //         form.handleSubmit();
-  //       }}
-  //     >
-  //       <form.Field
-  //         name='message'
-  //         children={({ state, handleChange, handleBlur }) => {
-  //           return (
-  //             <TextField
-  //               id='message'
-  //               label='Message'
-  //               defaultValue={state.value}
-  //               onChange={(e) => handleChange(e.target.value)}
-  //               onBlur={handleBlur}
-  //               placeholder='Ask AI about a podcast or episode'
-  //               fullWidth
-  //             />
-  //           );
-  //         }}
-  //       />
-  //       <form.Subscribe
-  //         selector={(state) => [state.canSubmit, state.isSubmitting]}
-  //         children={([canSubmit, isSubmitting]) => (
-  //           <Button type='submit' disabled={!canSubmit} loading={isSubmitting}>
-  //             Send
-  //           </Button>
-  //         )}
-  //       />
-  //     </form>
-  //   </Stack>
-  // );
 }

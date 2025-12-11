@@ -1,3 +1,4 @@
+import { openai } from '@ai-sdk/openai';
 import { RAG } from '@convex-dev/rag';
 import { components } from 'convex/_generated/api';
 import { action, internalMutation } from 'convex/_generated/server';
@@ -18,7 +19,7 @@ type Metadata = {
 };
 
 export const rag = new RAG<Filters, Metadata>(components.rag, {
-  textEmbeddingModel,
+  textEmbeddingModel: openai.embedding(textEmbeddingModel),
   embeddingDimension,
   filterNames: ['podcastId', 'category'],
 });

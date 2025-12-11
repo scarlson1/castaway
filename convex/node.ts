@@ -79,6 +79,7 @@ async function embed(input: string, model = 'text-embedding-3-small') {
   return emb.data[0].embedding;
 }
 
+// transcribe --> save to transcripts table --> pass transcript to RAG component to create embedding
 export const transcribeEpisodeAndSaveTranscript = internalAction({
   args: {
     episodeId: v.string(),
