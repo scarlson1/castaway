@@ -45,19 +45,6 @@ const ChatMarkdownStyledWrapper = styled(Box)(({ theme }) => ({
   },
 }));
 
-// const components: Components = {
-//   // @ts-ignore
-//   code({ node, inline, className, children, ...props }) {
-//     if (inline)
-//       return (
-//         <code className={className} {...props}>
-//           {children}
-//         </code>
-//       );
-//     return <CodeBlock>{children}</CodeBlock>;
-//   },
-// };
-
 function extractText(node: any): string {
   if (typeof node === 'string') return node;
   if (Array.isArray(node)) return node.map(extractText).join('');
@@ -163,13 +150,24 @@ function ChatCodeBlock({ code, language }: ChatCodeBlockProps) {
         border: '1px solid',
         borderColor: 'divider',
         bgcolor: 'background.paper',
-        overflow: 'hidden',
+        // overflow: 'hidden',
         // mt: 1,
         // mb: 1,
       }}
     >
       {/* Copy Button */}
-      <Box sx={{ position: 'absolute', top: 6, right: 6, zIndex: 10 }}>
+      <Box
+        sx={{
+          // position: 'absolute', top: 6, right: 6, zIndex: 10
+          position: 'sticky',
+          top: 6,
+          // right: 6,
+          display: 'flex',
+          justifyContent: 'flex-end',
+          zIndex: 2,
+          // pointerEvents: 'none', // prevents blocking text selection
+        }}
+      >
         <Tooltip title={copied ? 'Copied!' : 'Copy'}>
           <IconButton
             size='small'

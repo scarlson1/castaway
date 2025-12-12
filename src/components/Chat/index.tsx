@@ -52,18 +52,6 @@ export const Chat = ({ threadId }: { threadId: string }) => {
   );
 
   return (
-    // <Container disableGutters maxWidth='md'>
-    //   <Stack
-    //     spacing={2}
-    //     direction='row'
-    //     sx={{ justifyContent: 'space-between' }}
-    //   >
-    //     <Typography variant='h5' fontWeight='medium' gutterBottom>
-    //       Convex Agent Chat
-    //     </Typography>
-
-    //   </Stack>
-
     <Container
       maxWidth='md'
       sx={{

@@ -81,29 +81,6 @@ export const ThreadsList = () => {
   );
 };
 
-// <ListItem key={t._id} disablePadding>
-//   <MuiListItemButtonLink
-//     to='/chat/$threadId'
-//     params={{ threadId: t._id }}
-//     selected={currentChatId === t._id}
-//     disableGutters
-//     sx={{
-//       whiteSpace: 'nowrap',
-//       overflow: 'hidden',
-//       textOverflow: 'ellipsis',
-//       px: 1,
-//       borderRadius: 1,
-//     }}
-//   >
-//     <ListItemText
-//       primary={t.title || 'new chat'}
-//       slotProps={{
-//         primary: { noWrap: true },
-//       }}
-//     />
-//   </MuiListItemButtonLink>
-// </ListItem>
-
 interface ChatListItemProps {
   threadId: string;
   title: string;
@@ -181,7 +158,11 @@ export function ChatListItem({
             params: { threadId },
           })
         }
-        sx={{ borderRadius: 1, px: 1.5 }}
+        sx={{
+          borderRadius: 1,
+          px: 1.5,
+          '&.MuiListItemButton-root': { pr: '30px' },
+        }}
       >
         {isRenaming ? (
           <TextField

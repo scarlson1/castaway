@@ -43,14 +43,6 @@ function RouteComponent() {
         }}
       >
         <ChatSideBar />
-        {/* <Box sx={{ flex: '0 0 260px', display: { sm: 'none', md: 'block' } }}>
-          <Typography variant='overline' color='textSecondary'>
-            Your chats
-          </Typography>
-          <Box flex={1} overflow='auto'>
-            <ThreadsList />
-          </Box>
-        </Box> */}
         <Box display='flex' flexDirection='column' sx={{ flex: '1 1 auto' }}>
           <Outlet />
         </Box>
@@ -74,11 +66,17 @@ function ChatSideBar() {
       <Toolbar />
       <Box sx={{ p: 1 }}>
         <List dense>
-          <MuiListItemButtonLink to='/chat' disableGutters sx={{ px: 1 }}>
-            <ListItemIcon>
+          <MuiListItemButtonLink
+            to='/chat'
+            disableGutters
+            sx={{ px: 1, borderRadius: 1 }}
+          >
+            <ListItemIcon sx={{ minWidth: 32 }}>
               <EditNoteRounded />
             </ListItemIcon>
-            New chat
+            <Typography variant='body2' fontSize={'0.95rem'}>
+              New chat
+            </Typography>
           </MuiListItemButtonLink>
         </List>
 
