@@ -92,6 +92,9 @@ importers:
       '@tanstack/zod-adapter':
         specifier: ^1.134.20
         version: 1.135.0(@tanstack/react-router@1.135.0(react-dom@19.2.0(react@19.2.0))(react@19.2.0))(zod@4.1.12)
+      ai:
+        specifier: ^5.0.112
+        version: 5.0.112(zod@4.1.12)
       axios:
         specifier: ^1.13.2
         version: 1.13.2

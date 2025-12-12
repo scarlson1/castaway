@@ -1,5 +1,4 @@
-import type { MessageDoc } from '@convex-dev/agent';
-import { toUIMessages, useThreadMessages } from '@convex-dev/agent/react';
+import { useUIMessages } from '@convex-dev/agent/react';
 import { Button, Stack, Typography } from '@mui/material';
 import { api } from 'convex/_generated/api';
 import 'highlight.js/styles/github.css';
@@ -13,25 +12,32 @@ export function MessageList({
   threadId: string;
   stream?: boolean;
 }) {
-  // const { results, status, loadMore, isLoading } = useUIMessages(
-  //   api.chatAgent.listThreadMessages,
-  //   { threadId },
-  //   { initialNumItems: 10 /* stream: true */ }
-  // );
-  const { results, status, loadMore, isLoading } = useThreadMessages(
+  const {
+    results: messages,
+    status,
+    loadMore,
+    isLoading,
+  } = useUIMessages(
     stream
       ? api.agent.streaming.listThreadMessages
       : api.agent.chat.listThreadMessages,
     { threadId },
     { initialNumItems: 10, stream }
   );
-  const messages = toUIMessages((results as MessageDoc[]) ?? []);
-  // console.log('THREADS: ', messages.results, toUIMessages(messages.results));
+  // const { results, status, loadMore, isLoading } = useThreadMessages(
+  //   stream
+  //     ? api.agent.streaming.listThreadMessages
+  //     : api.agent.chat.listThreadMessages,
+  //   { threadId },
+  //   { initialNumItems: 10, stream }
+  // );
+  // const messages = toUIMessages((results as MessageDoc[]) ?? []);
+  // console.log('THREADS: ', results, messages);
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [results]);
+  }, [messages]);
 
   // if (!results?.length && !isLoading)
   //   return (

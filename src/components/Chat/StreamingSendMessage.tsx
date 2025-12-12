@@ -3,16 +3,10 @@ import { Box } from '@mui/material';
 import { api } from 'convex/_generated/api';
 import { useMutation } from 'convex/react';
 import 'highlight.js/styles/github.css';
-import { ChatForm, chatFormOpts } from '~/components/ChatForm';
+import { ChatForm, chatSchema } from '~/components/ChatForm';
 import { useAppForm } from '~/hooks/form';
 
 export function StreamingSendMessage({ threadId }: { threadId: string }) {
-  // const { mutate: sendMessage, isPending } = useMutation({
-  //   mutationFn: useConvexMutation(api.agent.streaming.initiateAsyncStreaming),
-  //   onSuccess: (res) => {
-  //     console.log('mutation finished', res);
-  //   },
-  // });
   const sendMessage = useMutation(
     api.agent.streaming.initiateAsyncStreaming
   ).withOptimisticUpdate(
@@ -20,12 +14,18 @@ export function StreamingSendMessage({ threadId }: { threadId: string }) {
   );
 
   const form = useAppForm({
-    ...chatFormOpts,
+    // ...chatFormOpts,
+    defaultValues: {
+      message: '',
+    },
+    validators: {
+      onChange: chatSchema,
+    },
     onSubmit: async ({ value, formApi }) => {
       await sendMessage({ threadId, prompt: value.message });
-      console.log('resetting form...');
-      formApi.reset({ message: '' });
-      // form.reset();
+
+      // formApi.reset({ message: '' });
+      form.reset();
     },
   });
 
@@ -51,3 +51,17 @@ export function StreamingSendMessage({ threadId }: { threadId: string }) {
     </Box>
   );
 }
+// actions={
+//   <IconButton
+//     size='small'
+//     onClick={(e) => {
+//       e.preventDefault();
+//       e.stopPropagation();
+//       const order =
+//         messages.find((m) => m.status === 'streaming')?.order ?? 0;
+//       void abortStreamByOrder({ threadId, order });
+//     }}
+//   >
+//     <StopRounded fontSize='inherit' />
+//   </IconButton>
+// }

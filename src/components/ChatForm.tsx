@@ -4,7 +4,7 @@ import { formOptions } from '@tanstack/react-form';
 import { z } from 'zod/v4';
 import { withForm } from '~/hooks/form';
 
-const chatSchema = z.object({
+export const chatSchema = z.object({
   message: z.string(),
 });
 
@@ -20,7 +20,9 @@ export const chatFormOpts = formOptions({
 export const ChatForm = withForm({
   ...chatFormOpts,
   // Optional, but adds props to the `render` function outside of `form`
-  props: {},
+  props: {
+    // actions: null as ReactNode | null | undefined // [] as ReactNode[]
+  },
   render: ({ form }) => {
     return (
       <>
@@ -39,6 +41,9 @@ export const ChatForm = withForm({
               slotProps={{
                 input: {
                   endAdornment: (
+                    // <Stack direction='row' spacing={1} >
+                    //   {/* {actions?.map(a => a)} */}
+                    //   {actions}
                     <InputAdornment position='end'>
                       <IconButton
                         aria-label='toggle password visibility'
@@ -53,6 +58,7 @@ export const ChatForm = withForm({
                         <ArrowUpwardRounded />
                       </IconButton>
                     </InputAdornment>
+                    // </Stack>
                   ),
                 },
               }}
