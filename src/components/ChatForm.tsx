@@ -48,6 +48,7 @@ export const ChatForm = withForm({
                           onClick={() => {
                             form.handleSubmit();
                           }}
+                          type='submit'
                           // onMouseDown={handleMouseDownPassword}
                           edge='end' // Aligns the button flush with the edge
                         >
