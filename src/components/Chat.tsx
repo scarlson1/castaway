@@ -15,6 +15,9 @@ import { useMutation } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import Markdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import remarkGfm from 'remark-gfm';
 import { ChatForm, chatFormOpts } from '~/components/ChatForm';
 import { useAppForm } from '~/hooks/form';
 
@@ -30,7 +33,7 @@ export const Chat = () => {
   });
 
   return (
-    <Container disableGutters maxWidth='sm'>
+    <Container disableGutters maxWidth='md'>
       <Typography variant='h5' fontWeight='medium' gutterBottom>
         Convex Agent Chat
       </Typography>
@@ -110,8 +113,6 @@ function Message({ message }: { message: UIMessage }) {
 
   return (
     <Paper
-      // key={msg._id}
-      // key={msg.key}
       variant='outlined'
       sx={[
         () => ({
@@ -119,8 +120,9 @@ function Message({ message }: { message: UIMessage }) {
           maxWidth: '80%',
           // bgcolor: isUser ? 'gray.800' : 'gray.600',
           backgroundColor: isUser ? 'info.light' : 'grey.100',
-          ml: isUser ? 'auto !important' : 0,
-          mr: isUser ? 0 : 'auto !important',
+          // ml: isUser ? 'auto !important' : 0,
+          // mr: isUser ? 0 : 'auto !important',
+          alignSelf: isUser ? 'flex-end' : 'flex-start',
         }),
         (theme) =>
           theme.applyStyles('dark', {
@@ -134,7 +136,7 @@ function Message({ message }: { message: UIMessage }) {
         direction='row'
         spacing={1}
         sx={{
-          alignItems: 'center',
+          alignItems: 'flex-start', // 'center',
         }}
       >
         <Avatar sx={{ bgcolor: isUser ? 'primary' : 'secondary' }}>
@@ -148,7 +150,8 @@ function Message({ message }: { message: UIMessage }) {
           <Typography variant='body2' fontWeight='medium' color='textSecondary'>
             {isUser ? 'you' : 'agent'}
           </Typography>
-          <Typography>{message.text || '...'}</Typography>
+          {/* <Typography>{message.text || '...'}</Typography> */}
+          <ChatMarkdown content={message.text || '...'} />
         </Box>
       </Stack>
     </Paper>
@@ -166,6 +169,16 @@ function Message({ message }: { message: UIMessage }) {
   // );
 }
 
+function ChatMarkdown({ content }: { content: string }) {
+  return (
+    <div className='prose prose-neutral dark:prose-invert max-w-none'>
+      <Markdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeHighlight]}>
+        {content}
+      </Markdown>
+    </div>
+  );
+}
+
 function SendMessage({ threadId }: { threadId: string }) {
   const [response, setResponse] = useState<any>();
   const { mutate: sendMessage, isPending } = useMutation({
@@ -178,11 +191,12 @@ function SendMessage({ threadId }: { threadId: string }) {
 
   const form = useAppForm({
     ...chatFormOpts,
-    onSubmit: async ({ value }) => {
-      console.log(value);
+    onSubmit: async ({ value, formApi }) => {
       await sendMessage({ threadId, prompt: value.message });
       console.log('resetting form...');
-      form.reset();
+      // formApi.clearFieldValues()
+      formApi.reset({ message: '' });
+      // form.reset()
     },
   });
 

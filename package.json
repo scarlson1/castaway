@@ -70,7 +70,10 @@
     "react-error-boundary": "^6.0.0",
     "react-hot-toast": "^2.5.2",
     "react-intersection-observer": "^10.0.0",
+    "react-markdown": "^10.1.0",
     "react-swipeable": "^7.0.2",
+    "rehype-highlight": "^7.0.2",
+    "remark-gfm": "^4.0.1",
     "svix": "^1.81.0",
     "zod": "^4.1.12",
     "zustand": "^5.0.8"

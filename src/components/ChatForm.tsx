@@ -1,3 +1,5 @@
+import { ArrowUpwardRounded } from '@mui/icons-material';
+import { IconButton, InputAdornment } from '@mui/material';
 import { formOptions } from '@tanstack/react-form';
 import { Suspense } from 'react';
 import { z } from 'zod/v4';
@@ -24,7 +26,7 @@ export const ChatForm = withForm({
     return (
       <>
         <form.AppField name='message'>
-          {({ TextField, state }) => (
+          {({ TextField, state, ...rest }) => (
             <Suspense>
               <TextField
                 id='message'
@@ -34,13 +36,34 @@ export const ChatForm = withForm({
                 fullWidth
                 variant='outlined'
                 color={state.meta.errors.length ? 'error' : 'primary'}
+                // multiline
+                // maxRows={4}
+                slotProps={{
+                  input: {
+                    endAdornment: (
+                      <InputAdornment position='end'>
+                        <IconButton
+                          aria-label='toggle password visibility'
+                          disabled={state.meta.isPristine}
+                          onClick={() => {
+                            form.handleSubmit();
+                          }}
+                          // onMouseDown={handleMouseDownPassword}
+                          edge='end' // Aligns the button flush with the edge
+                        >
+                          <ArrowUpwardRounded />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  },
+                }}
               />
             </Suspense>
           )}
         </form.AppField>
-        <form.AppForm>
+        {/* <form.AppForm>
           <form.SubmitButton label='Send' fullWidth />
-        </form.AppForm>
+        </form.AppForm> */}
       </>
     );
   },
