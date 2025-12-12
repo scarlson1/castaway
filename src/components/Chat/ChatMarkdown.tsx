@@ -83,7 +83,7 @@ const markdownComponents = {
       return (
         <code
           style={{
-            background: 'rgba(0,0,0,0.12)',
+            background: 'rgba(0,0,0,0.08)',
             padding: '2px 4px',
             borderRadius: '4px',
             fontFamily: 'monospace',

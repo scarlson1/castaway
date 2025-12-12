@@ -1,4 +1,9 @@
-import { listUIMessages, syncStreams, vStreamArgs } from '@convex-dev/agent';
+import {
+  abortStream,
+  listUIMessages,
+  syncStreams,
+  vStreamArgs,
+} from '@convex-dev/agent';
 import { components, internal } from 'convex/_generated/api';
 import { internalAction, mutation, query } from 'convex/_generated/server';
 import { agent } from 'convex/agent/agent';
@@ -40,7 +45,7 @@ export const streamAsync = internalAction({
       { threadId },
       { promptMessageId },
       // more custom delta options (`true` uses defaults)
-      { saveStreamDeltas: true } // { saveStreamDeltas: { chunking: 'word', throttleMs: 100 } }
+      { saveStreamDeltas: { chunking: 'line', throttleMs: 100 } }
     );
     // We need to make sure the stream finishes - by awaiting each chunk
     // or using this call to consume it all.
@@ -71,3 +76,38 @@ export const listThreadMessages = query({
     return { ...paginated, streams };
   },
 });
+
+export const abortStreamByOrder = mutation({
+  args: { threadId: v.string(), order: v.number() },
+  handler: async (ctx, { threadId, order }) => {
+    await authorizeThreadAccess(ctx, threadId);
+    if (
+      await abortStream(ctx, components.agent, {
+        threadId,
+        order,
+        reason: 'Aborting explicitly',
+      })
+    ) {
+      console.log('Aborted stream', threadId, order);
+    } else {
+      console.log('No stream found', threadId, order);
+    }
+  },
+});
+
+// export const abortStreamByStreamId = internalMutation({
+//   args: { threadId: v.string() },
+//   handler: async (ctx, { threadId }) => {
+//     const streams = await listStreams(ctx, components.agent, { threadId });
+//     for (const stream of streams) {
+//       console.log("Aborting stream", stream);
+//       await abortStream(ctx, components.agent, {
+//         reason: "Aborting via async call",
+//         streamId: stream.streamId,
+//       });
+//     }
+//     if (!streams.length) {
+//       console.log("No streams found");
+//     }
+//   },
+// });

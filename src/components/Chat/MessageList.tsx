@@ -1,60 +1,77 @@
-import { useUIMessages } from '@convex-dev/agent/react';
+import type { UIMessage } from '@convex-dev/agent';
 import { Button, Stack, Typography } from '@mui/material';
-import { api } from 'convex/_generated/api';
 import 'highlight.js/styles/github.css';
-import { useEffect, useRef } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type RefObject,
+} from 'react';
 import { Message } from '~/components/Chat/Message';
+import { useEventListener } from '~/hooks/useEventListener';
+
+const SCROLL_THRESHOLD = 50; // px from bottom to still count as "at bottom"
 
 export function MessageList({
-  threadId,
-  stream = false,
+  messages,
+  loadMore,
+  status,
 }: {
+  messages: UIMessage[];
+  loadMore: (numItems: number) => void;
+  status: string;
   threadId: string;
-  stream?: boolean;
 }) {
-  const {
-    results: messages,
-    status,
-    loadMore,
-    isLoading,
-  } = useUIMessages(
-    stream
-      ? api.agent.streaming.listThreadMessages
-      : api.agent.chat.listThreadMessages,
-    { threadId },
-    { initialNumItems: 10, stream }
-  );
-  // const { results, status, loadMore, isLoading } = useThreadMessages(
-  //   stream
-  //     ? api.agent.streaming.listThreadMessages
-  //     : api.agent.chat.listThreadMessages,
-  //   { threadId },
-  //   { initialNumItems: 10, stream }
-  // );
-  // const messages = toUIMessages((results as MessageDoc[]) ?? []);
-  // console.log('THREADS: ', results, messages);
-
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [isAtBottom, setIsAtBottom] = useState(true);
+
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      const distanceFromBottom =
+        el.scrollHeight - el.scrollTop - el.clientHeight;
+      console.log('dist from bottom: ', distanceFromBottom);
+
+      setIsAtBottom(distanceFromBottom < SCROLL_THRESHOLD);
+    };
+
+    el.addEventListener('scroll', onScroll);
+    return () => el.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!isAtBottom) return;
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isAtBottom]);
 
-  // if (!results?.length && !isLoading)
-  //   return (
-  //     <Typography variant='body2' color='textSecondary' gutterBottom>
-  //       No messages yet. Start a conversation!
-  //     </Typography>
-  //   );
+  const onScroll = useCallback((e: Event) => {
+    // const el = containerRef.current;
+    const el = e.target as HTMLElement;
+    const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    console.log(
+      'setting is at bottom: ',
+      distanceFromBottom < SCROLL_THRESHOLD
+    );
+    setIsAtBottom(distanceFromBottom < SCROLL_THRESHOLD);
+  }, []);
 
-  // if (isLoading)
-  //   return (
-  //     <Typography variant='body2' fontWeight={500} color='textSecondary'>
-  //       Loading...
-  //     </Typography>
-  //   );
+  useEventListener(
+    'scroll',
+    onScroll,
+    containerRef as RefObject<HTMLDivElement>
+  );
 
   return (
-    <Stack spacing={2} sx={{ overflowY: 'auto', flex: 1 }}>
+    <Stack
+      ref={containerRef}
+      spacing={2}
+      sx={{ overflowY: 'auto', flex: 1 }}
+      onScroll={console.log}
+    >
       {/* Messages area - scrollable */}
       {messages.length > 0 ? (
         <>
@@ -71,15 +88,6 @@ export function MessageList({
           No messages yet. Start a conversation!
         </Typography>
       )}
-      {/* {results?.length > 0
-        ? toUIMessages(results ?? []).map((m) => (
-            <Message key={m.key} message={m} />
-          ))
-        : null} */}
-      {/* {messages.map((msg, i) => (
-        <Message key={msg.key} message={msg} />
-      ))} */}
-      {/* <div ref={messageEndRef} /> */}
     </Stack>
   );
 }

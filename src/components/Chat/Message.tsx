@@ -81,7 +81,6 @@ export function Message({ message }: { message: UIMessage }) {
             </Typography>
           ))} */}
 
-          {/* <ChatMarkdown content={message.text || '...'} /> */}
           <ChatMarkdown
             content={isUser ? message.text : visibleText || '...'}
           />

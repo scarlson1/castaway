@@ -35,6 +35,7 @@ import type * as rag from "../rag.js";
 import type * as stats_episodes from "../stats/episodes.js";
 import type * as stats_podcasts from "../stats/podcasts.js";
 import type * as subscribe from "../subscribe.js";
+import type * as tools_updateThreadTitle from "../tools/updateThreadTitle.js";
 import type * as transcripts from "../transcripts.js";
 import type * as users from "../users.js";
 import type * as utils_auth from "../utils/auth.js";
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   "stats/episodes": typeof stats_episodes;
   "stats/podcasts": typeof stats_podcasts;
   subscribe: typeof subscribe;
+  "tools/updateThreadTitle": typeof tools_updateThreadTitle;
   transcripts: typeof transcripts;
   users: typeof users;
   "utils/auth": typeof utils_auth;

@@ -1,12 +1,21 @@
 import { optimisticallySendMessage } from '@convex-dev/agent/react';
-import { Box } from '@mui/material';
+import { StopCircleRounded } from '@mui/icons-material';
+import { Box, IconButton, Tooltip } from '@mui/material';
 import { api } from 'convex/_generated/api';
 import { useMutation } from 'convex/react';
 import 'highlight.js/styles/github.css';
 import { ChatForm, chatSchema } from '~/components/ChatForm';
 import { useAppForm } from '~/hooks/form';
 
-export function StreamingSendMessage({ threadId }: { threadId: string }) {
+export function StreamingSendMessage({
+  threadId,
+  isStreaming,
+  abortStream,
+}: {
+  threadId: string;
+  isStreaming: boolean;
+  abortStream: () => void;
+}) {
   const sendMessage = useMutation(
     api.agent.streaming.initiateAsyncStreaming
   ).withOptimisticUpdate(
@@ -47,7 +56,18 @@ export function StreamingSendMessage({ threadId }: { threadId: string }) {
         gap: 2,
       }}
     >
-      <ChatForm form={form} />
+      <ChatForm
+        form={form}
+        actions={
+          isStreaming ? (
+            <Tooltip title='abort'>
+              <IconButton onClick={abortStream} size='medium'>
+                <StopCircleRounded fontSize='inherit' />
+              </IconButton>
+            </Tooltip>
+          ) : null
+        }
+      />
     </Box>
   );
 }

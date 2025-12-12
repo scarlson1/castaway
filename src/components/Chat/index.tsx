@@ -1,122 +1,105 @@
-import { useConvexMutation } from '@convex-dev/react-query';
+import { useUIMessages } from '@convex-dev/agent/react';
 import {
   Box,
-  Button,
   CircularProgress,
   Container,
   FormControlLabel,
-  Stack,
   Switch,
   Typography,
 } from '@mui/material';
-import { useMutation } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
+import { useMutation } from 'convex/react';
 import 'highlight.js/styles/github.css';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MessageList } from '~/components/Chat/MessageList';
 import { SendMessage } from '~/components/Chat/SendMessage';
 import { StreamingSendMessage } from '~/components/Chat/StreamingSendMessage';
 
-export const Chat = () => {
-  const [threadId, setThreadId] = useState();
-  const { mutate: createThread, isPending } = useMutation({
-    mutationFn: useConvexMutation(api.agent.threads.create),
-    // onMutate: () => toast.loading(`checking for new episodes`),
-    onSuccess: ({ threadId: id }) => {
-      setThreadId(id);
-    },
-    // onError: () => toast.error('something went wrong'),
-  });
+export const Chat = ({ threadId }: { threadId: string }) => {
+  const [stream, setStream] = useState(true);
+  const {
+    results: messages,
+    status,
+    loadMore,
+    isLoading,
+  } = useUIMessages(
+    stream
+      ? api.agent.streaming.listThreadMessages
+      : api.agent.chat.listThreadMessages,
+    { threadId },
+    { initialNumItems: 10, stream }
+  );
 
-  const [streaming, setStreaming] = useState(true);
+  const abortStreamByOrder = useMutation(
+    api.agent.streaming.abortStreamByOrder
+  );
+
+  const isStreaming = useMemo(
+    () => messages.some((m) => m.status === 'streaming'),
+    [messages]
+  );
+  const handleAbortStream = useCallback(() => {
+    const order = messages.find((m) => m.status === 'streaming')?.order ?? 0;
+    void abortStreamByOrder({ threadId, order });
+  }, [messages]);
 
   const handleChange = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
-      setStreaming(event.target.checked);
+      setStream(event.target.checked);
     },
     []
   );
 
   return (
-    <Container disableGutters maxWidth='md'>
-      <Stack
-        spacing={2}
-        direction='row'
-        sx={{ justifyContent: 'space-between' }}
-      >
-        <Typography variant='h5' fontWeight='medium' gutterBottom>
-          Convex Agent Chat
-        </Typography>
-        <FormControlLabel
-          control={<Switch checked={streaming} onChange={handleChange} />}
-          label='Streaming'
-        />
-      </Stack>
+    // <Container disableGutters maxWidth='md'>
+    //   <Stack
+    //     spacing={2}
+    //     direction='row'
+    //     sx={{ justifyContent: 'space-between' }}
+    //   >
+    //     <Typography variant='h5' fontWeight='medium' gutterBottom>
+    //       Convex Agent Chat
+    //     </Typography>
 
-      {threadId ? (
-        <ChatFlexLayout threadId={threadId} streaming={streaming} />
-      ) : (
-        // <Stack spacing={2}>
-        //   <ErrorBoundary
-        //     fallback={
-        //       <Typography color='error'>Error displaying thread</Typography>
-        //     }
-        //   >
-        //     <Suspense fallback={<CircularProgress />}>
-        //       <MessageList threadId={threadId} />
-        //     </Suspense>
-        //   </ErrorBoundary>
-        //   <ErrorBoundary
-        //     fallback={<Typography color='error'>Error loading form</Typography>}
-        //   >
-        //     <Suspense>
-        //       <SendMessage threadId={threadId} />
-        //     </Suspense>
-        //   </ErrorBoundary>
-        // </Stack>
-        <Stack spacing={2}>
-          <Typography>No thread created yet</Typography>
-          <Button onClick={() => createThread({})}>Create thread</Button>
-        </Stack>
-      )}
-    </Container>
-  );
-};
+    //   </Stack>
 
-function ChatFlexLayout({
-  threadId,
-  streaming,
-}: {
-  threadId: string;
-  streaming: boolean;
-}) {
-  return (
-    <Box
+    <Container
+      maxWidth='md'
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        height: '100vh',
+        flex: 1,
       }}
     >
       <Box
         sx={{
           flex: 1,
+          overflowY: 'auto',
+          py: 2,
         }}
       >
+        <FormControlLabel
+          control={<Switch checked={stream} onChange={handleChange} />}
+          label='Streaming'
+        />
         <ErrorBoundary
           fallback={
             <Typography color='error'>Error displaying thread</Typography>
           }
         >
           <Suspense fallback={<CircularProgress />}>
-            <MessageList threadId={threadId} stream={streaming} />
+            <MessageList
+              threadId={threadId}
+              messages={messages}
+              status={status}
+              loadMore={loadMore}
+            />
           </Suspense>
         </ErrorBoundary>
       </Box>
       <Box
         sx={{
-          // p: 2,
           pt: 2,
           pb: 2,
           borderTop: '1px solid',
@@ -126,14 +109,19 @@ function ChatFlexLayout({
           display: 'flex',
           gap: 1,
           bgcolor: 'background.default',
+          zIndex: 1200,
         }}
       >
-        {streaming ? (
+        {stream ? (
           <ErrorBoundary
             fallback={<Typography color='error'>Error loading form</Typography>}
           >
             <Suspense>
-              <StreamingSendMessage threadId={threadId} />
+              <StreamingSendMessage
+                threadId={threadId}
+                abortStream={handleAbortStream}
+                isStreaming={isStreaming}
+              />
             </Suspense>
           </ErrorBoundary>
         ) : (
@@ -146,45 +134,6 @@ function ChatFlexLayout({
           </ErrorBoundary>
         )}
       </Box>
-    </Box>
+    </Container>
   );
-}
-
-// function ChatAbsoluteLayout({ threadId }: { threadId: string }) {
-//   return (
-//     <Box
-//       sx={{
-//         position: 'relative',
-//         height: '100vh',
-//       }}
-//     >
-//       <Box>
-//         <ErrorBoundary
-//           fallback={
-//             <Typography color='error'>Error displaying thread</Typography>
-//           }
-//         >
-//           <Suspense fallback={<CircularProgress />}>
-//             <MessageList threadId={threadId} />
-//           </Suspense>
-//         </ErrorBoundary>
-//       </Box>
-//       <Box
-//         sx={{
-//           position: 'absolute',
-//           bottom: 0,
-//           left: 0,
-//           width: '100%',
-//         }}
-//       >
-//         <ErrorBoundary
-//           fallback={<Typography color='error'>Error loading form</Typography>}
-//         >
-//           <Suspense>
-//             <SendMessage threadId={threadId} />
-//           </Suspense>
-//         </ErrorBoundary>
-//       </Box>
-//     </Box>
-//   );
-// }
+};

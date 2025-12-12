@@ -18,7 +18,7 @@ export function SendMessage({ threadId }: { threadId: string }) {
     ...chatFormOpts,
     onSubmit: async ({ value, formApi }) => {
       await sendMessage({ threadId, prompt: value.message });
-      console.log('resetting form...');
+
       formApi.reset({ message: '' });
       // form.reset();
     },
@@ -42,7 +42,7 @@ export function SendMessage({ threadId }: { threadId: string }) {
         gap: 2,
       }}
     >
-      <ChatForm form={form} />
+      <ChatForm form={form} actions={null} />
       {/* <button
         onClick={(e) => {
           e.preventDefault();
