@@ -1,3 +1,4 @@
+import { embeddingDimension } from 'convex/agent/models';
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
@@ -170,6 +171,12 @@ export default defineSchema({
         })
       )
     ),
+    // LLM computed data
+    summaryTitle: v.optional(v.string()),
+    oneSentenceSummary: v.optional(v.string()),
+    detailedSummary: v.optional(v.string()),
+    keyTopics: v.optional(v.array(v.string())),
+    notableQuotes: v.optional(v.array(v.string())),
   })
     .index('by_podId', ['podcastId'])
     .index('by_episodeId', ['episodeId'])
@@ -247,6 +254,11 @@ export default defineSchema({
         text: v.string(),
       })
     ),
+    summaryTitle: v.optional(v.string()),
+    oneSentenceSummary: v.optional(v.string()),
+    detailedSummary: v.optional(v.string()),
+    keyTopics: v.optional(v.array(v.string())),
+    notableQuotes: v.optional(v.array(v.string())),
     createdAt: v.number(),
   }).index('by_episodeId', ['episodeId']),
 
@@ -266,7 +278,7 @@ export default defineSchema({
   })
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
-      dimensions: 1536, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
+      dimensions: embeddingDimension, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
       filterFields: ['podcastId'],
     })
     .index('by_episodeId', ['episodeId']),

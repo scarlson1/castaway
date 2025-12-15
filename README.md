@@ -84,6 +84,7 @@ See `.env.example` for required environment variables.
 ### Collections / tables
 
 - `podcasts` - canonical podcast metadata
+
   ```json
   {
     "_id": "podcast:xxxxx",
@@ -102,9 +103,10 @@ See `.env.example` for required environment variables.
     "categoryArray": ["news"],
     "explicit": false,
     "funding": {},
-    "embedding": [0.23234, 0.3498]
+    "embedding": [0.23234, 0.3498] // TODO: delete ?? use convex rag component instead
   }
   ```
+
 - `episodes` - canonical episode references (one doc per episode GUID)
   ```json
   {
@@ -137,7 +139,9 @@ See `.env.example` for required environment variables.
     "socialInteract": []
   }
   ```
+  TODO: delete ?? use convex RAG component instead ??
 - `episodeEmbedding` - vector embedding for episodes
+
   ```json
   {
     "episodeConvexId": "2l3k4j",
@@ -153,7 +157,9 @@ See `.env.example` for required environment variables.
     "createdAt": 29348002
   }
   ```
+
 - `subscriptions` - user subscribes to a podcast
+
   ```json
   {
     "_id": "subscription:zzz",
@@ -167,7 +173,9 @@ See `.env.example` for required environment variables.
     }
   }
   ```
+
 - `user_playback` - per (user, episode) progress & state
+
   ```json
   {
     "_id": "0293848sslksdjfl",
@@ -182,7 +190,9 @@ See `.env.example` for required environment variables.
     "podcastTitle": "Pod Title"
   }
   ```
+
 - `ads` - ad segments
+
   ```json
   {
     "_id": "0293848sslksdjfl",
@@ -199,7 +209,9 @@ See `.env.example` for required environment variables.
     "createdAt": 293840293849
   }
   ```
+
 - `adJobs` - ad job workflow
+
   ```json
   {
     "_id": "0293848sslksdjfl",
@@ -220,6 +232,7 @@ See `.env.example` for required environment variables.
     ]
   }
   ```
+
 - `adJobWindows` - ad job windows - intermediate step in workflow - sent to classifier before being stitched into ad segments if determined to be an ad
 
   ```json
@@ -428,6 +441,7 @@ export const startAdDetection = mutation({
 2. Transcribe audio
 
 - `transcribeUrl` - breaks audio into chunks of <25MB --> openAI.transcribe --> combine & return transcript segments & text
+- `transcribeEpisodeAndSaveTranscript` calls LLM again to generate summary & tags which are passed to Convex RAG component which will create embedding (`internal.rag.insertEpisodeTranscript`)
 
 ```typescript
 // convex/adPipeline/transcribe.ts
@@ -596,9 +610,105 @@ export const fn = internalAction({
 });
 ```
 
-## Convex Agent Ideas
+## Agent Chat/Search
 
-Here are practical, high-impact ways to use **Convex Agent Mode** to add AI features to a podcast app. I’ll group them by user-facing features and the backend/ops work Convex Agent Mode can automate.
+## **3. Personalized Episode Highlights**
+
+Use Agent Mode to:
+
+- Analyze the transcript and detect “high-value moments”
+- Generate:
+
+  - quotes
+  - takeaways
+  - timestamps
+
+- Store highlight cards
+
+You can personalize based on user interests (stored in Convex).
+
+---
+
+## **4. AI Search Across All Podcasts**
+
+Index transcripts with embeddings and store them in Convex.
+
+Supports:
+
+- “Find me episodes where they talk about self-driving cars”
+- Cross-episode and cross-show semantic search
+- Question answering over all transcript content
+
+Convex Agent Mode can:
+
+- Generate embeddings
+- Build vector index entries
+- Re-index periodically or incrementally
+
+---
+
+## **5. Ask Questions About an Episode (RAG)**
+
+Users ask:
+
+> “What did the guest say about remote work?”
+
+Agent Mode retrieves transcript chunks and uses GPT to answer.
+
+Workflow:
+
+- Retrieve transcript (local or external)
+- Chunk + embed
+- Run retrieval
+- Generate answer
+- Return final result
+
+## **7. Intelligent Recommendations**
+
+Convex workflow:
+
+- Process transcripts + metadata
+- Build embeddings per episode
+- Match to user profile embeddings
+- Push new recommendations periodically
+
+Types:
+
+- “Because you liked hard-science episodes…”
+- “Episodes similar to what you listened to today…”
+
+---
+
+## Agent Implementation
+
+1. new episode is added
+
+- create transcript using OpenAI whisper
+- save transcript to DB (used for ad detection)
+
+2. RAG
+
+- pass to Convex's agent for RAG [docs](https://docs.convex.dev/agents/rag)
+- calc transcript summary instead of embedding entire transcript? (title + description + transcript summary)
+  - how Convex agent filter/namespace by episode ??
+
+3. Recommendations
+
+- occasionally compute user taste vector (cron) & save to user doc
+
+```typescript
+ctx.db
+  .query('podcastEpisodes')
+  .withVectorIndex('by_embedding', (q) => q.near(userEmbedding, { limit: 20 }));
+```
+
+TODO: currently saving episode embeddings to `episodeEmbeddings` table & passing to RAG agent component
+
+### Chat
+
+- create a new thread
+- updateThreadTitle tool summarizes the query to create title
+- Agent can be scoped to specific podcast/episode for search (use tool ??)
 
 ---
 
@@ -627,6 +737,8 @@ Use cases:
 ---
 
 ## **2. Chapter Generation / Topic Segmentation**
+
+TODO: can this be done with same token cost as classifyAds ??
 
 Agent workflow:
 

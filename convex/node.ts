@@ -1,7 +1,10 @@
 'use node';
 
 import { internal } from 'convex/_generated/api';
+import type { Doc } from 'convex/_generated/dataModel';
 import { action, internalAction } from 'convex/_generated/server';
+import { textEmbeddingModel } from 'convex/agent/models';
+import { summarizeTranscript } from 'convex/utils/summarizeTranscript';
 import { transcribeUrl } from 'convex/utils/transcribeUrl';
 import { v } from 'convex/values';
 import OpenAI from 'openai';
@@ -21,12 +24,6 @@ export const saveAdSegment = internalAction({
     confidence: v.number(),
   },
   handler: async (ctx, args) => {
-    // const emb = await openai.embeddings.create({
-    //   model: 'text-embedding-3-small', // 'text-embedding-3-large',
-    //   input: args.transcript,
-    // });
-
-    // const embedding = emb.data[0].embedding;
     const embedding = await embed(args.transcript);
 
     await ctx.runMutation(internal.adSegments.saveAdDoc, {
@@ -69,8 +66,7 @@ export const searchAds = action({
   },
 });
 
-async function embed(input: string, model = 'text-embedding-3-small') {
-  // 'text-embedding-3-large',
+async function embed(input: string, model = textEmbeddingModel) {
   const emb = await openai.embeddings.create({
     model,
     input,
@@ -85,20 +81,52 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     episodeId: v.string(),
     // convexEpId: v.id('episodes'),
     audioUrl: v.string(),
+    episodeTitle: v.optional(v.string()),
   },
-  handler: async (ctx, { audioUrl, episodeId }) => {
+  handler: async (ctx, { audioUrl, episodeId, episodeTitle }) => {
     const transcript = await transcribeUrl(audioUrl, {});
 
-    const transcriptId = await ctx.runMutation(internal.transcripts.save, {
+    let summary: Partial<Doc<'transcripts'>> = {
       episodeId,
       audioUrl,
       fullText: transcript.text,
       segments: transcript.segments || [],
-    });
+    };
 
+    try {
+      const { title, ...rest } = await summarizeTranscript(transcript.text);
+      console.log('SUMMARIZED TRANSCRIPT: ', title);
+      // TODO: need to save summary / keywords in episode data to avoid fetching transcript doc every time we want to search/find similar ??
+
+      summary = {
+        ...summary,
+        summaryTitle: title,
+        ...rest,
+      };
+      await ctx.scheduler.runAfter(0, internal.episodes.updateEpisode, {
+        episodeId,
+        updates: {
+          ...rest,
+          summaryTitle: title,
+        },
+      });
+    } catch (err) {
+      console.error('error summarizing transcript: ', err);
+    }
+
+    console.log('SAVING TRANSCRIPT: ', summary);
+    const transcriptId = await ctx.runMutation(
+      // @ts-ignore
+      internal.transcripts.save,
+      summary
+    );
+
+    console.log('ADDING TRANSCRIPT TO RAG: ', summary);
     // add embedding to rag component (for episode search etc.)
     await ctx.scheduler.runAfter(0, internal.rag.insertEpisodeTranscript, {
-      transcript: transcript.text,
+      summary: summary.detailedSummary || transcript.text,
+      title: episodeTitle || summary.summaryTitle || '', //  summary title redundant (derived from summary) prefer episode title if available
+      keyTopics: summary.keyTopics || [],
       episodeId,
     });
 

@@ -20,6 +20,7 @@ import type * as adPipeline_transcribe from "../adPipeline/transcribe.js";
 import type * as adSegments from "../adSegments.js";
 import type * as agent_agent from "../agent/agent.js";
 import type * as agent_chat from "../agent/chat.js";
+import type * as agent_models from "../agent/models.js";
 import type * as agent_streaming from "../agent/streaming.js";
 import type * as agent_threads from "../agent/threads.js";
 import type * as aggregates from "../aggregates.js";
@@ -35,6 +36,7 @@ import type * as rag from "../rag.js";
 import type * as stats_episodes from "../stats/episodes.js";
 import type * as stats_podcasts from "../stats/podcasts.js";
 import type * as subscribe from "../subscribe.js";
+import type * as tools_searchEpisodes from "../tools/searchEpisodes.js";
 import type * as tools_updateThreadTitle from "../tools/updateThreadTitle.js";
 import type * as transcripts from "../transcripts.js";
 import type * as users from "../users.js";
@@ -45,6 +47,7 @@ import type * as utils_env from "../utils/env.js";
 import type * as utils_helpers from "../utils/helpers.js";
 import type * as utils_llmBatchClassifier from "../utils/llmBatchClassifier.js";
 import type * as utils_mergeWindows from "../utils/mergeWindows.js";
+import type * as utils_summarizeTranscript from "../utils/summarizeTranscript.js";
 import type * as utils_transcribeUrl from "../utils/transcribeUrl.js";
 import type * as utils_types from "../utils/types.js";
 
@@ -67,6 +70,7 @@ declare const fullApi: ApiFromModules<{
   adSegments: typeof adSegments;
   "agent/agent": typeof agent_agent;
   "agent/chat": typeof agent_chat;
+  "agent/models": typeof agent_models;
   "agent/streaming": typeof agent_streaming;
   "agent/threads": typeof agent_threads;
   aggregates: typeof aggregates;
@@ -82,6 +86,7 @@ declare const fullApi: ApiFromModules<{
   "stats/episodes": typeof stats_episodes;
   "stats/podcasts": typeof stats_podcasts;
   subscribe: typeof subscribe;
+  "tools/searchEpisodes": typeof tools_searchEpisodes;
   "tools/updateThreadTitle": typeof tools_updateThreadTitle;
   transcripts: typeof transcripts;
   users: typeof users;
@@ -92,6 +97,7 @@ declare const fullApi: ApiFromModules<{
   "utils/helpers": typeof utils_helpers;
   "utils/llmBatchClassifier": typeof utils_llmBatchClassifier;
   "utils/mergeWindows": typeof utils_mergeWindows;
+  "utils/summarizeTranscript": typeof utils_summarizeTranscript;
   "utils/transcribeUrl": typeof utils_transcribeUrl;
   "utils/types": typeof utils_types;
 }>;

@@ -59,7 +59,7 @@ export const generateEpisodeEmbedding = action({
     });
     if (!episode) throw new Error('Episode not found');
 
-    const embedding = await generateEmbedding(episode.title, episode.summary);
+    const embedding = await generateEmbedding(episode);
 
     // optional normalization step for better vector search stability
     // normalizeVector(vector)
@@ -264,7 +264,7 @@ export const bulkEmbedEpisodes = action({
 
     for (const ep of toProcess) {
       try {
-        const embedding = await generateEmbedding(ep.title, ep.summary);
+        const embedding = await generateEmbedding(ep);
         await ctx.runMutation(internal.episodeEmbeddings.saveEpisodeEmbedding, {
           episodeConvexId: ep._id,
           embedding,
@@ -295,7 +295,7 @@ export const embedNewEpisodes = internalAction({
 
     for (const ep of filtered) {
       try {
-        const embedding = await generateEmbedding(ep.title, ep.summary);
+        const embedding = await generateEmbedding(ep);
         await ctx.runMutation(internal.episodeEmbeddings.saveEpisodeEmbedding, {
           episodeConvexId: ep._id,
           embedding,
@@ -310,7 +310,12 @@ export const embedNewEpisodes = internalAction({
   },
 });
 
-async function generateEmbedding(title: string, summary: string) {
-  const text = [title, summary ?? ''].join('\n\n');
+async function generateEmbedding(episode: Doc<'episodes'>) {
+  // const text = [episode.title, episode.summary ?? ''].join('\n\n');
+  const text =
+    episode.title + episode.summaryTitle ||
+    '' + episode.detailedSummary ||
+    episode.summary + episode.keyTopics?.join(' ');
+
   return createEmbedding(text);
 }

@@ -22,6 +22,11 @@ export const save = internalMutation({
         text: v.string(),
       })
     ),
+    summaryTitle: v.optional(v.string()),
+    oneSentenceSummary: v.optional(v.string()),
+    detailedSummary: v.optional(v.string()),
+    keyTopics: v.optional(v.array(v.string())),
+    notableQuotes: v.optional(v.array(v.string())),
   },
   handler: async ({ db }, values) => {
     await db.insert('transcripts', {
@@ -31,6 +36,7 @@ export const save = internalMutation({
   },
 });
 
+// trigger transcription of episode (in case it wasn't transcribed on import)
 export const create = action({
   args: { episodeId: v.string() },
   handler: async (ctx, { episodeId }) => {
@@ -45,6 +51,7 @@ export const create = action({
       {
         episodeId,
         audioUrl: episode.audioUrl,
+        episodeTitle: episode.title,
       }
     );
 

@@ -5,6 +5,7 @@ import {
 } from '@convex-dev/react-query';
 import {
   DownloadRounded,
+  HistoryEduRounded,
   IosShareRounded,
   PauseCircleFilledRounded,
   PlayCircleFilledRounded,
@@ -13,6 +14,10 @@ import {
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
   Stack,
@@ -24,7 +29,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import type { Doc, Id } from 'convex/_generated/dataModel';
 import { formatDate, formatDuration } from 'date-fns';
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { AdsTimeline } from '~/components/AdsTimeline';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
@@ -195,15 +200,41 @@ function RouteComponent() {
           </Stack>
 
           <Box sx={{ ml: 'auto' }}>
-            <EpisodeActions />
+            <EpisodeActions
+              episodeId={episodeId}
+              isTranscribed={Boolean(data.detailedSummary)}
+            />
           </Box>
         </Stack>
         <Divider sx={{ my: 1 }} />
-        <Typography variant='h6' gutterBottom>
-          Episode Description
-        </Typography>
+        <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+          <Typography variant='h6' gutterBottom>
+            Episode Description{' '}
+          </Typography>
+          {data.detailedSummary ? (
+            <Typography
+              component='span'
+              variant='body2'
+              color='textSecondary'
+              sx={{ pl: 1 }}
+            >
+              (AI generated summary)
+            </Typography>
+          ) : null}
+        </Stack>
         <Typography component='div' variant='body2'>
-          <div dangerouslySetInnerHTML={{ __html: data.summary }} />
+          {data.detailedSummary ? (
+            <Stack spacing={1}>
+              <Typography variant='body2'>{data.detailedSummary}</Typography>
+              <Divider flexItem />
+              <Typography variant='overline' color='textSecondary'>
+                Description from the podcast host:
+              </Typography>
+              <div dangerouslySetInnerHTML={{ __html: data.summary }} />
+            </Stack>
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: data.summary }} />
+          )}
         </Typography>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
           <MuiButtonLink to='/podcasts/$podId' params={{ podId }}>
@@ -221,6 +252,7 @@ function RouteComponent() {
             Transcribe & classify job
           </Button>
           <EmbedEpisode convexId={data._id} />
+          <ViewTranscript episodeId={episodeId} />
         </Stack>
 
         <Typography variant='h6' gutterBottom>
@@ -316,7 +348,22 @@ function AdSegments({ episodeId }: { episodeId: string }) {
   );
 }
 
-function EpisodeActions() {
+function EpisodeActions({
+  episodeId,
+  isTranscribed,
+}: {
+  episodeId: string;
+  isTranscribed: boolean;
+}) {
+  const toast = useAsyncToast();
+  const { mutate: transcribeEpisode, isPending: transcribePending } =
+    useMutation({
+      mutationFn: useConvexAction(api.transcripts.create),
+      // onMutate: () => toast.loading('transcribing episode...'),
+      onError: () => toast.error('error transcribing episode'),
+      onSuccess: () => toast.success('episode transcription started'),
+    });
+
   return (
     <Stack direction='row' spacing={1}>
       <Tooltip title='share'>
@@ -332,6 +379,16 @@ function EpisodeActions() {
       <Tooltip title='add to queue'>
         <IconButton size='small' onClick={() => alert('TODO: episode actions')}>
           <PlaylistAddRounded fontSize='inherit' />
+        </IconButton>
+      </Tooltip>
+      <Tooltip title='transcribe'>
+        <IconButton
+          size='small'
+          loading={transcribePending}
+          disabled={isTranscribed}
+          onClick={() => transcribeEpisode({ episodeId })}
+        >
+          <HistoryEduRounded fontSize='inherit' />
         </IconButton>
       </Tooltip>
     </Stack>
@@ -391,5 +448,30 @@ function EmbedEpisode({ convexId }: { convexId: Id<'episodes'> }) {
     >
       Embed Episode
     </Button>
+  );
+}
+
+function ViewTranscript({ episodeId }: { episodeId: string }) {
+  const [open, setOpen] = useState(false);
+  const { data } = useSuspenseQuery(
+    convexQuery(api.transcripts.getByEpisodeId, { episodeId })
+  );
+  console.log(data);
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>View Transcript</Button>
+      <Dialog open={open} onClose={() => setOpen(false)}>
+        <DialogTitle>Transcript</DialogTitle>
+        <DialogContent dividers>
+          <Typography variant='body2' fontSize='0.875rem'>
+            {data?.fullText}
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }

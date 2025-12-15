@@ -243,6 +243,7 @@ export const saveEpisodesToDb = internalMutation({
     );
 
     if (episodeIds.length) {
+      // embed title + description (delete - use rag instead ??)
       await scheduler.runAfter(0, internal.episodeEmbeddings.embedNewEpisodes, {
         episodeIds,
       });
@@ -332,6 +333,27 @@ export const updatePods = internalMutation({
         // lastUpdatedAt: update.lastUpdatedAt,
       });
     }
+  },
+});
+
+export const updateEpisode = internalMutation({
+  args: {
+    episodeId: v.string(),
+    updates: v
+      .object({
+        summaryTitle: v.optional(v.string()),
+        oneSentenceSummary: v.optional(v.string()),
+        detailedSummary: v.optional(v.string()),
+        keyTopics: v.optional(v.array(v.string())),
+        notableQuotes: v.optional(v.array(v.string())),
+      })
+      .partial(),
+  },
+  handler: async ({ db }, { episodeId, updates }) => {
+    const episode = await getEpisodeById(db, episodeId);
+    if (!episode) throw new Error('episode not found');
+    console.log('UPDATING EPISODE: ', episodeId, updates);
+    await db.patch(episode._id, updates);
   },
 });
 

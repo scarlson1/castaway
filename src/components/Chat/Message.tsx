@@ -5,7 +5,13 @@ import { Avatar, Box, Paper, Stack, Typography } from '@mui/material';
 import 'highlight.js/styles/github.css';
 import { ChatMarkdown } from '~/components/Chat/ChatMarkdown';
 
-export function Message({ message }: { message: UIMessage }) {
+export function Message({
+  message,
+}: // scrollContainerRef,
+{
+  message: UIMessage;
+  // scrollContainerRef: RefObject<HTMLDivElement>;
+}) {
   const isUser = message.role === 'user';
   const [visibleText] = useSmoothText(message.text, {
     startStreaming: message.status === 'streaming', // will only return messages with streaming true
@@ -33,6 +39,7 @@ export function Message({ message }: { message: UIMessage }) {
           // bgcolor: isUser ? 'gray.800' : 'gray.600',
           backgroundColor: isUser ? 'info.light' : 'grey.100',
           alignSelf: isUser ? 'flex-end' : 'flex-start',
+          overflow: 'visible', // allow position: "sticky" for children
         }),
         (theme) =>
           theme.applyStyles('dark', {

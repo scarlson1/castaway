@@ -1,5 +1,3 @@
-'use node';
-
 import { api, internal } from 'convex/_generated/api';
 import { internalAction } from 'convex/_generated/server';
 import { v } from 'convex/values';
@@ -8,8 +6,6 @@ import { v } from 'convex/values';
 // call transcription service for each chunk
 // write transcript to adJob doc
 // trigger next step: chunkTranscript
-
-// TODO: can change to internalMutation since transcribe moved to action in node.ts (instead of function) ??
 
 export const fn = internalAction({
   args: { jobId: v.id('adJobs') },
@@ -48,21 +44,6 @@ export const fn = internalAction({
       );
       transcript = result.transcript;
       transcriptId = result.transcriptId;
-
-      // transcript = await transcribeUrl(job.audioUrl, {});
-
-      // transcriptId = await ctx.runMutation(internal.transcripts.save, {
-      //   episodeId: job.episodeId,
-      //   audioUrl: job.audioUrl,
-      //   fullText: transcript.text,
-      //   segments: transcript.segments || [],
-      // });
-
-      // // add embedding to rag component (for episode search etc.)
-      // await ctx.scheduler.runAfter(0, internal.rag.insertEpisodeTranscript, {
-      //   transcript: transcript.text,
-      //   episodeId: job.episodeId,
-      // });
     }
 
     if (!transcriptId) throw new Error('failed to save transcript to DB');

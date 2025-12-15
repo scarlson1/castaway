@@ -2,41 +2,42 @@ import { openai } from '@ai-sdk/openai';
 import { RAG } from '@convex-dev/rag';
 import { components } from 'convex/_generated/api';
 import { action, internalMutation } from 'convex/_generated/server';
+import { languageModel, textEmbeddingModel } from 'convex/agent/models';
 import { v } from 'convex/values';
 
-export const textEmbeddingModel = 'text-embedding-3-small';
 const embeddingDimension = 1536;
 
-const defaultNamespace = 'global';
+export const defaultNamespace = 'global';
 
-export type Filters = { podcastId: string; category: string | null };
+export type Filters = {
+  podcastId: string;
+  category: string | null;
+  object: string | null;
+};
 type Metadata = {
   podcastId: string;
   podcastTitle: string;
-  episodeId: string;
-  episodeTitle: string;
-  publishedAt: number;
+  episodeId?: string | null;
+  episodeTitle?: string;
+  publishedAt?: number | null;
 };
 
 export const rag = new RAG<Filters, Metadata>(components.rag, {
   textEmbeddingModel: openai.embedding(textEmbeddingModel),
   embeddingDimension,
-  filterNames: ['podcastId', 'category'],
+  filterNames: ['podcastId', 'category', 'object'],
 });
 
+// TODO: need to update to use title + summary + tags instead of transcript ??
 export const insertEpisodeTranscript = internalMutation({
   args: {
-    // transcript: v.string(),
-    // episodeId: v.string(),
-    // episodeTitle: v.string(),
-    // podcastId: v.string(),
-    // podcastTitle: v.string(),
-    // publishedAt: v.number(),
-    // category: v.optional(v.string()),
     episodeId: v.string(),
-    transcript: v.string(),
+    // transcript: v.string(),
+    title: v.string(),
+    summary: v.string(),
+    keyTopics: v.array(v.string()),
   },
-  handler: async (ctx, { episodeId, transcript }) => {
+  handler: async (ctx, { episodeId, title, summary, keyTopics }) => {
     const episode = await ctx.db
       .query('episodes')
       .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
@@ -44,7 +45,7 @@ export const insertEpisodeTranscript = internalMutation({
     if (!episode) throw new Error(`episode not found [ID: ${episodeId}]`);
 
     const { entryId, created } = await rag.add(ctx, {
-      namespace: defaultNamespace, // 'episodes', // use episodeId ?? searching within episode ??
+      namespace: defaultNamespace, // 'episodes', // use episodeId ?? searching within episode ?? use filter (object = 'episode' or object = 'podcast')
 
       title: episode.episodeId,
       key: episode.episodeId,
@@ -55,9 +56,9 @@ export const insertEpisodeTranscript = internalMutation({
         episodeTitle: episode.title,
         publishedAt: episode.publishedAt,
       },
-      // contentHash: await contentHashFromArrayBuffer(args.transcript) // To avoid re-inserting if the file contents haven't changed.
+      // contentHash: await contentHashFromArrayBuffer(args.transcript) // To avoid re-inserting if the file contents haven't changed (for files)
 
-      text: transcript,
+      text: title + ' ' + summary + ' ' + keyTopics.join(' '),
 
       filterValues: [
         {
@@ -68,6 +69,10 @@ export const insertEpisodeTranscript = internalMutation({
           name: 'category',
           value: null, // TODO: pod category not stored on episode (add to episode or fetch pod ??)
         },
+        {
+          name: 'object',
+          value: 'episode', // TODO: pod category not stored on episode (add to episode or fetch pod ??)
+        },
       ],
       // onComplete: internal.example.recordUploadMetadata, // Called when the entry is ready (transactionally safe with listing).
     });
@@ -76,12 +81,13 @@ export const insertEpisodeTranscript = internalMutation({
       console.debug('entry already exists, skipping upload metadata');
       // await ctx.storage.delete(storageId);
     }
-    // return { url: (await ctx.storage.getUrl(storageId))!, entryId };
+
     return { entryId };
   },
 });
 
-export const search = action({
+// delete ?? use directly as a tool if not calling directly ??
+export const searchEpisodes = action({
   args: {
     query: v.string(),
     globalNamespace: v.boolean(),
@@ -135,7 +141,7 @@ export const askQuestion = action({
         chunkContext: args.chunkContext ?? { before: 1, after: 1 },
       },
       prompt: args.prompt,
-      model: 'openai/gpt-4o-mini', // openai.chat("gpt-4o-mini"),
+      model: languageModel, // 'openai/gpt-4o-mini', // openai.chat("gpt-4o-mini"),
     });
     return {
       answer: text,
