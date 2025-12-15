@@ -2,7 +2,7 @@ import { openai } from '@ai-sdk/openai';
 import { RAG } from '@convex-dev/rag';
 import { components } from 'convex/_generated/api';
 import { action, internalMutation } from 'convex/_generated/server';
-import { languageModel, textEmbeddingModel } from 'convex/agent/models';
+import { embeddingModelName } from 'convex/agent/models';
 import { v } from 'convex/values';
 
 const embeddingDimension = 1536;
@@ -23,7 +23,7 @@ type Metadata = {
 };
 
 export const rag = new RAG<Filters, Metadata>(components.rag, {
-  textEmbeddingModel: openai.embedding(textEmbeddingModel),
+  textEmbeddingModel: openai.embedding(embeddingModelName), // textEmbeddingModel
   embeddingDimension,
   filterNames: ['podcastId', 'category', 'object'],
 });
@@ -58,7 +58,7 @@ export const insertEpisodeTranscript = internalMutation({
       },
       // contentHash: await contentHashFromArrayBuffer(args.transcript) // To avoid re-inserting if the file contents haven't changed (for files)
 
-      text: title + ' ' + summary + ' ' + keyTopics.join(' '),
+      text: [title + ' ' + summary + ' ' + keyTopics.join(', ')].join('/n/n'),
 
       filterValues: [
         {
@@ -86,7 +86,7 @@ export const insertEpisodeTranscript = internalMutation({
   },
 });
 
-// delete ?? use directly as a tool if not calling directly ??
+// can be called directly from client for search
 export const searchEpisodes = action({
   args: {
     query: v.string(),
@@ -141,7 +141,7 @@ export const askQuestion = action({
         chunkContext: args.chunkContext ?? { before: 1, after: 1 },
       },
       prompt: args.prompt,
-      model: languageModel, // 'openai/gpt-4o-mini', // openai.chat("gpt-4o-mini"),
+      model: 'openai/gpt-4o-mini', // languageModelName, // languageModel, // 'openai/gpt-4o-mini', // openai.chat("gpt-4o-mini"),
     });
     return {
       answer: text,

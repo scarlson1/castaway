@@ -1,5 +1,5 @@
 import type { ClassifiedWindow, Window } from 'convex/adSegments';
-import { languageModel } from 'convex/agent/models';
+import { languageModelName } from 'convex/agent/models';
 import OpenAI from 'openai';
 
 // include previously classified ads for additional context ??
@@ -53,7 +53,7 @@ Remember: Return exactly ${windowCount} items in your JSON array.`;
   const estimatedTokens = Math.max(4000, windowCount * 150 + 500);
 
   const resp = await openai.chat.completions.create({
-    model: languageModel,
+    model: languageModelName, //  languageModel.modelId, // 'gpt-4o-mini'
     temperature: 0,
     max_tokens: estimatedTokens,
     messages: [

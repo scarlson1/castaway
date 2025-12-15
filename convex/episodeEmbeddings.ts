@@ -311,11 +311,11 @@ export const embedNewEpisodes = internalAction({
 });
 
 async function generateEmbedding(episode: Doc<'episodes'>) {
-  // const text = [episode.title, episode.summary ?? ''].join('\n\n');
-  const text =
-    episode.title + episode.summaryTitle ||
-    '' + episode.detailedSummary ||
-    episode.summary + episode.keyTopics?.join(' ');
+  const text = [
+    episode.title,
+    episode.detailedSummary ?? episode.summary,
+    episode.keyTopics?.join(', '),
+  ].join('\n\n');
 
   return createEmbedding(text);
 }

@@ -1,3 +1,5 @@
+// 'use node';
+
 import { api, internal } from 'convex/_generated/api';
 import { internalAction } from 'convex/_generated/server';
 import { v } from 'convex/values';

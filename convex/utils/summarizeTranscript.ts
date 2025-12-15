@@ -1,3 +1,4 @@
+import { languageModelName } from 'convex/agent/models';
 import OpenAI from 'openai';
 
 // TODO: get model from env var
@@ -42,7 +43,7 @@ async function reduceSummaries(
   chunkSummaries: string[]
 ): Promise<EpisodeSummary> {
   const response = await openai.chat.completions.create({
-    model: 'gpt-4.1',
+    model: languageModelName, // 'gpt-4.1',
     temperature: 0,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },
@@ -72,7 +73,7 @@ Return JSON with this exact schema:
 
 async function summarizeChunk(chunk: string): Promise<string> {
   const response = await openai.chat.completions.create({
-    model: 'gpt-4.1-mini',
+    model: languageModelName, // 'gpt-4.1-mini',
     temperature: 0,
     messages: [
       { role: 'system', content: SYSTEM_PROMPT },

@@ -3,7 +3,7 @@
 import { internal } from 'convex/_generated/api';
 import type { Doc } from 'convex/_generated/dataModel';
 import { action, internalAction } from 'convex/_generated/server';
-import { textEmbeddingModel } from 'convex/agent/models';
+import { embeddingModelName } from 'convex/agent/models';
 import { summarizeTranscript } from 'convex/utils/summarizeTranscript';
 import { transcribeUrl } from 'convex/utils/transcribeUrl';
 import { v } from 'convex/values';
@@ -66,7 +66,7 @@ export const searchAds = action({
   },
 });
 
-async function embed(input: string, model = textEmbeddingModel) {
+async function embed(input: string, model = embeddingModelName) {
   const emb = await openai.embeddings.create({
     model,
     input,
@@ -117,7 +117,7 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     console.log('SAVING TRANSCRIPT: ', summary);
     const transcriptId = await ctx.runMutation(
       // @ts-ignore
-      internal.transcripts.save,
+      internal.transcriptsTest.save,
       summary
     );
 
