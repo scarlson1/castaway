@@ -29,7 +29,7 @@ export const add = internalMutation({
     { db, scheduler },
     { podcastId, ...rest }: WithoutSystemFields<Doc<'podcasts'>>
   ) => {
-    // possible to add table constraint (userId & podcastId unique)
+    // possible to add table constraint (userId & podcastId unique) ??
     let existingSub = await checkExisting(db, podcastId);
 
     if (existingSub) return { success: true, new: false };
@@ -40,6 +40,8 @@ export const add = internalMutation({
       lastFetchedAt: getTimestamp(),
     });
 
+    // TODO: use RAG component for embedding ??
+    // should podcast embedding be recomputed from episode summaries ??
     // add embedding to podcast
     await scheduler.runAfter(0, internal.podcasts.generateEmbedding, {
       podConvexId: id,
@@ -129,6 +131,7 @@ export const saveEmbedding = internalMutation({
     embedding: v.array(v.number()),
   },
   handler: async ({ db }, { podConvexId, embedding }) => {
+    console.log(`saving embedding for podcast ${podConvexId}...`);
     await db.patch(podConvexId, {
       embedding,
     });

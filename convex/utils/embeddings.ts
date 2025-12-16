@@ -1,8 +1,8 @@
-import { languageModelName } from 'convex/agent/models';
+import { embeddingModelName } from 'convex/agent/models';
 
 export async function createEmbedding(
   text: string,
-  { model = languageModelName, apiKey = process.env.OPENAI_API_KEY } = {}
+  { model = embeddingModelName, apiKey = process.env.OPENAI_API_KEY } = {}
 ): Promise<number[]> {
   if (!apiKey) throw new Error('OPENAI_API_KEY required');
 

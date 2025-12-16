@@ -29,7 +29,7 @@ export const SubscribeIconButtonITunes = ({
   );
 
   const { mutate: subscribe, isPending } = useMutation({
-    mutationFn: useConvexAction(api.actions.subscribeitunesId),
+    mutationFn: useConvexAction(api.actions.subscribeItunesId),
   });
 
   const { mutate: unsubscribe, isPending: unsubPending } = useMutation({

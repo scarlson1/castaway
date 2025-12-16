@@ -65,7 +65,7 @@ export const subscribe = action({
 });
 
 // when podcast GUID isn't available (pod index trending includes itunes ID but not GUID)
-export const subscribeitunesId = action({
+export const subscribeItunesId = action({
   args: { itunesId: v.number() },
   handler: async (ctx, { itunesId }) => {
     const feed = await fetchPodIndexByitunesId(ctx, {

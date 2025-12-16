@@ -83,12 +83,11 @@ function RouteComponent() {
 }
 
 function PodDetails({ feed }: { feed: PodcastFeed }) {
+  const navigate = Route.useNavigate();
+
   return (
     <Stack direction='row' spacing={2}>
       <Box
-        // component='img'
-        // src={feed?.artwork}
-        // alt={`${feed.title} cover art`}
         sx={{
           // height: { xs: 100, sm: 160, md: 200 },
           // width: { xs: 100, sm: 160, md: 200 },
@@ -124,7 +123,13 @@ function PodDetails({ feed }: { feed: PodcastFeed }) {
                 </Skeleton>
               }
             >
-              <FollowingButtons podId={feed.podcastGuid} />
+              <FollowingButtons
+                podId={feed.podcastGuid}
+                onSubscribe={(podId) => {
+                  console.log('ON SUBSCRIBED CALLED');
+                  navigate({ to: '/podcasts/$podId', params: { podId } });
+                }}
+              />
             </Suspense>
           </ErrorBoundary>
         </Stack>
