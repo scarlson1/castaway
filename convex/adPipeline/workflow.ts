@@ -1,7 +1,7 @@
 import { vWorkflowId, WorkflowManager } from '@convex-dev/workflow';
 import { vResultValidator } from '@convex-dev/workpool';
 import { components, internal } from 'convex/_generated/api';
-import { internalMutation, mutation } from 'convex/_generated/server';
+import { internalMutation } from 'convex/_generated/server';
 import { v } from 'convex/values';
 
 export const workflow = new WorkflowManager(components.workflow);
@@ -97,7 +97,7 @@ export const createJob = internalMutation({
   },
 });
 
-export const handleOnComplete = mutation({
+export const handleOnComplete = internalMutation({
   args: {
     workflowId: vWorkflowId,
     result: vResultValidator,

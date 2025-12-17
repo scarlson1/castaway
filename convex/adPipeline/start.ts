@@ -1,3 +1,4 @@
+import type { WorkflowId } from '@convex-dev/workflow';
 import { internal } from 'convex/_generated/api';
 import { mutation } from 'convex/_generated/server';
 import { workflow } from 'convex/adPipeline/workflow';
@@ -34,7 +35,7 @@ export const startAdDetection = mutation({
     audioUrl: v.string(),
   },
   handler: async (ctx, args) => {
-    const workflowId = await workflow.start(
+    const workflowId: WorkflowId = await workflow.start(
       ctx,
       internal.adPipeline.workflow.adDetectionWorkflow,
       args,
