@@ -44,8 +44,6 @@ export const fn = internalAction({
       updates: { status: 'complete', completedAt: Date.now() },
     });
 
-    // delete ad windows ?? or cron ??
-
     return adSegmentIds;
   },
 });

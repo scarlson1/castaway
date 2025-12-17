@@ -352,7 +352,7 @@ export const updateEpisode = internalMutation({
   handler: async ({ db }, { episodeId, updates }) => {
     const episode = await getEpisodeById(db, episodeId);
     if (!episode) throw new Error('episode not found');
-    console.log('UPDATING EPISODE: ', episodeId, updates);
+    console.log('UPDATING EPISODE: ', episodeId, updates.summaryTitle);
     await db.patch(episode._id, updates);
   },
 });

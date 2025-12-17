@@ -409,20 +409,8 @@ function AdJobs({ episodeId }: { episodeId: string }) {
         const { transcript, ...job } = j;
         return (
           <Box key={j._id}>
-            {job.workflowId ? (
-              <ErrorBoundary
-                fallback={
-                  <Typography>Error loading workflow status</Typography>
-                }
-              >
-                <Suspense>
-                  <WorkflowStatus workflowId={job.workflowId} />
-                </Suspense>
-              </ErrorBoundary>
-            ) : null}
-
             <Typography variant='overline' color='textSecondary'>
-              Job Status
+              {`Job Status ${data.length > 1 ? job._id : ''}`.trim()}
             </Typography>
             <Typography
               variant='body2'
@@ -434,6 +422,18 @@ function AdJobs({ episodeId }: { episodeId: string }) {
             >
               {`Job status: ${job.status}`}
             </Typography>
+
+            {job.workflowId ? (
+              <ErrorBoundary
+                fallback={
+                  <Typography>Error loading workflow status</Typography>
+                }
+              >
+                <Suspense>
+                  <WorkflowStatus workflowId={job.workflowId} />
+                </Suspense>
+              </ErrorBoundary>
+            ) : null}
           </Box>
         );
       })}
@@ -453,21 +453,14 @@ function WorkflowStatus({ workflowId }: { workflowId: WorkflowId }) {
       <Typography variant='overline' color='textSecondary'>
         Workflow Status
       </Typography>
-      <Typography variant='body2'>{`Type: ${data.type}`}</Typography>
+      <Typography variant='body2'>{`Status: ${data.type}`}</Typography>
 
       {data.type === 'inProgress'
         ? data.running.map((step) => (
             <Typography
-              component='div'
               variant='body2'
-              sx={{
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap',
-              }}
-            >
-              <pre>{JSON.stringify(step, null, 2)}</pre>
-            </Typography>
+              key={step.name}
+            >{`Step: ${step.name}`}</Typography>
           ))
         : null}
 
@@ -478,17 +471,6 @@ function WorkflowStatus({ workflowId }: { workflowId: WorkflowId }) {
       {data.type === 'failed' ? (
         <Typography variant='body2'>{data.error}</Typography>
       ) : null}
-      {/* <Typography
-        component='div'
-        variant='body2'
-        sx={{
-          overflow: 'hidden',
-          textOverflow: 'ellipsis',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        <pre>{JSON.stringify(data, null, 2)}</pre>
-      </Typography> */}
     </>
   );
 }

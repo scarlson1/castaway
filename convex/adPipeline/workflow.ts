@@ -42,7 +42,8 @@ export const adDetectionWorkflow = workflow.define({
     );
 
     // 1) transcribe audio from url
-    const transcribeResult = await step.runAction(
+    await step.runAction(
+      // const transcribeResult =
       internal.adPipeline.transcribe.fn,
       {
         jobId,
@@ -51,7 +52,8 @@ export const adDetectionWorkflow = workflow.define({
     );
 
     // 2) break transcript into windows and write to 'adJobWindows' table
-    const chunkTranscriptResult = await step.runMutation(
+    await step.runMutation(
+      // const chunkTranscriptResult =
       internal.adPipeline.chunkTranscript.fn,
       {
         jobId,
@@ -60,7 +62,8 @@ export const adDetectionWorkflow = workflow.define({
     );
 
     // 3) pass to LLM in batches to classify windows - called recursively (20 at a time)
-    const classifyWindowsResult = await step.runAction(
+    await step.runAction(
+      // const classifyWindowsResult =
       internal.adPipeline.classifyWindows.fn,
       {
         jobId,
@@ -70,10 +73,14 @@ export const adDetectionWorkflow = workflow.define({
     );
 
     // wait for all batches to complete (classifyWindows is called recursively)
-    await step.awaitEvent({ id: windowClassificationCompleteEventId });
+    await step.awaitEvent({
+      id: windowClassificationCompleteEventId,
+      name: 'batchClassifyWindows',
+    });
 
     // 4) stitch together windows classified as ads into ad segments
-    const mergeSegmentsResult = await step.runMutation(
+    await step.runMutation(
+      // const mergeSegmentsResult =
       internal.adPipeline.mergeSegments.fn,
       {
         jobId,
@@ -89,6 +96,8 @@ export const adDetectionWorkflow = workflow.define({
       },
       { name: 'saveToAds' }
     );
+
+    // TODO: delete windows ?? or run in cron job ??
 
     // return saveToAdsResult;
     return `${saveToAdsResult?.length ?? '0'} ad segments added to DB `; // [${args.episodeId}]

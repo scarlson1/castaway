@@ -5,12 +5,10 @@ import { v } from 'convex/values';
 
 // takes transcript segments --> combine/break into fixed size windows
 // save windows to adJobWindows table
-// trigger classification job to classify windows
 
 const WINDOW_SIZE = 12; // seconds
 const WINDOW_OVERLAP = Math.ceil(WINDOW_SIZE / 3);
 
-// should be an action instead b/c of build windows ??
 export const fn = internalMutation({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
