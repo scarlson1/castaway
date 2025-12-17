@@ -1,5 +1,5 @@
 import { SignedIn } from '@clerk/tanstack-react-start';
-import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
+import { convexQuery } from '@convex-dev/react-query';
 import { Box, Divider, Grid, Stack, styled, Typography } from '@mui/material';
 import { ErrorBoundary } from '@sentry/tanstackstart-react';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
@@ -26,129 +26,125 @@ export const Route = createFileRoute('/')({
 });
 
 function Home() {
-  const { isAuthenticated } = useConvexAuth();
+  const homeItems = [
+    <Featured />,
+
+    <Box>
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          pb: 2,
+          width: '100%',
+        }}
+      >
+        <Typography variant='h5'>Episodes you won't want to miss</Typography>
+        <SignedIn>
+          <MuiButtonLink to='/podcasts/feed'>See more</MuiButtonLink>
+        </SignedIn>
+      </Box>
+      <RecentSubscribedEpisodes />
+    </Box>,
+
+    <Box>
+      <Typography variant='h5' gutterBottom>
+        New Episode Releases
+      </Typography>
+      <ErrorBoundary
+        fallback={<Typography>Failed to load recent episodes</Typography>}
+      >
+        <Suspense
+          fallback={
+            <SuspenseGridCards
+              numItems={8}
+              orientation='horizontal'
+              childGridProps={{ size: { xs: 16, sm: 8 } }}
+            />
+          }
+        >
+          <RecentEpisodes />
+        </Suspense>
+      </ErrorBoundary>
+    </Box>,
+
+    <Authed>
+      <Box sx={{ width: '100%' }}>
+        <Box>
+          <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
+            Based on your listening
+          </Typography>
+          <Typography variant='h5' gutterBottom>
+            Podcasts you might like
+          </Typography>
+        </Box>
+        <ErrorBoundary
+          fallback={<Typography>Error loading recommendations</Typography>}
+        >
+          <Suspense
+            fallback={
+              <SuspenseGridCards
+                numItems={8}
+                columnSpacing={2}
+                rowSpacing={1}
+                columns={16}
+                childGridProps={{
+                  size: { xs: 8, sm: 4, md: 4, lg: 2 },
+                }}
+              />
+            }
+          >
+            <RecommendedPods limit={8} />
+          </Suspense>
+        </ErrorBoundary>
+      </Box>
+    </Authed>,
+
+    <Authed>
+      <Box sx={{ width: '100%' }}>
+        <Box>
+          <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
+            Based on your listening
+          </Typography>
+          <Typography variant='h5' gutterBottom>
+            Episodes you might like
+          </Typography>
+        </Box>
+
+        <ErrorBoundary
+          fallback={<Typography>Error loading recommendations</Typography>}
+        >
+          <RecommendedEpisodes limit={8} />
+        </ErrorBoundary>
+      </Box>
+    </Authed>,
+
+    <Box>
+      <Typography variant='h5' gutterBottom>
+        Find something new
+      </Typography>
+      <RandomEpisodes />
+    </Box>,
+
+    // {/* TODO: get most recent listened episode and use to generate recommendations */}
+
+    <Box sx={{ width: '100%' }}>
+      <Typography variant='h5' gutterBottom>
+        Categories
+      </Typography>
+      <PodcastGenreCards />
+    </Box>,
+  ].filter(Boolean);
+
+  const stackItems = homeItems.filter(Boolean);
+
   return (
     <Stack
       direction='column'
       spacing={{ xs: 4, sm: 5, md: 6 }}
       divider={<Divider flexItem />}
     >
-      {/* <Typography variant='h1' marginBlockEnd={4}>
-        Castaway
-      </Typography> */}
-      <Featured />
-
-      <Box>
-        <Box
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            pb: 2,
-            width: '100%',
-          }}
-        >
-          <Typography variant='h5'>Episodes you won't want to miss</Typography>
-          <SignedIn>
-            <MuiButtonLink to='/podcasts/feed'>See more</MuiButtonLink>
-          </SignedIn>
-        </Box>
-        <RecentSubscribedEpisodes />
-      </Box>
-
-      <Box>
-        <Typography variant='h5' gutterBottom>
-          New Episode Releases
-        </Typography>
-        <ErrorBoundary
-          fallback={<Typography>Failed to load recent episodes</Typography>}
-        >
-          <Suspense
-            fallback={
-              <SuspenseGridCards
-                numItems={8}
-                orientation='horizontal'
-                childGridProps={{ size: { xs: 16, sm: 8 } }}
-              />
-            }
-          >
-            <RecentEpisodes />
-          </Suspense>
-        </ErrorBoundary>
-      </Box>
-
-      <Authed>
-        <Box sx={{ width: '100%' }}>
-          <Box>
-            <Typography
-              variant='overline'
-              lineHeight={1.2}
-              color='textSecondary'
-            >
-              Based on your listening
-            </Typography>
-            <Typography variant='h5' gutterBottom>
-              Podcasts you might like
-            </Typography>
-          </Box>
-          <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
-            <Suspense
-              fallback={
-                <SuspenseGridCards
-                  numItems={8}
-                  columnSpacing={2}
-                  rowSpacing={1}
-                  columns={16}
-                  childGridProps={{
-                    size: { xs: 8, sm: 4, md: 4, lg: 2 },
-                  }}
-                />
-              }
-            >
-              <RecommendedPods limit={8} />
-            </Suspense>
-          </ErrorBoundary>
-        </Box>
-      </Authed>
-
-      <Authed>
-        <Box sx={{ width: '100%' }}>
-          <Box>
-            <Typography
-              variant='overline'
-              lineHeight={1.2}
-              color='textSecondary'
-            >
-              Based on your listening
-            </Typography>
-            <Typography variant='h5' gutterBottom>
-              Episodes you might like
-            </Typography>
-          </Box>
-
-          <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
-            <RecommendedEpisodes limit={8} />
-          </ErrorBoundary>
-        </Box>
-      </Authed>
-
-      <Box>
-        <Typography variant='h5' gutterBottom>
-          Find something new
-        </Typography>
-        <RandomEpisodes />
-      </Box>
-
-      {/* TODO: get most recent listened episode and use to generate recommendations */}
-
-      <Box sx={{ width: '100%' }}>
-        <Typography variant='h5' gutterBottom>
-          Categories
-        </Typography>
-        <PodcastGenreCards />
-      </Box>
-
-      {/* <TestGraphQL /> */}
+      {stackItems}
     </Stack>
   );
 }
