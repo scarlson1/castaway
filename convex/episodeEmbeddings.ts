@@ -9,7 +9,10 @@ import {
   query,
 } from 'convex/_generated/server';
 import { getClerkId } from 'convex/utils/auth';
-import { createEmbedding } from 'convex/utils/embeddings';
+import {
+  createEmbedding,
+  formatEpisodeEmbeddingText,
+} from 'convex/utils/embeddings';
 import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
 
@@ -59,7 +62,11 @@ export const generateEpisodeEmbedding = action({
     });
     if (!episode) throw new Error('Episode not found');
 
-    const embedding = await generateEmbedding(episode);
+    const text = formatEpisodeEmbeddingText(episode);
+
+    const embeddingResult = await createEmbedding(text);
+    const embedding = embeddingResult[0].embedding;
+    // const embedding = await generateEmbedding(episode);
 
     // optional normalization step for better vector search stability
     // normalizeVector(vector)
@@ -145,7 +152,9 @@ export const getPersonalizedRecommendations = action({
       }
     );
 
-    if (!listens || listens.length === 0) return [];
+    if (!listens || listens.length === 0) {
+      return await ctx.runQuery(api.episodes.unauthedRecentEpisodes, { limit });
+    }
 
     // const episodeIds = listens.map(l => l.episodeId);
     // const embRows = await ctx.db
@@ -240,46 +249,7 @@ export const getEpisodesWithoutEmbedding = internalQuery({
   },
 });
 
-// run periodically (cron job) to ensure all episodes are embedded
-// TODO: change to internal & run as cron job
-export const bulkEmbedEpisodes = action({
-  args: {
-    podcastId: v.optional(v.string()),
-    batchSize: v.optional(v.number()),
-  },
-  handler: async (ctx, { podcastId, batchSize = 10 }) => {
-    // fetch episodes that don't have embeddings yet
-    const episodes: Doc<'episodes'>[] = await ctx.runQuery(
-      internal.episodeEmbeddings.getEpisodesWithoutEmbedding,
-      { podcastId, limit: batchSize }
-    );
-    console.log('EMBEDDING EPISODES: ', episodes.length);
-
-    // fetch existing embedding episodeIds
-    // const existing = await ctx.db.query("episodeEmbeddings").collect();
-    // const existingIds = new Set(existing.map(e => String(e.episodeId)));
-
-    // const toProcess = episodes.filter(e => !existingIds.has(String(e._id))).slice(0, batchSize);
-    const toProcess = episodes.slice(0, batchSize);
-
-    for (const ep of toProcess) {
-      try {
-        const embedding = await generateEmbedding(ep);
-        await ctx.runMutation(internal.episodeEmbeddings.saveEpisodeEmbedding, {
-          episodeConvexId: ep._id,
-          embedding,
-        });
-      } catch (err) {
-        // log and continue — robust to API hiccups
-        console.error('embed fail', ep._id, err);
-      }
-    }
-
-    return { processed: toProcess.length };
-  },
-});
-
-// called after new episodes imported
+// called after new episodes imported (call with <= 10 episodes at a time)
 export const embedNewEpisodes = internalAction({
   args: {
     episodeIds: v.array(v.id('episodes')),
@@ -295,7 +265,11 @@ export const embedNewEpisodes = internalAction({
 
     for (const ep of filtered) {
       try {
-        const embedding = await generateEmbedding(ep);
+        // TODO: batch embeddings
+        // const embeddingRes = await generateEmbedding(ep);
+        const text = formatEpisodeEmbeddingText(ep);
+        const embeddingResult = await createEmbedding(text);
+        const embedding = embeddingResult[0].embedding;
         await ctx.runMutation(internal.episodeEmbeddings.saveEpisodeEmbedding, {
           episodeConvexId: ep._id,
           embedding,
@@ -310,12 +284,72 @@ export const embedNewEpisodes = internalAction({
   },
 });
 
-async function generateEmbedding(episode: Doc<'episodes'>) {
-  const text = [
-    episode.title,
-    episode.detailedSummary ?? episode.summary,
-    episode.keyTopics?.join(', '),
-  ].join('\n\n');
+// TODO: delete the above function and use this instead (less likely to timeout)
+// cron job or explicitly call ??
+export const embedNewEpisodesBatch = internalAction({
+  args: {
+    episodeIds: v.array(v.id('episodes')),
+  },
+  handler: async (ctx, { episodeIds }) => {
+    const episodes: (Doc<'episodes'> | null)[] = await ctx.runQuery(
+      internal.episodes.getMultipleById,
+      {
+        convexIds: episodeIds,
+      }
+    );
+    const filtered = episodes.filter(isNotNullish);
+    // Build embedding inputs (CLEAN + SHORT)
+    const inputs = filtered.map(formatEpisodeEmbeddingText);
 
-  return createEmbedding(text);
-}
+    const embeddingResult = await createEmbedding(inputs);
+
+    for (let i = 0; i < filtered.length; i++) {
+      await ctx.runMutation(api.mutations.saveEpisodeEmbedding, {
+        episodeId: filtered[i]._id,
+        vector: embeddingResult[i].embedding,
+        metadata: {
+          title: filtered[i].title,
+        },
+      });
+    }
+
+    return {
+      status: 'ok',
+      processed: filtered.length,
+    };
+  },
+});
+
+// run periodically (cron job) to ensure all episodes are embedded
+// TODO: change to internal & run as cron job
+export const bulkEmbedEpisodes = action({
+  args: {
+    podcastId: v.optional(v.string()),
+    batchSize: v.optional(v.number()),
+  },
+  handler: async (ctx, { podcastId, batchSize = 10 }) => {
+    // fetch episodes that don't have embeddings yet
+    const episodes: Doc<'episodes'>[] = await ctx.runQuery(
+      internal.episodeEmbeddings.getEpisodesWithoutEmbedding,
+      { podcastId, limit: batchSize }
+    );
+    console.log('EMBEDDING EPISODES: ', episodes.length);
+
+    // Build embedding inputs (CLEAN + SHORT)
+    const inputs = episodes.map(formatEpisodeEmbeddingText);
+
+    const embeddingResult = await createEmbedding(inputs);
+
+    for (let i = 0; i < episodes.length; i++) {
+      await ctx.runMutation(api.mutations.saveEpisodeEmbedding, {
+        episodeId: episodes[i]._id,
+        vector: embeddingResult[i].embedding,
+        metadata: {
+          title: episodes[i].title,
+        },
+      });
+    }
+
+    return { processed: episodes.length };
+  },
+});

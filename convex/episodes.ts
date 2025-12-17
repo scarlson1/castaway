@@ -214,7 +214,7 @@ export const getByGuid = query({
   },
 });
 
-export const saveEpisodesToDb = internalMutation({
+export const saveEpisodes = internalMutation({
   // args: { episodes: Doc<"episodes"> },
   handler: async (
     { db, scheduler },
@@ -243,7 +243,7 @@ export const saveEpisodesToDb = internalMutation({
     );
 
     if (episodeIds.length) {
-      // embed title + description (delete - use rag instead ??)
+      // embed title + description (delete - use rag instead --> trigger transcript ??)
       await scheduler.runAfter(0, internal.episodeEmbeddings.embedNewEpisodes, {
         episodeIds,
       });
@@ -307,7 +307,7 @@ export const refreshByPodId = action({
       podcastTitle: mostRecentEpisode?.podcastTitle,
     }));
 
-    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
       episodes: eps,
     });
 
@@ -416,7 +416,7 @@ export const fetchNewEpisodes = internalAction({
     }
 
     if (podLastUpdated.length) {
-      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
         episodes: newEpisodesQueue,
       });
     }

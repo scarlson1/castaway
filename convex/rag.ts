@@ -1,8 +1,8 @@
-import { openai } from '@ai-sdk/openai';
+// import { openai } from '@ai-sdk/openai';
 import { RAG } from '@convex-dev/rag';
-import { components } from 'convex/_generated/api';
-import { action, internalMutation } from 'convex/_generated/server';
-import { embeddingModelName } from 'convex/agent/models';
+import { api, components } from 'convex/_generated/api';
+import { action, internalAction } from 'convex/_generated/server';
+// import { embeddingModelName } from 'convex/agent/models';
 import { v } from 'convex/values';
 
 const embeddingDimension = 1536;
@@ -23,13 +23,12 @@ type Metadata = {
 };
 
 export const rag = new RAG<Filters, Metadata>(components.rag, {
-  textEmbeddingModel: openai.embedding(embeddingModelName), // textEmbeddingModel
+  textEmbeddingModel: 'openai/gpt-4o-mini', // openai.embedding(embeddingModelName), // textEmbeddingModel
   embeddingDimension,
   filterNames: ['podcastId', 'category', 'object'],
 });
 
-// TODO: need to update to use title + summary + tags instead of transcript ??
-export const insertEpisodeTranscript = internalMutation({
+export const insertEpisodeTranscript = internalAction({
   args: {
     episodeId: v.string(),
     // transcript: v.string(),
@@ -38,11 +37,14 @@ export const insertEpisodeTranscript = internalMutation({
     keyTopics: v.array(v.string()),
   },
   handler: async (ctx, { episodeId, title, summary, keyTopics }) => {
-    const episode = await ctx.db
-      .query('episodes')
-      .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
-      .first();
+    const episode = await ctx.runQuery(api.episodes.getByGuid, {
+      id: episodeId,
+    });
     if (!episode) throw new Error(`episode not found [ID: ${episodeId}]`);
+
+    console.log(
+      `Adding transcript to RAG component [episode ID: ${episodeId}]...`
+    );
 
     const { entryId, created } = await rag.add(ctx, {
       namespace: defaultNamespace, // 'episodes', // use episodeId ?? searching within episode ?? use filter (object = 'episode' or object = 'podcast')
@@ -58,7 +60,13 @@ export const insertEpisodeTranscript = internalMutation({
       },
       // contentHash: await contentHashFromArrayBuffer(args.transcript) // To avoid re-inserting if the file contents haven't changed (for files)
 
-      text: [title + ' ' + summary + ' ' + keyTopics.join(', ')].join('/n/n'),
+      text: [
+        title ? `Title: ${title}` : '',
+        summary ? `Summary: ${summary}` : '',
+        keyTopics.join(', '),
+      ]
+        .filter(Boolean)
+        .join('/n/n'),
 
       filterValues: [
         {
@@ -86,7 +94,75 @@ export const insertEpisodeTranscript = internalMutation({
   },
 });
 
+// export const insertEpisodeTranscript = internalMutation({
+//   args: {
+//     episodeId: v.string(),
+//     // transcript: v.string(),
+//     title: v.string(),
+//     summary: v.string(),
+//     keyTopics: v.array(v.string()),
+//   },
+//   handler: async (ctx, { episodeId, title, summary, keyTopics }) => {
+//     const episode = await ctx.db
+//       .query('episodes')
+//       .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+//       .first();
+//     if (!episode) throw new Error(`episode not found [ID: ${episodeId}]`);
+
+//     console.log(
+//       `Adding transcript to RAG component [episode ID: ${episodeId}]...`
+//     );
+
+//     const { entryId, created } = await rag.add(ctx, {
+//       namespace: defaultNamespace, // 'episodes', // use episodeId ?? searching within episode ?? use filter (object = 'episode' or object = 'podcast')
+
+//       title: episode.episodeId,
+//       key: episode.episodeId,
+//       metadata: {
+//         podcastId: episode.podcastId,
+//         podcastTitle: episode.podcastTitle,
+//         episodeId: episode.episodeId,
+//         episodeTitle: episode.title,
+//         publishedAt: episode.publishedAt,
+//       },
+//       // contentHash: await contentHashFromArrayBuffer(args.transcript) // To avoid re-inserting if the file contents haven't changed (for files)
+
+//       text: [
+//         title ? `Title: ${title}` : '',
+//         summary ? `Summary: ${summary}` : '',
+//         keyTopics.join(', '),
+//       ]
+//         .filter(Boolean)
+//         .join('/n/n'),
+
+//       filterValues: [
+//         {
+//           name: 'podcastId',
+//           value: episode.podcastId,
+//         },
+//         {
+//           name: 'category',
+//           value: null, // TODO: pod category not stored on episode (add to episode or fetch pod ??)
+//         },
+//         {
+//           name: 'object',
+//           value: 'episode', // TODO: pod category not stored on episode (add to episode or fetch pod ??)
+//         },
+//       ],
+//       // onComplete: internal.example.recordUploadMetadata, // Called when the entry is ready (transactionally safe with listing).
+//     });
+
+//     if (!created) {
+//       console.debug('entry already exists, skipping upload metadata');
+//       // await ctx.storage.delete(storageId);
+//     }
+
+//     return { entryId };
+//   },
+// });
+
 // can be called directly from client for search
+
 export const searchEpisodes = action({
   args: {
     query: v.string(),

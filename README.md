@@ -39,6 +39,10 @@ See `.env.example` for required environment variables.
 - feedback score for ad segments
 - search ad segments with embedding before sending to classifier (only send if unsure whether segment is ad)
 - subscription notifications
+- Refactor to use [Convex workflows](https://www.convex.dev/components/workflow)
+  - adPipeline
+  - transcribe episode
+  - import podcast ?
 - global playback/user preferences (playback speed, notifications, etc.)
 - fingerprint ad detection (repeated segments across episodes)
   - Use audio fingerprints (Chromaprint/AcoustID-like, or embeddings hashed + approximate nearest neighbors).

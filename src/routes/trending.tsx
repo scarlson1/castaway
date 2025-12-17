@@ -110,10 +110,15 @@ function RouteComponent() {
         </FormControl>
       </Stack>
 
-      <Stack direction='column' spacing={3} sx={{ py: 3 }}>
+      <Stack
+        direction='column'
+        spacing={3}
+        sx={{ py: 3 }}
+        divider={<Divider flexItem />}
+      >
         {cat ? (
           <>
-            <Typography variant='h6' fontWeight={500}>
+            <Typography variant='h6' gutterBottom fontWeight={500}>
               {`Popular in ${cat}`}
             </Typography>
             <ErrorBoundary
@@ -123,13 +128,12 @@ function RouteComponent() {
                 <CategoryMostPopular category={cat} lang='en' since={since} />
               </Suspense>
             </ErrorBoundary>
-            <Divider flexItem />
           </>
         ) : null}
 
         {!cat ? (
           <>
-            <Typography variant='h6' fontWeight={500}>
+            <Typography variant='h6' gutterBottom fontWeight={500}>
               Most streamed episodes
             </Typography>
             <ErrorBoundary
@@ -149,13 +153,12 @@ function RouteComponent() {
                 <StatsMostPlayedEpisodes pageSize={8} />
               </Suspense>
             </ErrorBoundary>
-            <Divider flexItem />
           </>
         ) : null}
 
         {!cat ? (
           <>
-            <Typography variant='h6' fontWeight={500}>
+            <Typography variant='h6' gutterBottom fontWeight={500}>
               Most streamed podcasts
             </Typography>
             <ErrorBoundary fallback={<div>Error loading most played pods</div>}>
@@ -175,7 +178,6 @@ function RouteComponent() {
                 <StatsMostPlayedPodcasts pageSize={8} />
               </Suspense>
             </ErrorBoundary>
-            <Divider flexItem />
           </>
         ) : null}
 
@@ -273,36 +275,36 @@ function CategoryMostPopular({
   );
 
   return (
-    <Stack spacing={3} sx={{ py: { xs: 3, md: 5 } }}>
-      <Divider flexItem />
+    // <Stack spacing={3} sx={{ py: { xs: 3, md: 5 } }}>
+    //   <Divider flexItem />
 
-      <Typography
-        variant='h5'
-        gutterBottom
-        fontWeight='medium'
-      >{`Most popular in ${category}`}</Typography>
+    //   <Typography
+    //     variant='h5'
+    //     gutterBottom
+    //     fontWeight='medium'
+    //   >{`Most popular in ${category}`}</Typography>
 
-      <Grid container columnSpacing={1.5} rowSpacing={2} columns={16}>
-        {items.map((pod) => (
-          <Grid key={`${pod.id}-cat`} size={{ xs: 8, sm: 4, md: 2 }}>
-            <Card
-              orientation='vertical'
-              imgSrc={pod.image || pod.artwork}
-              title={pod.title}
-              subtitle={pod.author}
-              linkProps={{
-                to: '/podcast/$podId',
-                params: { podId: `${pod.id}` },
-              }}
-            >
-              <SubscribeIconButtonITunes itunesId={pod.itunesId} />
-            </Card>
-          </Grid>
-        ))}
-      </Grid>
+    <Grid container columnSpacing={1.5} rowSpacing={2} columns={16}>
+      {items.map((pod) => (
+        <Grid key={`${pod.id}-cat`} size={{ xs: 8, sm: 4, md: 2 }}>
+          <Card
+            orientation='vertical'
+            imgSrc={pod.image || pod.artwork}
+            title={pod.title}
+            subtitle={pod.author}
+            linkProps={{
+              to: '/podcast/$podId',
+              params: { podId: `${pod.id}` },
+            }}
+          >
+            <SubscribeIconButtonITunes itunesId={pod.itunesId} />
+          </Card>
+        </Grid>
+      ))}
+    </Grid>
 
-      <Divider flexItem />
-    </Stack>
+    //   <Divider flexItem />
+    // </Stack>
   );
 }
 

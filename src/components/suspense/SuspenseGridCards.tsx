@@ -4,7 +4,7 @@ import { SuspenseCard } from '~/components/suspense/SuspenseCard';
 
 interface SuspenseGridCardsProps extends GridProps {
   numItems: number;
-  orientation?: string;
+  orientation?: 'vertical' | 'horizontal';
   rank?: string | boolean;
   childGridProps?: GridProps;
 }

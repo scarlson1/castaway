@@ -1,7 +1,7 @@
 'use node';
 
-import { internal } from 'convex/_generated/api';
-import type { Doc } from 'convex/_generated/dataModel';
+import { api, internal } from 'convex/_generated/api';
+import type { Doc, Id } from 'convex/_generated/dataModel';
 import { action, internalAction } from 'convex/_generated/server';
 import { embeddingModelName } from 'convex/agent/models';
 import { summarizeTranscript } from 'convex/utils/summarizeTranscript';
@@ -82,11 +82,35 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     // convexEpId: v.id('episodes'),
     audioUrl: v.string(),
     episodeTitle: v.optional(v.string()),
+    forceTranscribe: v.optional(v.boolean()),
   },
-  handler: async (ctx, { audioUrl, episodeId, episodeTitle }) => {
-    const transcript = await transcribeUrl(audioUrl, {});
+  handler: async (
+    ctx,
+    { audioUrl, episodeId, episodeTitle, forceTranscribe = false }
+  ) => {
+    let transcript;
+    if (!forceTranscribe) {
+      let existingTranscript: Doc<'transcripts'> | null = await ctx.runQuery(
+        api.transcripts.getByEpisodeId,
+        { episodeId }
+      );
+      if (existingTranscript) {
+        console.log('using existing transcript');
+        transcript = {
+          text: existingTranscript.fullText,
+          segments: existingTranscript.segments,
+        };
+      }
+    }
+    if (!transcript) transcript = await transcribeUrl(audioUrl, {});
 
-    let summary: Partial<Doc<'transcripts'>> = {
+    // const transcript = await transcribeUrl(audioUrl, {});
+
+    let summary: Pick<
+      Doc<'transcripts'>,
+      'episodeId' | 'audioUrl' | 'fullText' | 'segments'
+    > &
+      Partial<Doc<'transcripts'>> = {
       episodeId,
       audioUrl,
       fullText: transcript.text,
@@ -94,6 +118,7 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     };
 
     try {
+      console.log('summarizing transcript...');
       const { title, ...rest } = await summarizeTranscript(transcript.text);
       console.log('SUMMARIZED TRANSCRIPT: ', title);
       // TODO: need to save summary / keywords in episode data to avoid fetching transcript doc every time we want to search/find similar ??
@@ -114,10 +139,9 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
       console.error('error summarizing transcript: ', err);
     }
 
-    console.log('SAVING TRANSCRIPT: ', summary);
-    const transcriptId = await ctx.runMutation(
-      // @ts-ignore
-      internal.transcriptsTest.save,
+    console.log('saving transcript... ', summary.summaryTitle);
+    const transcriptId: Id<'transcripts'> = await ctx.runMutation(
+      internal.transcripts.save,
       summary
     );
 

@@ -91,9 +91,6 @@ export const setLastUpdated = internalMutation({
   handler: async ({ db }, { updates }) => {
     for (const { podId, ...rest } of updates) {
       await db.patch(podId, { ...rest });
-      // const id = await db.insert('episodes', {
-      //   ...podIndexEpToConvexEp(episode, podcastTitle),
-      // });
     }
   },
 });
@@ -218,7 +215,12 @@ export const getPersonalizedRecommendations = action({
 
     const subscribed = await ctx.runQuery(api.subscribe.all);
 
-    if (!subscribed?.length) return [];
+    // TODO: return fallback to most listened
+    // https://github.com/get-convex/aggregate/blob/main/example/convex/shuffle.ts
+    if (!subscribed?.length) {
+      // // return [];
+      return await ctx.runQuery(api.podcasts.recentlyUpdated, { limit });
+    }
 
     const podIds = subscribed.map((s) => s.podConvexId);
 
@@ -277,5 +279,6 @@ export async function getEmbedding(
   categories?: string
 ) {
   const text = [title, description, categories ?? ''].join('\n\n');
-  return createEmbedding(text);
+  const embeddingResult = await createEmbedding(text);
+  return embeddingResult[0].embedding;
 }

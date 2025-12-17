@@ -385,7 +385,7 @@ function EpisodeActions({
         <IconButton
           size='small'
           loading={transcribePending}
-          disabled={isTranscribed}
+          // disabled={isTranscribed}
           onClick={() => transcribeEpisode({ episodeId })}
         >
           <HistoryEduRounded fontSize='inherit' />
@@ -456,17 +456,46 @@ function ViewTranscript({ episodeId }: { episodeId: string }) {
   const { data } = useSuspenseQuery(
     convexQuery(api.transcripts.getByEpisodeId, { episodeId })
   );
-  console.log(data);
+
+  const toast = useAsyncToast();
+  const { mutate: transcribeEpisode, isPending } = useMutation({
+    mutationFn: useConvexAction(api.transcripts.create),
+    // onMutate: () => toast.loading('transcribing episode...'),
+    onError: () => toast.error('error transcribing episode'),
+    onSuccess: () => toast.success('episode transcription started'),
+  });
 
   return (
     <>
       <Button onClick={() => setOpen(true)}>View Transcript</Button>
-      <Dialog open={open} onClose={() => setOpen(false)}>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth={!data?.fullText ? 'xs' : 'md'}
+        fullWidth={!data?.fullText}
+      >
         <DialogTitle>Transcript</DialogTitle>
         <DialogContent dividers>
-          <Typography variant='body2' fontSize='0.875rem'>
-            {data?.fullText}
-          </Typography>
+          {data?.fullText ? (
+            <Typography variant='body2' fontSize='0.875rem'>
+              {data.fullText}
+            </Typography>
+          ) : (
+            <Stack
+              direction='column'
+              spacing={2}
+              sx={{ alignItems: 'center', py: 2 }}
+            >
+              <Typography>Transcript not found</Typography>
+              <Button
+                disabled={isPending}
+                onClick={() => transcribeEpisode({ episodeId })}
+                variant='contained'
+              >
+                Transcribe
+              </Button>
+            </Stack>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpen(false)}>Close</Button>

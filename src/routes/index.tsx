@@ -2,7 +2,7 @@ import { SignedIn } from '@clerk/tanstack-react-start';
 import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
 import { Box, Divider, Grid, Stack, styled, Typography } from '@mui/material';
 import { ErrorBoundary } from '@sentry/tanstackstart-react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense } from 'react';
@@ -28,13 +28,15 @@ export const Route = createFileRoute('/')({
 function Home() {
   const { isAuthenticated } = useConvexAuth();
   return (
-    <Stack direction='column' spacing={{ xs: 4, sm: 5, md: 6 }}>
+    <Stack
+      direction='column'
+      spacing={{ xs: 4, sm: 5, md: 6 }}
+      divider={<Divider flexItem />}
+    >
       {/* <Typography variant='h1' marginBlockEnd={4}>
         Castaway
       </Typography> */}
       <Featured />
-
-      <Divider flexItem />
 
       <Box>
         <Box
@@ -54,18 +56,27 @@ function Home() {
         <RecentSubscribedEpisodes />
       </Box>
 
-      <Divider flexItem />
-
       <Box>
         <Typography variant='h5' gutterBottom>
           New Episode Releases
         </Typography>
-        <RecentEpisodes />
+        <ErrorBoundary
+          fallback={<Typography>Failed to load recent episodes</Typography>}
+        >
+          <Suspense
+            fallback={
+              <SuspenseGridCards
+                numItems={8}
+                orientation='horizontal'
+                childGridProps={{ size: { xs: 16, sm: 8 } }}
+              />
+            }
+          >
+            <RecentEpisodes />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
 
-      <Divider flexItem />
-
-      {/* {isAuthenticated ? ( */}
       <Authed>
         <Box sx={{ width: '100%' }}>
           <Box>
@@ -98,10 +109,7 @@ function Home() {
             </Suspense>
           </ErrorBoundary>
         </Box>
-
-        <Divider flexItem />
       </Authed>
-      {/* ) : null} */}
 
       <Authed>
         <Box sx={{ width: '100%' }}>
@@ -122,8 +130,6 @@ function Home() {
             <RecommendedEpisodes limit={8} />
           </ErrorBoundary>
         </Box>
-
-        <Divider flexItem />
       </Authed>
 
       <Box>
@@ -134,8 +140,6 @@ function Home() {
       </Box>
 
       {/* TODO: get most recent listened episode and use to generate recommendations */}
-
-      <Divider flexItem />
 
       <Box sx={{ width: '100%' }}>
         <Typography variant='h5' gutterBottom>
@@ -241,7 +245,7 @@ function RandomEpisodes() {
 }
 
 function RecentEpisodes() {
-  const { data } = useQuery(recentEpisodesQueryOptions({ max: 8 }));
+  const { data } = useSuspenseQuery(recentEpisodesQueryOptions({ max: 8 }));
 
   return (
     <Grid container columnSpacing={2} rowSpacing={1}>

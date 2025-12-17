@@ -22,3 +22,19 @@ export const podcastAggregate = new TableAggregate<{
 }>(components.aggregateByPodcast, {
   sortKey: (doc) => [-doc.playCount, doc.podcastId], // largest --> smallest (podcast ID to simplify populating pod details)
 });
+
+// export const randomizePodcast = new TableAggregate<{
+//   DataModel: DataModel;
+//   TableName: 'podcasts';
+//   Key: null;
+// }>(components.randomPod, {
+//   sortKey: () => null,
+// });
+
+// export const randomizeEpisode = new TableAggregate<{
+//   DataModel: DataModel;
+//   TableName: 'episodes';
+//   Key: null;
+// }>(components.randomEpisode, {
+//   sortKey: () => null,
+// });

@@ -35,7 +35,7 @@ export const subscribe = action({
       itunesId = feed.itunesId;
 
       try {
-        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
+        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodes
         // await fetchNewEpisodesOld(ctx, feed, IMPORT_EPISODE_LIMIT);
         await ctx.scheduler.runAfter(0, internal.actions.fetchNewEpisodes, {
           podcastGuid: feed.podcastGuid,
@@ -85,7 +85,7 @@ export const subscribeItunesId = action({
       id = newId as Id<'podcasts'>;
 
       try {
-        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
+        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodes
         // await fetchNewEpisodesOld(ctx, feed, IMPORT_EPISODE_LIMIT);
         await ctx.scheduler.runAfter(0, internal.actions.fetchNewEpisodes, {
           podcastGuid: feed.podcastGuid,
@@ -127,7 +127,7 @@ export const fetchNewEpisodes = internalAction({
     console.log(`${episodes?.length} episodes found - scheduling job`);
 
     if (episodes.length) {
-      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
         episodes,
         podcastTitle,
       });
@@ -175,7 +175,7 @@ async function saveNewPod(
 //   console.log(`${episodes?.length} episodes found - scheduling job`);
 
 //   if (episodes.length) {
-//     await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+//     await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
 //       episodes,
 //       podcastTitle: feed.title,
 //     });

@@ -1,6 +1,7 @@
 import {
   Box,
   Button,
+  CircularProgress,
   Container,
   Divider,
   Stack,
@@ -11,6 +12,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useEffect } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { TrendingCard } from '~/components/TrendingCard';
 
 export const Route = createFileRoute('/_authed/podcasts_/feed')({
@@ -19,7 +21,7 @@ export const Route = createFileRoute('/_authed/podcasts_/feed')({
 
 function RouteComponent() {
   return (
-    <Container maxWidth='md' disableGutters>
+    <Container maxWidth='lg' disableGutters>
       <Box
         sx={{
           display: 'flex',
@@ -57,7 +59,7 @@ function RecentlyUpdated() {
     // error, // TODO: error handling
     fetchNextPage,
     hasNextPage,
-    // isFetching,
+    isPending,
     isFetchingNextPage,
     // status,
   } = useInfiniteQuery({
@@ -73,6 +75,31 @@ function RecentlyUpdated() {
   }, [inView, hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   if (!data || !data.pages) return null;
+
+  if (isPending)
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+
+  if (!data.pages[0].items.length)
+    return (
+      <Stack direction='column' spacing={2} sx={{ alignItems: 'center' }}>
+        <Typography variant='subtitle1'>
+          Your followed podcasts will show up here
+        </Typography>
+        <MuiButtonLink to='/discover' variant='contained'>
+          Explore
+        </MuiButtonLink>
+      </Stack>
+    );
 
   return (
     <Stack direction='column' spacing={1} divider={<Divider />}>

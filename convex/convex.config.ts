@@ -13,7 +13,8 @@ const app = defineApp();
 
 app.use(aggregate, { name: 'aggregateByEpisode' });
 app.use(aggregate, { name: 'aggregateByPodcast' });
-// app.use(aggregate, { name: 'stats' });
+// app.use(aggregate, { name: 'randomPod' });
+// app.use(aggregate, { name: 'randomEpisode' });
 
 app.use(agent);
 app.use(rag);
