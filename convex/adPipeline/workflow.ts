@@ -1,7 +1,7 @@
 import { vWorkflowId, WorkflowManager } from '@convex-dev/workflow';
 import { vResultValidator } from '@convex-dev/workpool';
 import { components, internal } from 'convex/_generated/api';
-import { internalMutation, query } from 'convex/_generated/server';
+import { internalMutation, mutation, query } from 'convex/_generated/server';
 import { v } from 'convex/values';
 
 // Docs: https://www.convex.dev/components/workflow
@@ -41,15 +41,20 @@ export const adDetectionWorkflow = workflow.define({
       { name: 'createJob' }
     );
 
+    // TODO: move to it's own workflow (can )
     // 1) transcribe audio from url
-    await step.runAction(
-      // const transcribeResult =
-      internal.adPipeline.transcribe.fn,
-      {
-        jobId,
-      },
-      { name: 'transcribe' }
-    );
+    // await step.runAction(
+    //   // const transcribeResult =
+    //   internal.adPipeline.transcribe.fn,
+    //   {
+    //     jobId,
+    //   },
+    //   { name: 'transcribe' }
+    // );
+    await step.runWorkflow(internal.transcripts.transcribeWorkflow, {
+      episodeId: args.episodeId,
+      forceTranscribe: false,
+    });
 
     // 2) break transcript into windows and write to 'adJobWindows' table
     await step.runMutation(
@@ -147,5 +152,12 @@ export const status = query({
   args: { workflowId: vWorkflowId },
   handler: async (ctx, { workflowId }) => {
     return await workflow.status(ctx, workflowId);
+  },
+});
+
+export const cancel = mutation({
+  args: { workflowId: vWorkflowId },
+  handler: async (ctx, { workflowId }) => {
+    await workflow.cancel(ctx, workflowId);
   },
 });

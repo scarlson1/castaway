@@ -78,6 +78,7 @@ async function embed(input: string, model = embeddingModelName) {
   return emb.data[0].embedding;
 }
 
+// TODO: break up into workflow (in transcripts)
 // transcribe --> save to transcripts table --> pass transcript to RAG component to create embedding
 export const transcribeEpisodeAndSaveTranscript = internalAction({
   args: {
@@ -158,5 +159,83 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     });
 
     return { transcript, transcriptId };
+  },
+});
+
+// part of transcribeWorkflow
+export const transcribe = internalAction({
+  args: {
+    episodeId: v.string(),
+    audioUrl: v.string(),
+    // episodeTitle: v.optional(v.string()),
+    forceTranscribe: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { audioUrl, episodeId, forceTranscribe = false }) => {
+    if (!forceTranscribe) {
+      let existingTranscript: Doc<'transcripts'> | null = await ctx.runQuery(
+        api.transcripts.getByEpisodeId,
+        { episodeId }
+      );
+      if (existingTranscript) {
+        console.log('using existing transcript');
+        return { transcriptId: existingTranscript._id, exists: true };
+      }
+    }
+
+    const transcript = await transcribeUrl(audioUrl, {});
+
+    const transcriptId: Id<'transcripts'> = await ctx.runMutation(
+      internal.transcripts.save,
+      {
+        episodeId,
+        audioUrl,
+        fullText: transcript.text,
+        segments: transcript.segments || [],
+      }
+    );
+
+    return { transcriptId, exists: false };
+  },
+});
+
+// part of transcribeWorkflow
+export const summarize = internalAction({
+  args: {
+    // episodeId: v.string(),
+    transcriptId: v.id('transcripts'),
+    forceSummarize: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { transcriptId, forceSummarize }) => {
+    const transcript: Doc<'transcripts'> | null = await ctx.runQuery(
+      api.transcripts.getByConvexId,
+      { id: transcriptId }
+    );
+    if (!transcript) throw new Error('transcript not found');
+
+    if (transcript.detailedSummary && !forceSummarize) {
+      console.log('already summarized. using previous summary');
+      return {
+        title: transcript.summaryTitle,
+        oneSentenceSummary: transcript.oneSentenceSummary,
+        detailedSummary: transcript.detailedSummary,
+        keyTopics: transcript.keyTopics,
+        notableQuotes: transcript.notableQuotes,
+        exists: true,
+      };
+    }
+
+    console.log('summarizing transcript...');
+    const summary = await summarizeTranscript(transcript.fullText);
+    const { title, ...rest } = summary;
+    console.log('SUMMARIZED TRANSCRIPT: ', title);
+
+    console.log('updating transcript with summary... ', title);
+    await ctx.runMutation(internal.transcripts.update, {
+      transcriptId,
+      summaryTitle: title,
+      ...rest,
+    });
+
+    return { ...summary, exists: false };
   },
 });

@@ -359,10 +359,13 @@ function EpisodeActions({
   const toast = useAsyncToast();
   const { mutate: transcribeEpisode, isPending: transcribePending } =
     useMutation({
-      mutationFn: useConvexAction(api.transcripts.create),
+      mutationFn: useConvexMutation(api.transcripts.create),
       // onMutate: () => toast.loading('transcribing episode...'),
       onError: () => toast.error('error transcribing episode'),
-      onSuccess: () => toast.success('episode transcription started'),
+      onSuccess: ({ workflowId }) => {
+        toast.success('episode transcription started');
+        console.log('Transcript workflowId: ', workflowId);
+      },
     });
 
   return (
@@ -386,7 +389,7 @@ function EpisodeActions({
         <IconButton
           size='small'
           loading={transcribePending}
-          // disabled={isTranscribed}
+          disabled={isTranscribed}
           onClick={() => transcribeEpisode({ episodeId })}
         >
           <HistoryEduRounded fontSize='inherit' />
@@ -509,7 +512,7 @@ function ViewTranscript({ episodeId }: { episodeId: string }) {
 
   const toast = useAsyncToast();
   const { mutate: transcribeEpisode, isPending } = useMutation({
-    mutationFn: useConvexAction(api.transcripts.create),
+    mutationFn: useConvexMutation(api.transcripts.create),
     // onMutate: () => toast.loading('transcribing episode...'),
     onError: () => toast.error('error transcribing episode'),
     onSuccess: () => toast.success('episode transcription started'),

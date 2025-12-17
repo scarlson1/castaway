@@ -38,6 +38,7 @@ import type * as stats_podcasts from "../stats/podcasts.js";
 import type * as subscribe from "../subscribe.js";
 import type * as tools_searchEpisodes from "../tools/searchEpisodes.js";
 import type * as tools_updateThreadTitle from "../tools/updateThreadTitle.js";
+import type * as transcriptWorkflow from "../transcriptWorkflow.js";
 import type * as transcripts from "../transcripts.js";
 import type * as users from "../users.js";
 import type * as utils_auth from "../utils/auth.js";
@@ -88,6 +89,7 @@ declare const fullApi: ApiFromModules<{
   subscribe: typeof subscribe;
   "tools/searchEpisodes": typeof tools_searchEpisodes;
   "tools/updateThreadTitle": typeof tools_updateThreadTitle;
+  transcriptWorkflow: typeof transcriptWorkflow;
   transcripts: typeof transcripts;
   users: typeof users;
   "utils/auth": typeof utils_auth;
