@@ -26,21 +26,24 @@ export const saveAdSegment = internalAction({
   handler: async (ctx, args) => {
     const embedding = await embed(args.transcript);
 
-    await ctx.runMutation(internal.adSegments.saveAdDoc, {
-      // sourceId: args.sourceId,
-      podcastId: args.podcastId,
-      episodeId: args.episodeId,
-      convexEpId: args.convexEpId,
-      audioUrl: args.audioUrl,
-      start: args.start,
-      end: args.end,
-      duration: args.end - args.start,
-      transcript: args.transcript,
-      confidence: args.confidence,
-      embedding,
-    });
+    const result: Id<'ads'> = await ctx.runMutation(
+      internal.adSegments.saveAdDoc,
+      {
+        // sourceId: args.sourceId,
+        podcastId: args.podcastId,
+        episodeId: args.episodeId,
+        convexEpId: args.convexEpId,
+        audioUrl: args.audioUrl,
+        start: args.start,
+        end: args.end,
+        duration: args.end - args.start,
+        transcript: args.transcript,
+        confidence: args.confidence,
+        embedding,
+      }
+    );
 
-    return { ok: true };
+    return result;
   },
 });
 

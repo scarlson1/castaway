@@ -30,6 +30,7 @@
     "@convex-dev/rag": "^0.6.1",
     "@convex-dev/react-query": "0.0.0-alpha.11",
     "@convex-dev/workflow": "^0.3.3",
+    "@convex-dev/workpool": "^0.3.0",
     "@emotion/cache": "^11.14.0",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",

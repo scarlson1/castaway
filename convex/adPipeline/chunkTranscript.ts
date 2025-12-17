@@ -1,4 +1,3 @@
-import { internal } from 'convex/_generated/api';
 import { internalMutation } from 'convex/_generated/server';
 import { fetchTranscript } from 'convex/transcripts';
 import { buildWindows } from 'convex/utils/buildWindows';
@@ -40,8 +39,8 @@ export const fn = internalMutation({
     }
 
     // schedule classification batches
-    await ctx.scheduler.runAfter(0, internal.adPipeline.classifyWindows.fn, {
-      jobId,
-    });
+    // await ctx.scheduler.runAfter(0, internal.adPipeline.classifyWindows.fn, {
+    //   jobId,
+    // });
   },
 });

@@ -1,4 +1,5 @@
 import { api, internal } from 'convex/_generated/api';
+import type { Id } from 'convex/_generated/dataModel';
 import { internalAction } from 'convex/_generated/server';
 import { v } from 'convex/values';
 
@@ -20,8 +21,10 @@ export const fn = internalAction({
     });
     if (!episode) throw new Error('episode not found');
 
+    const adSegmentIds: Id<'ads'>[] = [];
+
     for (let segment of adJob.segments) {
-      await ctx.runAction(internal.node.saveAdSegment, {
+      let adSegmentId = await ctx.runAction(internal.node.saveAdSegment, {
         episodeId: adJob.episodeId,
         podcastId: episode.podcastId,
         audioUrl: adJob.audioUrl,
@@ -33,6 +36,7 @@ export const fn = internalAction({
         transcript: segment.transcript,
         confidence: segment.confidence,
       });
+      if (adSegmentId) adSegmentIds.push(adSegmentId);
     }
 
     await ctx.runMutation(internal.adJobs.patch, {
@@ -41,5 +45,7 @@ export const fn = internalAction({
     });
 
     // delete ad windows ?? or cron ??
+
+    return adSegmentIds;
   },
 });

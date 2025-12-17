@@ -47,7 +47,7 @@ export const saveAdDoc = internalMutation({
     embedding: v.array(v.number()),
   },
   handler: async (ctx, args) => {
-    await ctx.db.insert('ads', {
+    return await ctx.db.insert('ads', {
       ...args,
       createdAt: Date.now(),
     });
