@@ -18,6 +18,7 @@ import { Suspense } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesList, EpisodesOptionsButton } from '~/components/EpisodesList';
 import { FollowingButtons } from '~/components/FollowingButtons';
+import { RagSearch } from '~/components/RagSearch';
 import { SimilarPodcasts } from '~/components/SimilarPods';
 import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
@@ -95,6 +96,9 @@ function RouteComponent() {
       {/* <ErrorBoundary fallback={<div>search error</div>}>
         <WrappedTranscriptSearch podId={podId} />
       </ErrorBoundary> */}
+      <ErrorBoundary fallback={<Typography>Error rendering search</Typography>}>
+        <RagSearch podcastId={podId} />
+      </ErrorBoundary>
     </>
   );
 }

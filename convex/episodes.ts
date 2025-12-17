@@ -521,6 +521,11 @@ export const cleanUpEpisodeDelete = mutation({
       const playbacks = await getPlaybackByEpisodeId(ctx.db, episodeId);
       if (playbacks.length)
         for (let p of playbacks) promises.push(ctx.db.delete(p._id));
+
+      // promises.push(ctx.scheduler.runAfter(0, internal.rag.deleteByKey, {
+      //   key: episodeId,
+      //   noThrow: true
+      // }))
     }
     console.log(
       `cleaning up ${promises.length} related records for ${episodeGuids.length} deleted episodes`

@@ -51,7 +51,7 @@ export const adDetectionWorkflow = workflow.define({
     //   },
     //   { name: 'transcribe' }
     // );
-    await step.runWorkflow(internal.transcripts.transcribeWorkflow, {
+    await step.runWorkflow(internal.transcriptWorkflow.transcribeWorkflow, {
       episodeId: args.episodeId,
       forceTranscribe: false,
     });

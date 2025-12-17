@@ -21,6 +21,9 @@ import {
   DialogTitle,
   Divider,
   IconButton,
+  List,
+  ListItem,
+  ListItemText,
   Stack,
   Tooltip,
   Typography,
@@ -30,7 +33,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import type { Doc, Id } from 'convex/_generated/dataModel';
 import { formatDate, formatDuration } from 'date-fns';
-import { Suspense, useCallback, useState } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { AdsTimeline } from '~/components/AdsTimeline';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
@@ -109,7 +112,19 @@ function RouteComponent() {
 
   return (
     <>
-      <Stack direction='row' spacing={4} sx={{ mb: 2 }}>
+      <Stack
+        direction='row'
+        spacing={{ xs: 0, sm: 3, md: 4 }}
+        sx={{
+          mb: 2,
+          maxWidth: 760,
+          flexWrap: {
+            xs: 'wrap',
+            sm: 'nowrap',
+          },
+          justifyContent: { xs: 'center', sm: 'flex-start' },
+        }}
+      >
         <Box
           sx={{
             objectFit: 'contain',
@@ -138,7 +153,20 @@ function RouteComponent() {
             alt={`${data.podcastTitle} cover`}
           />
         </Box>
-        <Stack direction='column' spacing={1} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction='column'
+          spacing={1}
+          sx={{
+            alignItems: 'flex-start',
+            maxHeight: {
+              xs: 220, // 120,
+              sm: 200, // 160,
+              md: 200,
+              lg: 220,
+            },
+            overflow: 'hidden',
+          }}
+        >
           <Stack direction='row' spacing={2}>
             {/* <Typography variant='overline' color='textSecondary'>
               {data?.podcastTitle}
@@ -149,6 +177,7 @@ function RouteComponent() {
               underline='none'
               variant='overline'
               color='textSecondary'
+              lineHeight={1.8}
             >
               {data?.podcastTitle}
             </MuiLink>
@@ -156,7 +185,16 @@ function RouteComponent() {
               {getEpisodeLabel(data)}
             </Typography>
           </Stack>
-          <Typography variant='h5' gutterBottom>
+          <Typography
+            variant='h5'
+            gutterBottom
+            sx={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%',
+            }}
+          >
             {data?.title}
           </Typography>
           {isPlaying && curEpId === episodeId ? (
@@ -176,6 +214,20 @@ function RouteComponent() {
               <PlayCircleFilledRounded fontSize='inherit' />
             </IconButton>
           )}
+          {data.oneSentenceSummary ? (
+            <Typography
+              variant='subtitle1'
+              sx={{
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 3, // { xs: 1, sm: 3, md: 3, lg: 3 }, // adjust as needed
+                // display: { xs: 'none', sm: '-webkit-box' },
+              }}
+            >
+              {data.oneSentenceSummary}
+            </Typography>
+          ) : null}
         </Stack>
       </Stack>
 
@@ -227,10 +279,37 @@ function RouteComponent() {
           {data.detailedSummary ? (
             <Stack spacing={1}>
               <Typography variant='body2'>{data.detailedSummary}</Typography>
+              {data.notableQuotes?.length ? (
+                <>
+                  <Typography variant='overline' color='textSecondary'>
+                    Notable Quotes
+                  </Typography>
+                  <Quotes quotes={data.notableQuotes} />
+                </>
+              ) : null}
+              {data.keyTopics?.length ? (
+                <Box>
+                  <Typography
+                    variant='overline'
+                    color='textSecondary'
+                    lineHeight={1.8}
+                  >
+                    Key Topics
+                  </Typography>
+                  <List dense>
+                    {data.keyTopics.map((topic) => (
+                      <ListItem key={topic}>
+                        <ListItemText primary={topic} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              ) : null}
               <Divider flexItem />
               <Typography variant='overline' color='textSecondary'>
                 Description from the podcast host:
               </Typography>
+
               <div dangerouslySetInnerHTML={{ __html: data.summary }} />
             </Stack>
           ) : (
@@ -389,7 +468,7 @@ function EpisodeActions({
         <IconButton
           size='small'
           loading={transcribePending}
-          disabled={isTranscribed}
+          // disabled={isTranscribed}
           onClick={() => transcribeEpisode({ episodeId })}
         >
           <HistoryEduRounded fontSize='inherit' />
@@ -406,9 +485,14 @@ function AdJobs({ episodeId }: { episodeId: string }) {
 
   if (!data?.length) return <Typography>No classification jobs</Typography>;
 
+  const sorted = useMemo(
+    () => data.sort((a, b) => b._creationTime - a._creationTime),
+    [data]
+  );
+
   return (
-    <>
-      {data.map((j) => {
+    <Stack spacing={1} divider={<Divider flexItem />}>
+      {sorted.map((j) => {
         const { transcript, ...job } = j;
         return (
           <Box key={j._id}>
@@ -440,7 +524,7 @@ function AdJobs({ episodeId }: { episodeId: string }) {
           </Box>
         );
       })}
-    </>
+    </Stack>
   );
 }
 
@@ -555,5 +639,40 @@ function ViewTranscript({ episodeId }: { episodeId: string }) {
         </DialogActions>
       </Dialog>
     </>
+  );
+}
+
+function Quotes({ quotes }: { quotes: string[] }) {
+  return (
+    <Stack direction='column' spacing={1}>
+      {quotes.map((q) => (
+        <QuoteBlock key={q} quote={q} author='Host' />
+      ))}
+    </Stack>
+  );
+}
+
+function QuoteBlock({ quote, author }) {
+  return (
+    <Box
+      sx={{
+        borderLeft: '4px solid #1976d2', // A classic Material Design blue border
+        paddingLeft: 2,
+        marginLeft: 2,
+        fontStyle: 'italic',
+        color: 'text.secondary', // Uses theme's secondary text color
+      }}
+    >
+      <Typography variant='body1' component='p' sx={{ mb: 1 }}>
+        "{quote}"
+      </Typography>
+      <Typography
+        variant='caption'
+        component='cite'
+        sx={{ display: 'block', textAlign: 'right' }}
+      >
+        — {author}
+      </Typography>
+    </Box>
   );
 }

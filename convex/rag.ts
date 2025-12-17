@@ -1,9 +1,10 @@
-// import { openai } from '@ai-sdk/openai';
-import { RAG } from '@convex-dev/rag';
+import { openai } from '@ai-sdk/openai';
+import { RAG, vNamespaceId } from '@convex-dev/rag';
 import { api, components } from 'convex/_generated/api';
 import { action, internalAction } from 'convex/_generated/server';
-// import { embeddingModelName } from 'convex/agent/models';
 import { v } from 'convex/values';
+
+// TODO: remove from RAG when doc is deleted ??
 
 const embeddingDimension = 1536;
 
@@ -15,6 +16,7 @@ export type Filters = {
   object: string | null;
 };
 type Metadata = {
+  image?: string | null;
   podcastId: string;
   podcastTitle: string;
   episodeId?: string | null;
@@ -23,7 +25,7 @@ type Metadata = {
 };
 
 export const rag = new RAG<Filters, Metadata>(components.rag, {
-  textEmbeddingModel: 'openai/gpt-4o-mini', // openai.embedding(embeddingModelName), // textEmbeddingModel
+  textEmbeddingModel: openai.embedding('text-embedding-3-small'), // openai.embedding(embeddingModelName),
   embeddingDimension,
   filterNames: ['podcastId', 'category', 'object'],
 });
@@ -52,6 +54,7 @@ export const insertEpisodeTranscript = internalAction({
       title: episode.episodeId,
       key: episode.episodeId,
       metadata: {
+        image: episode.image,
         podcastId: episode.podcastId,
         podcastTitle: episode.podcastTitle,
         episodeId: episode.episodeId,
@@ -163,9 +166,25 @@ export const insertEpisodeTranscript = internalAction({
 
 // can be called directly from client for search
 
+const filterName = v.union(
+  v.literal('podcastId'),
+  v.literal('category'),
+  v.literal('object')
+);
+
 export const searchEpisodes = action({
   args: {
     query: v.string(),
+    // podcastId: v.optional(v.string()),
+    // filters: v.optional(v.array(vNamedFilter)),
+    filters: v.optional(
+      v.array(
+        v.object({
+          name: filterName,
+          value: v.string(), // v.union(v.string(), v.null())
+        })
+      )
+    ),
     globalNamespace: v.boolean(),
     limit: v.optional(v.number()),
     chunkContext: v.optional(
@@ -175,13 +194,27 @@ export const searchEpisodes = action({
   handler: async (ctx, args) => {
     // const userId = await getUserId(ctx);
     // if (!userId) throw new Error("Unauthorized");
-    const results = await rag.search(ctx, {
+    let queryArgs: {
+      namespace: string;
+      query: string | Array<number>;
+      limit?: number;
+      chunkContext?: {
+        before: number;
+        after: number;
+      };
+      vectorScoreThreshold?: number;
+      filters?: { name: keyof Filters; value: string }[];
+    } = {
       namespace: defaultNamespace, // args.globalNamespace ? "global" : userId,
       query: args.query,
       limit: args.limit ?? 10,
       // filters: [{ name: "category", value: args.category }],
       chunkContext: args.chunkContext,
-    });
+      vectorScoreThreshold: 0.5,
+      filters: args.filters,
+    };
+
+    const results = await rag.search(ctx, queryArgs);
 
     // return { ...results, files: await toFiles(ctx, results.entries) };
     return results;
@@ -224,5 +257,23 @@ export const askQuestion = action({
       ...context,
       // files: await toFiles(ctx, context.entries),
     };
+  },
+});
+
+export const deleteByKey = internalAction({
+  args: {
+    key: v.string(),
+    namespace: v.optional(vNamespaceId),
+    noThrow: v.optional(v.boolean()),
+  },
+  handler: async (ctx, { key, namespace = defaultNamespace, noThrow }) => {
+    const namespaceResult = await rag.getNamespace(ctx, { namespace });
+    if (!namespaceResult) {
+      if (noThrow) return;
+      throw new Error(`namespace not found [${namespace}]`);
+    }
+    const { namespaceId } = namespaceResult;
+
+    await rag.deleteByKeyAsync(ctx, { key, namespaceId });
   },
 });

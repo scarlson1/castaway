@@ -17,7 +17,7 @@ import { getPlaybackPct } from '~/utils/format';
 const iconButtonSize = 24;
 const progressThickness = 2;
 const circleSize = iconButtonSize + progressThickness * 2 - 1;
-const StyledIconButton = styled(IconButton)({
+const StyledIconButton = styled(IconButton)(({ theme }) => ({
   // position: 'absolute',
   top: 0,
   left: 0,
@@ -26,16 +26,24 @@ const StyledIconButton = styled(IconButton)({
   minWidth: iconButtonSize,
   height: iconButtonSize,
   width: iconButtonSize,
-  color: '#fff',
-  backgroundColor: alpha('#363D49', 0.5),
+  color: theme.vars.palette.primary.main,
+  backgroundColor: alpha('#E6EBFD', 0.8),
   '&:hover': {
-    color: '#3A4D73',
+    // color: '#3A4D73',
     backgroundColor: '#fff',
   },
-  '&:hover .MuiSvgIcon-root': {
-    color: '#3A4D73',
-  },
-});
+  // '&:hover .MuiSvgIcon-root': {
+  //   color: '#3A4D73',
+  // },
+  ...theme.applyStyles('dark', {
+    color: '#fff',
+    backgroundColor: alpha('#363D49', 0.5),
+    '&:hover': {
+      // color: '#3A4D73',
+      backgroundColor: theme.vars.palette.background.paper,
+    },
+  }),
+}));
 
 type EpisodeRequired = Pick<
   Doc<'episodes'>,
