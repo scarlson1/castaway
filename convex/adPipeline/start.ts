@@ -4,8 +4,6 @@ import { mutation } from 'convex/_generated/server';
 import { workflow } from 'convex/adPipeline/workflow';
 import { v } from 'convex/values';
 
-// track / start ad detection process
-
 // export const startAdDetection = mutation({
 //   args: {
 //     episodeId: v.string(),
@@ -26,8 +24,6 @@ import { v } from 'convex/values';
 //     return { jobId };
 //   },
 // });
-
-// use workflow instead
 
 export const startAdDetection = mutation({
   args: {

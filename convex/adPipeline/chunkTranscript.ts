@@ -17,6 +17,10 @@ export const fn = internalMutation({
     const job = await ctx.db.get(jobId);
     if (!job) throw new Error('job not found');
 
+    await ctx.db.patch(jobId, {
+      status: 'buildingWindows',
+    });
+
     const transcript = await fetchTranscript(ctx.db, job.episodeId);
     if (!transcript)
       throw new Error(

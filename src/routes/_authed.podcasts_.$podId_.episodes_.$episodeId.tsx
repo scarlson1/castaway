@@ -3,6 +3,7 @@ import {
   useConvexAction,
   useConvexMutation,
 } from '@convex-dev/react-query';
+import type { WorkflowId, WorkflowStatus } from '@convex-dev/workflow';
 import {
   DownloadRounded,
   HistoryEduRounded,
@@ -70,7 +71,7 @@ function RouteComponent() {
   );
 
   const { mutate: startJob, isPending: jobPending } = useMutation<
-    { jobId: string },
+    { workflowId: string },
     Error,
     { episodeId: string; audioUrl: string }
   >({
@@ -407,20 +408,87 @@ function AdJobs({ episodeId }: { episodeId: string }) {
       {data.map((j) => {
         const { transcript, ...job } = j;
         return (
-          <Typography
-            component='div'
-            variant='body2'
-            key={j._id}
-            sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <pre>{JSON.stringify(job, null, 2)}</pre>
-          </Typography>
+          <Box key={j._id}>
+            {job.workflowId ? (
+              <ErrorBoundary
+                fallback={
+                  <Typography>Error loading workflow status</Typography>
+                }
+              >
+                <Suspense>
+                  <WorkflowStatus workflowId={job.workflowId} />
+                </Suspense>
+              </ErrorBoundary>
+            ) : null}
+
+            <Typography variant='overline' color='textSecondary'>
+              Job Status
+            </Typography>
+            <Typography
+              variant='body2'
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {`Job status: ${job.status}`}
+            </Typography>
+          </Box>
         );
       })}
+    </>
+  );
+}
+
+function WorkflowStatus({ workflowId }: { workflowId: WorkflowId }) {
+  const { data } = useSuspenseQuery(
+    convexQuery(api.adPipeline.workflow.status, { workflowId })
+  );
+
+  if (!data) return <Typography>Workflow not found</Typography>;
+
+  return (
+    <>
+      <Typography variant='overline' color='textSecondary'>
+        Workflow Status
+      </Typography>
+      <Typography variant='body2'>{`Type: ${data.type}`}</Typography>
+
+      {data.type === 'inProgress'
+        ? data.running.map((step) => (
+            <Typography
+              component='div'
+              variant='body2'
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              <pre>{JSON.stringify(step, null, 2)}</pre>
+            </Typography>
+          ))
+        : null}
+
+      {data.type === 'completed' ? (
+        <Typography variant='body2'>{`Result: ${data.result}`}</Typography>
+      ) : null}
+
+      {data.type === 'failed' ? (
+        <Typography variant='body2'>{data.error}</Typography>
+      ) : null}
+      {/* <Typography
+        component='div'
+        variant='body2'
+        sx={{
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
+        }}
+      >
+        <pre>{JSON.stringify(data, null, 2)}</pre>
+      </Typography> */}
     </>
   );
 }

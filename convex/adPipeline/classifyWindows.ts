@@ -16,6 +16,13 @@ export const fn = internalAction({
     eventId: vEventId('WindowClassificationComplete'),
   },
   handler: async (ctx, { jobId, eventId }) => {
+    await ctx.runMutation(internal.adJobs.patch, {
+      id: jobId,
+      updates: {
+        status: 'classifyingWindows',
+      },
+    });
+
     const windows = await ctx.runQuery(internal.adJobs.getWindows, {
       jobId,
       classified: false,
@@ -26,7 +33,7 @@ export const fn = internalAction({
       // await ctx.scheduler.runAfter(0, internal.adPipeline.mergeSegments.fn, {
       //   jobId,
       // });
-      workflow.sendEvent(ctx, { id: eventId });
+      await workflow.sendEvent(ctx, { id: eventId });
       return;
     }
 

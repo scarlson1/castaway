@@ -1,10 +1,23 @@
 import { vWorkflowId, WorkflowManager } from '@convex-dev/workflow';
 import { vResultValidator } from '@convex-dev/workpool';
 import { components, internal } from 'convex/_generated/api';
-import { internalMutation } from 'convex/_generated/server';
+import { internalMutation, query } from 'convex/_generated/server';
 import { v } from 'convex/values';
 
+// Docs: https://www.convex.dev/components/workflow
+//
+
+// Workflow limitations:
+// - Steps can only take in and return a total of 1 MiB of data within a single workflow execution.
+// -The workflow body is internally a mutation, with each step's return value read from the database on each subsequent step. As a result, the limits for a mutation apply and limit the number and size of steps you can perform to 16MiB
+
 export const workflow = new WorkflowManager(components.workflow);
+
+// alternative way to define sharable event (https://www.convex.dev/components/workflow#sharing-event-definitions):
+// export const approvalEvent = defineEvent({
+//   name: "WindowClassificationComplete",
+//   validator: v.object({ completed: v.boolean() }),
+// });
 
 export const adDetectionWorkflow = workflow.define({
   args: {
@@ -15,6 +28,7 @@ export const adDetectionWorkflow = workflow.define({
   handler: async (step, args): Promise<string> => {
     //                         ^ Specify the return type of the handler
 
+    // event called when all batches have been classified
     const windowClassificationCompleteEventId = await workflow.createEvent(
       step,
       { name: 'WindowClassificationComplete', workflowId: step.workflowId }
@@ -23,10 +37,11 @@ export const adDetectionWorkflow = workflow.define({
     // replaced by workflow, keeping until front end to updated
     const { jobId } = await step.runMutation(
       internal.adPipeline.workflow.createJob,
-      args,
+      { ...args, workflowId: step.workflowId },
       { name: 'createJob' }
     );
 
+    // 1) transcribe audio from url
     const transcribeResult = await step.runAction(
       internal.adPipeline.transcribe.fn,
       {
@@ -35,6 +50,7 @@ export const adDetectionWorkflow = workflow.define({
       { name: 'transcribe' }
     );
 
+    // 2) break transcript into windows and write to 'adJobWindows' table
     const chunkTranscriptResult = await step.runMutation(
       internal.adPipeline.chunkTranscript.fn,
       {
@@ -43,7 +59,7 @@ export const adDetectionWorkflow = workflow.define({
       { name: 'chunkTranscript' }
     );
 
-    // called recursively (20 at a time)
+    // 3) pass to LLM in batches to classify windows - called recursively (20 at a time)
     const classifyWindowsResult = await step.runAction(
       internal.adPipeline.classifyWindows.fn,
       {
@@ -56,6 +72,7 @@ export const adDetectionWorkflow = workflow.define({
     // wait for all batches to complete (classifyWindows is called recursively)
     await step.awaitEvent({ id: windowClassificationCompleteEventId });
 
+    // 4) stitch together windows classified as ads into ad segments
     const mergeSegmentsResult = await step.runMutation(
       internal.adPipeline.mergeSegments.fn,
       {
@@ -64,6 +81,7 @@ export const adDetectionWorkflow = workflow.define({
       { name: 'mergeSegments' }
     );
 
+    // 5) write ad segments to `ads` table
     const saveToAdsResult = await step.runAction(
       internal.adPipeline.saveToAds.fn,
       {
@@ -73,9 +91,7 @@ export const adDetectionWorkflow = workflow.define({
     );
 
     // return saveToAdsResult;
-    return `${saveToAdsResult?.length ?? '0'} ad segments added to DB [${
-      args.episodeId
-    }]`;
+    return `${saveToAdsResult?.length ?? '0'} ad segments added to DB `; // [${args.episodeId}]
   },
 });
 
@@ -84,13 +100,15 @@ export const createJob = internalMutation({
   args: {
     episodeId: v.string(),
     audioUrl: v.string(),
+    workflowId: vWorkflowId,
   },
-  handler: async (ctx, { audioUrl, episodeId }) => {
+  handler: async (ctx, { audioUrl, episodeId, workflowId }) => {
     const jobId = await ctx.db.insert('adJobs', {
       episodeId,
       audioUrl,
       status: 'pending',
       createdAt: Date.now(),
+      workflowId,
     });
 
     return { jobId };
@@ -109,7 +127,6 @@ export const handleOnComplete = internalMutation({
       const text = args.result.returnValue;
       console.log(`EpId: ${episodeId} result: ${text}`);
     } else if (args.result.kind === 'failed') {
-      // args.result.kind === "error"
       console.error('Workflow failed', args.result.error);
     } else if (args.result.kind === 'canceled') {
       console.log('Workflow canceled', args.context);
@@ -117,68 +134,9 @@ export const handleOnComplete = internalMutation({
   },
 });
 
-// export const kickoffWorkflow = mutation({
-//   handler: async (ctx) => {
-//     const name = "James";
-//     const workflowId = await workflow.start(
-//       ctx,
-//       internal.example.exampleWorkflow,
-//       { name},
-//       {
-//         onComplete: internal.example.handleOnComplete,
-//         context: name, // can be anything
-//       },
-//     );
-//     return {workflowId}
-//   },
-// });
-
-// export const exampleWorkflow = workflow.define({
-//   args: { name: v.string() },
-//   returns: v.string(),
-//   handler: async (step, args): Promise<string> => {
-//     //                         ^ Specify the return type of the handler
-//     const queryResult = await step.runQuery(
-//       internal.example.exampleQuery,
-//       args,
-//     );
-//     const actionResult = await step.runAction(
-//       internal.example.exampleAction,
-//       { queryResult }, // pass in results from previous steps!
-//     );
-//     return actionResult;
-//   },
-// });
-
-// export const exampleQuery = internalQuery({
-//   args: { name: v.string() },
-//   handler: async (ctx, args) => {
-//     return `The query says... Hi ${args.name}!`;
-//   },
-// });
-
-// export const exampleAction = internalAction({
-//   args: { queryResult: v.string() },
-//   handler: async (ctx, args) => {
-//     return args.queryResult + " The action says... Hi back!";
-//   },
-// });
-
-// export const handleOnComplete = mutation({
-//   args: {
-//     workflowId: vWorkflowId,
-//     result: vResultValidator,
-//     context: v.any(), // used to pass through data from the start site.
-//   },
-//   handler: async (ctx, args) => {
-//     const name = (args.context as { name: string }).name;
-//     if (args.result.kind === "success") {
-//       const text = args.result.returnValue;
-//       console.log(`${name} result: ${text}`);
-//     } else if (args.result.kind === "error") {
-//       console.error("Workflow failed", args.result.error);
-//     } else if (args.result.kind === "canceled") {
-//       console.log("Workflow canceled", args.context);
-//     }
-//   },
-// });
+export const status = query({
+  args: { workflowId: vWorkflowId },
+  handler: async (ctx, { workflowId }) => {
+    return await workflow.status(ctx, workflowId);
+  },
+});

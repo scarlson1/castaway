@@ -50,14 +50,13 @@ export const fn = internalAction({
 
     if (!transcriptId) throw new Error('failed to save transcript to DB');
 
-    // TODO: delete once moved to workflow refactor
-    await ctx.runMutation(internal.adJobs.patch, {
-      id: jobId,
-      updates: {
-        transcriptId,
-        status: 'transcribed',
-      },
-    });
+    // await ctx.runMutation(internal.adJobs.patch, {
+    //   id: jobId,
+    //   updates: {
+    //     transcriptId,
+    //     status: 'transcribed',
+    //   },
+    // });
 
     // await ctx.scheduler.runAfter(0, internal.adPipeline.chunkTranscript.fn, {
     //   jobId,

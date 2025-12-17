@@ -12,6 +12,10 @@ const MERGE_GAP = 2;
 export const fn = internalMutation({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
+    await ctx.db.patch(jobId, {
+      status: 'mergingWindows',
+    });
+
     const windows = await ctx.db
       .query('adJobWindows')
       .withIndex('by_jobId_classified', (q) => q.eq('jobId', jobId))

@@ -1,3 +1,4 @@
+import { vWorkflowId } from '@convex-dev/workflow';
 import { embeddingDimension } from 'convex/agent/models';
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
@@ -284,6 +285,7 @@ export default defineSchema({
     .index('by_episodeId', ['episodeId']),
 
   adJobs: defineTable({
+    workflowId: vWorkflowId,
     episodeId: v.string(),
     audioUrl: v.string(),
     status: v.string(),
