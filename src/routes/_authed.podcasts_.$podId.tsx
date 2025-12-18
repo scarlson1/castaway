@@ -1,9 +1,16 @@
 import { convexQuery, useConvexAction } from '@convex-dev/react-query';
-import { ExplicitRounded, LinkRounded, MicRounded } from '@mui/icons-material';
+import {
+  ClearRounded,
+  ExplicitRounded,
+  LinkRounded,
+  MicRounded,
+} from '@mui/icons-material';
 import {
   Box,
   Button,
   Divider,
+  IconButton,
+  InputAdornment,
   Link,
   Rating,
   Skeleton,
@@ -14,14 +21,16 @@ import {
 import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { Suspense } from 'react';
+import { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesList, EpisodesOptionsButton } from '~/components/EpisodesList';
+import { ExpandableSearchBar } from '~/components/ExpandableSearchBar';
 import { FollowingButtons } from '~/components/FollowingButtons';
-import { RagSearch } from '~/components/RagSearch';
+import { RagEpisodeResults } from '~/components/RagSearch';
 import { SimilarPodcasts } from '~/components/SimilarPods';
 import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
+import { useDebounce } from '~/hooks/useDebounce';
 import {
   podchaserPodcast,
   type PodcastIdentifierType,
@@ -39,6 +48,12 @@ export const Route = createFileRoute('/_authed/podcasts_/$podId')({
 
 function RouteComponent() {
   const { podId } = Route.useParams();
+  const [query, setQuery] = useState('');
+  const debouncedQuery = useDebounce(query, 500);
+
+  const isSearching = Boolean(debouncedQuery.trim());
+  // TODO: use same component to render search/table episodes
+  // const episodes = isSearching ? useQuery(ragSearch) : useQuery(table)
 
   return (
     <>
@@ -53,19 +68,69 @@ function RouteComponent() {
         spacing={2}
         sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
       >
-        <Typography variant='h6' gutterBottom>
+        <Typography variant='h6' gutterBottom sx={{ flex: '1 1 auto' }}>
           Episodes
         </Typography>
+        <Box>
+          <ExpandableSearchBar
+            value={query}
+            onChange={(val) => setQuery(val)}
+            fullWidth
+            placeholder='search episodes'
+            endAdornment={
+              <InputAdornment position='end'>
+                <IconButton
+                  aria-label={'clear search'}
+                  onClick={() => setQuery('')}
+                  edge='end'
+                  size='small'
+                >
+                  <ClearRounded fontSize='inherit' />
+                </IconButton>
+              </InputAdornment>
+            }
+          />
+          {/* <TextField
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            fullWidth
+            placeholder='search episodes'
+            variant='standard'
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <InputAdornment position='end'>
+                    <IconButton
+                      aria-label={'clear search'}
+                      onClick={() => setQuery('')}
+                      edge='end'
+                      size='small'
+                    >
+                      <ClearRounded fontSize='inherit' />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              },
+            }}
+          /> */}
+        </Box>
         <Box>
           <EpisodesOptionsButton podId={podId} />
         </Box>
       </Stack>
       <Divider />
-      <ErrorBoundary fallback={<div>Error loading episodes</div>}>
-        <Suspense fallback={<SuspenseEpisodeList numItems={10} />}>
-          <EpisodesList podId={podId} />
-        </Suspense>
-      </ErrorBoundary>
+      {isSearching ? (
+        <ErrorBoundary fallback={<div>Error loading episodes</div>}>
+          <RagEpisodeResults podcastId={podId} query={debouncedQuery} />
+        </ErrorBoundary>
+      ) : (
+        <ErrorBoundary fallback={<div>Error loading episodes</div>}>
+          <Suspense fallback={<SuspenseEpisodeList numItems={10} />}>
+            <EpisodesList podId={podId} />
+          </Suspense>
+        </ErrorBoundary>
+      )}
+
       {/* TODO: error boundary fallback / sentry */}
       <ErrorBoundary fallback={null}>
         <Suspense
@@ -96,9 +161,9 @@ function RouteComponent() {
       {/* <ErrorBoundary fallback={<div>search error</div>}>
         <WrappedTranscriptSearch podId={podId} />
       </ErrorBoundary> */}
-      <ErrorBoundary fallback={<Typography>Error rendering search</Typography>}>
+      {/* <ErrorBoundary fallback={<Typography>Error rendering search</Typography>}>
         <RagSearch podcastId={podId} />
-      </ErrorBoundary>
+      </ErrorBoundary> */}
     </>
   );
 }
@@ -301,18 +366,3 @@ function SuspensePodDetails() {
     </Stack>
   );
 }
-
-// function WrappedTranscriptSearch({ podId }: { podId: string }) {
-//   const { data } = useSuspenseQuery(
-//     convexQuery(api.podcasts.getPodByGuid, { id: podId })
-//   );
-//   if (!data?.itunesId) return null;
-
-//   return (
-//     <TranscriptSearch
-//       filters={{
-//         identifiers: [{ id: `${data.itunesId}`, type: 'APPLE_PODCASTS' }],
-//       }}
-//     />
-//   );
-// }

@@ -44,20 +44,6 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
 
   return (
     <>
-      {/* <Stack
-        direction='row'
-        spacing={2}
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
-      >
-        <Typography variant='h6' gutterBottom>
-          Episodes
-        </Typography>
-        <Box>
-          <EpisodesOptionsButton podId={podId} />
-        </Box>
-      </Stack>
-      <Divider /> */}
-
       <Box>
         {results.map((e) => {
           // const found = playbackEpisodeIds?.findIndex((epId) => epId === e.episodeId);

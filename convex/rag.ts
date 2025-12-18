@@ -22,6 +22,8 @@ type Metadata = {
   episodeId?: string | null;
   episodeTitle?: string;
   publishedAt?: number | null;
+  durationSeconds?: number | null;
+  audioUrl?: string | null;
 };
 
 export const rag = new RAG<Filters, Metadata>(components.rag, {
@@ -51,7 +53,7 @@ export const insertEpisodeTranscript = internalAction({
     const { entryId, created } = await rag.add(ctx, {
       namespace: defaultNamespace, // 'episodes', // use episodeId ?? searching within episode ?? use filter (object = 'episode' or object = 'podcast')
 
-      title: episode.episodeId,
+      title: episode.title,
       key: episode.episodeId,
       metadata: {
         image: episode.image,
@@ -60,6 +62,8 @@ export const insertEpisodeTranscript = internalAction({
         episodeId: episode.episodeId,
         episodeTitle: episode.title,
         publishedAt: episode.publishedAt,
+        durationSeconds: episode.durationSeconds,
+        audioUrl: episode.audioUrl,
       },
       // contentHash: await contentHashFromArrayBuffer(args.transcript) // To avoid re-inserting if the file contents haven't changed (for files)
 
@@ -172,7 +176,7 @@ const filterName = v.union(
   v.literal('object')
 );
 
-export const searchEpisodes = action({
+export const search = action({
   args: {
     query: v.string(),
     // podcastId: v.optional(v.string()),
@@ -209,8 +213,8 @@ export const searchEpisodes = action({
       query: args.query,
       limit: args.limit ?? 10,
       // filters: [{ name: "category", value: args.category }],
-      chunkContext: args.chunkContext,
-      vectorScoreThreshold: 0.5,
+      // chunkContext: args.chunkContext,
+      // vectorScoreThreshold: 0.5,
       filters: args.filters,
     };
 
