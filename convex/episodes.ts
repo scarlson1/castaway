@@ -558,12 +558,12 @@ async function getRecentEpisodes(
 
 export async function fetchPodEpisodesFromIndex(
   podcastId: string,
-  options: { max?: string; since?: string; fullText?: string } = {}
+  options: { max?: string; since?: string; fulltext?: string } = {}
 ) {
   const params = new URLSearchParams({
     guid: podcastId,
     max: '1000',
-    fullText: 'true', // '',
+    fulltext: 'true', // '',
     ...options,
   });
   const res = await api<EpisodesByPodGuidResult>(

@@ -10,9 +10,14 @@ import {
   Tooltip,
   type IconButtonProps,
 } from '@mui/material';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
+import { useClerkAuth } from '~/hooks/useClerkAuth';
 
 interface SubscribeIconButtonProps extends IconButtonProps {
   itunesId: number;
@@ -24,18 +29,33 @@ export const SubscribeIconButtonITunes = ({
   disableRipple = true,
   ...props
 }: SubscribeIconButtonProps) => {
+  const { isAuthenticated } = useClerkAuth();
   const { data: subscribed } = useSuspenseQuery(
     convexQuery(api.subscribe.all, {})
   );
 
+  const queryClient = useQueryClient();
+  const invalidateQueries = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['episodesFeed'] }),
+      queryClient.invalidateQueries({
+        queryKey: convexQuery(api.subscribe.allDetails, {}).queryKey,
+      }),
+    ]);
+  }, [queryClient]);
+
   const { mutate: subscribe, isPending } = useMutation({
     mutationFn: useConvexAction(api.actions.subscribeItunesId),
+    onSuccess: invalidateQueries,
   });
 
   const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
     mutationFn: useConvexMutation(api.subscribe.remove),
+    onSuccess: invalidateQueries,
   });
   // TODO: optimistic update instead of isPending
+
+  if (!isAuthenticated) return null;
 
   const { isFollowing, sub } = useMemo(() => {
     const isFollowing = subscribed?.some((s) => s.itunesId === itunesId);

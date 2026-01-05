@@ -9,6 +9,7 @@
     "dev": "npx convex dev --once && npm-run-all --parallel dev:web dev:db",
     "dev:local": "npx convex dev --once && npm-run-all --parallel dev:web dev:db:local",
     "dev:web": "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --mode development",
+    "dev:altDb": "npx convex dev --once && npm-run-all --parallel dev:web dev:db --mode altDb",
     "dev:db": "convex dev",
     "dev:db:local": "convex dev --local",
     "build": "vite build && cp instrument.server.mjs /dist",
