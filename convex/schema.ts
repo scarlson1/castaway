@@ -75,7 +75,7 @@ export default defineSchema({
   }).index('by_clerk_id', ['clerkId']),
 
   podcasts: defineTable({
-    podcastId: v.string(), // podcast index guid ??
+    podcastId: v.string(), // podcast index guid
     feedUrl: v.string(),
     link: v.optional(v.union(v.string(), v.null())),
     title: v.string(),
@@ -84,8 +84,9 @@ export default defineSchema({
     description: v.string(),
     imageUrl: v.union(v.string(), v.null()),
     itunesId: v.union(v.number(), v.null()),
-    lastFetchedAt: v.number(), // ms
-    mostRecentEpisode: v.optional(v.union(v.number(), v.null())), // ms
+    lastFetchedAt: v.number(), // ms - when episodes were last fetched from index
+    // lastUpdatedAt: v.optional(v.number()), // ms
+    mostRecentEpisode: v.optional(v.union(v.number(), v.null())), // ms - when most recent episode was published
     language: v.optional(v.string()),
     episodeCount: v.optional(v.union(v.number(), v.null())), // aggregate count from db query ??
     categories: v.optional(v.any()),
@@ -100,6 +101,7 @@ export default defineSchema({
     .index('by_podId', ['podcastId'])
     // .index('by_itunesId', ['itunesId'])
     .index('by_lastFetched', ['lastFetchedAt'])
+    .index('by_mostRecentEp', ['mostRecentEpisode'])
     // .index('by_podId_lastFetched', ['podcastId', 'lastFetchedAt'])
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',

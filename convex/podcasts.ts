@@ -10,7 +10,6 @@ import {
 } from 'convex/_generated/server';
 import { getTimestamp } from 'convex/playback';
 import { WithoutSystemFields } from 'convex/server';
-import { getClerkId } from 'convex/utils/auth';
 import { createEmbedding } from 'convex/utils/embeddings';
 import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
@@ -83,7 +82,7 @@ export const setLastUpdated = internalMutation({
     updates: v.array(
       v.object({
         podId: v.id('podcasts'),
-        lastUpdatedAt: v.number(),
+        lastFetchedAt: v.number(),
         mostRecentEpisode: v.optional(v.number()),
       })
     ),
@@ -105,11 +104,14 @@ export const getAllById = internalQuery({
 export const recentlyUpdated = query({
   args: { limit: v.optional(v.number()) },
   handler: async ({ db }, { limit = 8 }) => {
-    return db
-      .query('podcasts')
-      .withIndex('by_lastFetched')
-      .order('desc')
-      .take(limit);
+    return (
+      db
+        .query('podcasts')
+        // .withIndex('by_lastFetched')
+        .withIndex('by_mostRecentEp')
+        .order('desc')
+        .take(limit)
+    );
   },
 });
 
@@ -202,7 +204,7 @@ export const getPersonalizedRecommendations = action({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit = 10 }) => {
-    const clerkId = await getClerkId(ctx.auth);
+    // const clerkId = await getClerkId(ctx.auth);
 
     // TODO: need to add podcastId to playback
     // const listens: Doc<'user_playback'>[] = await ctx.runQuery(
@@ -218,7 +220,6 @@ export const getPersonalizedRecommendations = action({
     // TODO: return fallback to most listened
     // https://github.com/get-convex/aggregate/blob/main/example/convex/shuffle.ts
     if (!subscribed?.length) {
-      // // return [];
       return await ctx.runQuery(api.podcasts.recentlyUpdated, { limit });
     }
 

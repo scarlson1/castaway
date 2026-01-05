@@ -36,8 +36,8 @@ export const subscribe = action({
 
       try {
         // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodes
-        // await fetchNewEpisodesOld(ctx, feed, IMPORT_EPISODE_LIMIT);
         await ctx.scheduler.runAfter(0, internal.actions.fetchNewEpisodes, {
+          podcastConvexId: id,
           podcastGuid: feed.podcastGuid,
           podcastTitle: feed.title,
           limit: IMPORT_EPISODE_LIMIT,
@@ -116,11 +116,15 @@ export const subscribeItunesId = action({
 
 export const fetchNewEpisodes = internalAction({
   args: {
+    podcastConvexId: v.id('podcasts'),
     podcastGuid: v.string(),
     podcastTitle: v.optional(v.string()),
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { podcastGuid, podcastTitle, limit = 100 }) => {
+  handler: async (
+    ctx,
+    { podcastConvexId, podcastGuid, podcastTitle, limit = 100 }
+  ) => {
     const episodes = await fetchPodEpisodesFromIndex(podcastGuid, {
       max: `${limit}`,
     });
@@ -132,6 +136,15 @@ export const fetchNewEpisodes = internalAction({
         podcastTitle,
       });
     }
+    await ctx.scheduler.runAfter(0, internal.episodes.updatePods, {
+      updates: [
+        {
+          podId: podcastConvexId,
+          lastFetchedAt: Date.now(),
+          mostRecentEpisode: episodes[0].datePublished * 1000 || 0,
+        },
+      ],
+    });
   },
 });
 
@@ -163,24 +176,6 @@ async function saveNewPod(
 
   return newId;
 }
-
-// async function fetchNewEpisodesOld(
-//   ctx: ActionCtx,
-//   feed: PodcastsByFeedIdResult['feed'],
-//   limit: number = 100
-// ) {
-//   const episodes = await fetchPodEpisodesFromIndex(feed.podcastGuid, {
-//     max: `${limit}`,
-//   });
-//   console.log(`${episodes?.length} episodes found - scheduling job`);
-
-//   if (episodes.length) {
-//     await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
-//       episodes,
-//       podcastTitle: feed.title,
-//     });
-//   }
-// }
 
 const BASE_API_URL = 'https://api.podcastindex.org/api/1.0'; // replace with your base URL
 const key = process.env.PODCAST_INDEX_KEY;

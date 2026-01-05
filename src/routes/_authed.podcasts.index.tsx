@@ -30,7 +30,9 @@ function RouteComponent() {
 
   const sorted = useMemo(() => {
     if (sort === 'recent')
-      return data.sort((a, b) => b.lastFetchedAt - a.lastFetchedAt);
+      return data.sort(
+        (a, b) => (b.mostRecentEpisode || 0) - (a.mostRecentEpisode || 0)
+      );
     else if (sort === 'alpha') return sortBy(data, 'title');
     return data;
   }, [data, sort]);

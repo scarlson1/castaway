@@ -160,15 +160,3 @@ async function getPod(db: QueryCtx['db'], podId: string) {
 
   return sub;
 }
-// async function ensureBoardExists(
-//   ctx: QueryCtx,
-//   boardId: string,
-// ): Promise<Doc<'boards'>> {
-//   const board = await ctx.db
-//     .query('boards')
-//     .withIndex('id', (q) => q.eq('id', boardId))
-//     .unique()
-
-//   invariant(board, `missing board ${boardId}`)
-//   return board
-// }

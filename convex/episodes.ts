@@ -320,7 +320,7 @@ export const updatePods = internalMutation({
     updates: v.array(
       v.object({
         podId: v.id('podcasts'),
-        lastUpdatedAt: v.number(),
+        lastFetchedAt: v.number(),
         mostRecentEpisode: v.optional(v.number()),
       })
     ),
@@ -371,7 +371,7 @@ export const fetchNewEpisodes = internalAction({
 
     let podLastUpdated: {
       podId: Id<'podcasts'>;
-      lastUpdatedAt: number;
+      lastFetchedAt: number;
       mostRecentEpisode?: number;
     }[] = [];
 
@@ -397,16 +397,26 @@ export const fetchNewEpisodes = internalAction({
         newEpisodesQueue.push({ ...episode, podcastTitle: pod.title });
       }
 
-      if (newEpisodes.length) {
-        let update = {
-          podId: pod._id,
-          lastUpdatedAt: new Date().getTime(),
-        };
-        let mostRecentEpisode = newEpisodes[0].datePublished;
-        if (mostRecentEpisode)
-          update['mostRecentEpisode'] = mostRecentEpisode * 1000;
-        podLastUpdated.push(update);
-      }
+      // if (newEpisodes.length) {
+      //   let update = {
+      //     podId: pod._id,
+      //     lastUpdatedAt: Date.now(),
+      //     lastFetchedAt: Date.now(),
+      //   };
+      //   let mostRecentEpisode = newEpisodes[0].datePublished;
+      //   if (mostRecentEpisode)
+      //     update['mostRecentEpisode'] = mostRecentEpisode * 1000;
+      //   podLastUpdated.push(update);
+      // }
+
+      let update = {
+        podId: pod._id,
+        // lastUpdatedAt: Date.now(),
+        lastFetchedAt: Date.now(),
+      };
+      let mostRecentEp = newEpisodes[0].datePublished;
+      if (mostRecentEp) update['mostRecentEpisode'] = mostRecentEp * 1000;
+      podLastUpdated.push(update);
     }
 
     if (podLastUpdated.length) {
@@ -457,7 +467,6 @@ export const fetchPodcastForRefresh = internalQuery({
       )
       // .filter((q) => Date.now() - (q.lastFetchedAt || 0) > POLL_INTERVAL)
       .take(50);
-    // .collect();
   },
 });
 

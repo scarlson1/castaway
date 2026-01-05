@@ -14,7 +14,7 @@ const SearchContainer = styled(Paper, {
 })<{ open: boolean }>(({ theme, open }) => ({
   display: 'flex',
   alignItems: 'center',
-  width: open ? 260 : 40,
+  width: open ? 300 : 40,
   height: 40,
   padding: theme.spacing(0, 0.5),
   borderRadius: 20,
