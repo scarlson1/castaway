@@ -156,14 +156,14 @@ export default (
     //   q: string,
     //   val: 'any' | 'lightning' | 'hive' | 'webmonetization' | null = null,
     //   clean = false,
-    //   fullText = false
+    //   fulltext = false
     // ) => {
     //   let queries = {
     //     q: q,
     //   };
     //   if (val !== null) queries['val'] = val;
     //   if (clean) queries['clean'] = '';
-    //   if (fullText) queries['fullText'] = '';
+    //   if (fulltext) queries['fulltext'] = '';
     //   return custom<SearchByTermResult>(PATH_SEARCH_BY_TERM, queries);
     // },
     searchByTerm: async ({
@@ -173,7 +173,7 @@ export default (
       appleOnly,
       clean,
       similar,
-      fullText,
+      fulltext,
       pretty,
     }: SearchByTermSchema) => {
       return custom<SearchByTermResult>(PATH_SEARCH_BY_TERM, {
@@ -183,7 +183,7 @@ export default (
         aponly: appleOnly,
         clean,
         similar,
-        fullText,
+        fulltext,
         pretty,
       });
     },
@@ -191,21 +191,21 @@ export default (
       q: string,
       val = '',
       clean = false,
-      fullText = false
+      fulltext = false
     ) => {
       let queries = {
         q: q,
       };
       if (val !== '') queries['val'] = val;
       if (clean) queries['clean'] = '';
-      if (fullText) queries['fullText'] = '';
+      if (fulltext) queries['fulltext'] = '';
       return custom(PATH_SEARCH_BY_TITLE, queries);
     },
-    searchEpisodesByPerson: async (q: string, fullText = false) => {
+    searchEpisodesByPerson: async (q: string, fulltext = false) => {
       let queries = {
         q: q,
       };
-      if (fullText) queries['fullText'] = '';
+      if (fulltext) queries['fulltext'] = '';
       return custom(PATH_SEARCH_EPISODE_BY_PERSON, queries);
     },
 
@@ -262,42 +262,42 @@ export default (
       feedId,
       since = null,
       max = 10,
-      fullText = true
+      fulltext = true
     ) => {
       let queries = {
         id: feedId,
         since: since,
         max: max,
       };
-      if (fullText) queries['fullText'] = '';
+      if (fulltext) queries['fulltext'] = '';
       return custom<EpisodesByFeedId>(PATH_EPISODES_BY_FEED_ID, queries);
     },
     episodesByFeedUrl: async (
       feedUrl,
       since = null,
       max = 10,
-      fullText = true
+      fulltext = true
     ) => {
       let queries = {
         url: feedUrl,
         since: since,
         max: max,
       };
-      if (fullText) queries['fullText'] = '';
+      if (fulltext) queries['fulltext'] = '';
       return custom(PATH_EPISODES_BY_FEED_URL, queries);
     },
     episodesByPodGuid: async (
       guid: string,
       since: number | null = null,
       max = 1000,
-      fullText = true
+      fulltext = true
     ) => {
       let queries = {
         guid,
         since: since,
         max: max,
       };
-      if (fullText) queries['fullText'] = '';
+      if (fulltext) queries['fulltext'] = '';
       return custom<EpisodesByPodGuidResult>(
         PATH_EPISODES_BY_PODCAST_GUID,
         queries
@@ -307,21 +307,21 @@ export default (
       itunesId,
       since = null,
       max = 10,
-      fullText = true
+      fulltext = true
     ) => {
       let queries = {
         id: itunesId,
         since: since,
         max: max,
       };
-      if (fullText) queries['fullText'] = '';
+      if (fulltext) queries['fulltext'] = '';
       return custom(PATH_EPISODES_BY_ITUNES_ID, queries);
     },
-    episodesById: async (id, fullText = true) => {
+    episodesById: async (id, fulltext = true) => {
       let queries = {
         id: id,
       };
-      if (fullText) queries['fullText'] = '';
+      if (fulltext) queries['fulltext'] = '';
       return custom(PATH_EPISODES_BY_ID, queries);
     },
     episodesRandom: async (
@@ -330,9 +330,9 @@ export default (
       // lang = null,
       // cat = null,
       // notcat = null,
-      // fullText = true
+      // fulltext = true
     ) => {
-      // if (fullText) queries['fullText'] = '';
+      // if (fulltext) queries['fulltext'] = '';
       return custom<RandomEpisodesResult>(PATH_EPISODES_RANDOM, opts);
     },
 
@@ -356,14 +356,14 @@ export default (
       // max = 10,
       // excludeString = null,
       // before = null,
-      // fullText = true
+      // fulltext = true
     ) => {
       // let queries = {
       //   max: max,
       //   excludeString: excludeString ? excludeString : null,
       //   before: before,
       // };
-      // if (fullText) queries['fullText'] = '';
+      // if (fulltext) queries['fulltext'] = '';
       return custom<RecentEpisodesResult>(PATH_RECENT_EPISODES, options);
     },
     recentNewFeeds: async (max = 20, since = null) => {

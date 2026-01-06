@@ -86,7 +86,7 @@ export function Card({
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                // opacity: isHovering ? 1 : 0,
+                opacity: isHovering ? 1 : 0,
                 transition: 'opacity 0.3s ease-in-out',
                 position: 'absolute',
                 bottom: 8,

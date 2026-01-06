@@ -16,10 +16,13 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PodcastPodIdRouteImport } from './routes/podcast.$podId'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthSigninRouteImport } from './routes/auth.signin'
+import { Route as AuthedChatRouteImport } from './routes/_authed.chat'
 import { Route as AuthedPodcastsIndexRouteImport } from './routes/_authed.podcasts.index'
+import { Route as AuthedChatIndexRouteImport } from './routes/_authed.chat.index'
 import { Route as AuthedPodcastsProgressRouteImport } from './routes/_authed.podcasts_.progress'
 import { Route as AuthedPodcastsFeedRouteImport } from './routes/_authed.podcasts_.feed'
 import { Route as AuthedPodcastsPodIdRouteImport } from './routes/_authed.podcasts_.$podId'
+import { Route as AuthedChatThreadIdRouteImport } from './routes/_authed.chat.$threadId'
 import { Route as AuthedPodcastsPodIdEpisodesEpisodeIdRouteImport } from './routes/_authed.podcasts_.$podId_.episodes_.$episodeId'
 
 const TrendingRoute = TrendingRouteImport.update({
@@ -56,10 +59,20 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   path: '/auth/signin',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedChatRoute = AuthedChatRouteImport.update({
+  id: '/chat',
+  path: '/chat',
+  getParentRoute: () => AuthedRoute,
+} as any)
 const AuthedPodcastsIndexRoute = AuthedPodcastsIndexRouteImport.update({
   id: '/podcasts/',
   path: '/podcasts/',
   getParentRoute: () => AuthedRoute,
+} as any)
+const AuthedChatIndexRoute = AuthedChatIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedChatRoute,
 } as any)
 const AuthedPodcastsProgressRoute = AuthedPodcastsProgressRouteImport.update({
   id: '/podcasts_/progress',
@@ -76,6 +89,11 @@ const AuthedPodcastsPodIdRoute = AuthedPodcastsPodIdRouteImport.update({
   path: '/podcasts/$podId',
   getParentRoute: () => AuthedRoute,
 } as any)
+const AuthedChatThreadIdRoute = AuthedChatThreadIdRouteImport.update({
+  id: '/$threadId',
+  path: '/$threadId',
+  getParentRoute: () => AuthedChatRoute,
+} as any)
 const AuthedPodcastsPodIdEpisodesEpisodeIdRoute =
   AuthedPodcastsPodIdEpisodesEpisodeIdRouteImport.update({
     id: '/podcasts_/$podId_/episodes_/$episodeId',
@@ -87,12 +105,15 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
   '/trending': typeof TrendingRoute
+  '/chat': typeof AuthedChatRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
+  '/chat/$threadId': typeof AuthedChatThreadIdRoute
   '/podcasts/$podId': typeof AuthedPodcastsPodIdRoute
   '/podcasts/feed': typeof AuthedPodcastsFeedRoute
   '/podcasts/progress': typeof AuthedPodcastsProgressRoute
+  '/chat/': typeof AuthedChatIndexRoute
   '/podcasts': typeof AuthedPodcastsIndexRoute
   '/podcasts/$podId/episodes/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
@@ -103,9 +124,11 @@ export interface FileRoutesByTo {
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
+  '/chat/$threadId': typeof AuthedChatThreadIdRoute
   '/podcasts/$podId': typeof AuthedPodcastsPodIdRoute
   '/podcasts/feed': typeof AuthedPodcastsFeedRoute
   '/podcasts/progress': typeof AuthedPodcastsProgressRoute
+  '/chat': typeof AuthedChatIndexRoute
   '/podcasts': typeof AuthedPodcastsIndexRoute
   '/podcasts/$podId/episodes/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
@@ -115,12 +138,15 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteWithChildren
   '/discover': typeof DiscoverRoute
   '/trending': typeof TrendingRoute
+  '/_authed/chat': typeof AuthedChatRouteWithChildren
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
+  '/_authed/chat/$threadId': typeof AuthedChatThreadIdRoute
   '/_authed/podcasts_/$podId': typeof AuthedPodcastsPodIdRoute
   '/_authed/podcasts_/feed': typeof AuthedPodcastsFeedRoute
   '/_authed/podcasts_/progress': typeof AuthedPodcastsProgressRoute
+  '/_authed/chat/': typeof AuthedChatIndexRoute
   '/_authed/podcasts/': typeof AuthedPodcastsIndexRoute
   '/_authed/podcasts_/$podId_/episodes_/$episodeId': typeof AuthedPodcastsPodIdEpisodesEpisodeIdRoute
 }
@@ -130,12 +156,15 @@ export interface FileRouteTypes {
     | '/'
     | '/discover'
     | '/trending'
+    | '/chat'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
+    | '/chat/$threadId'
     | '/podcasts/$podId'
     | '/podcasts/feed'
     | '/podcasts/progress'
+    | '/chat/'
     | '/podcasts'
     | '/podcasts/$podId/episodes/$episodeId'
   fileRoutesByTo: FileRoutesByTo
@@ -146,9 +175,11 @@ export interface FileRouteTypes {
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
+    | '/chat/$threadId'
     | '/podcasts/$podId'
     | '/podcasts/feed'
     | '/podcasts/progress'
+    | '/chat'
     | '/podcasts'
     | '/podcasts/$podId/episodes/$episodeId'
   id:
@@ -157,12 +188,15 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/discover'
     | '/trending'
+    | '/_authed/chat'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
+    | '/_authed/chat/$threadId'
     | '/_authed/podcasts_/$podId'
     | '/_authed/podcasts_/feed'
     | '/_authed/podcasts_/progress'
+    | '/_authed/chat/'
     | '/_authed/podcasts/'
     | '/_authed/podcasts_/$podId_/episodes_/$episodeId'
   fileRoutesById: FileRoutesById
@@ -228,12 +262,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authed/chat': {
+      id: '/_authed/chat'
+      path: '/chat'
+      fullPath: '/chat'
+      preLoaderRoute: typeof AuthedChatRouteImport
+      parentRoute: typeof AuthedRoute
+    }
     '/_authed/podcasts/': {
       id: '/_authed/podcasts/'
       path: '/podcasts'
       fullPath: '/podcasts'
       preLoaderRoute: typeof AuthedPodcastsIndexRouteImport
       parentRoute: typeof AuthedRoute
+    }
+    '/_authed/chat/': {
+      id: '/_authed/chat/'
+      path: '/'
+      fullPath: '/chat/'
+      preLoaderRoute: typeof AuthedChatIndexRouteImport
+      parentRoute: typeof AuthedChatRoute
     }
     '/_authed/podcasts_/progress': {
       id: '/_authed/podcasts_/progress'
@@ -256,6 +304,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedPodcastsPodIdRouteImport
       parentRoute: typeof AuthedRoute
     }
+    '/_authed/chat/$threadId': {
+      id: '/_authed/chat/$threadId'
+      path: '/$threadId'
+      fullPath: '/chat/$threadId'
+      preLoaderRoute: typeof AuthedChatThreadIdRouteImport
+      parentRoute: typeof AuthedChatRoute
+    }
     '/_authed/podcasts_/$podId_/episodes_/$episodeId': {
       id: '/_authed/podcasts_/$podId_/episodes_/$episodeId'
       path: '/podcasts/$podId/episodes/$episodeId'
@@ -266,7 +321,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
+interface AuthedChatRouteChildren {
+  AuthedChatThreadIdRoute: typeof AuthedChatThreadIdRoute
+  AuthedChatIndexRoute: typeof AuthedChatIndexRoute
+}
+
+const AuthedChatRouteChildren: AuthedChatRouteChildren = {
+  AuthedChatThreadIdRoute: AuthedChatThreadIdRoute,
+  AuthedChatIndexRoute: AuthedChatIndexRoute,
+}
+
+const AuthedChatRouteWithChildren = AuthedChatRoute._addFileChildren(
+  AuthedChatRouteChildren,
+)
+
 interface AuthedRouteChildren {
+  AuthedChatRoute: typeof AuthedChatRouteWithChildren
   AuthedPodcastsPodIdRoute: typeof AuthedPodcastsPodIdRoute
   AuthedPodcastsFeedRoute: typeof AuthedPodcastsFeedRoute
   AuthedPodcastsProgressRoute: typeof AuthedPodcastsProgressRoute
@@ -275,6 +345,7 @@ interface AuthedRouteChildren {
 }
 
 const AuthedRouteChildren: AuthedRouteChildren = {
+  AuthedChatRoute: AuthedChatRouteWithChildren,
   AuthedPodcastsPodIdRoute: AuthedPodcastsPodIdRoute,
   AuthedPodcastsFeedRoute: AuthedPodcastsFeedRoute,
   AuthedPodcastsProgressRoute: AuthedPodcastsProgressRoute,

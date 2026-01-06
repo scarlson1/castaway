@@ -1,3 +1,5 @@
+import { vWorkflowId } from '@convex-dev/workflow';
+import { embeddingDimension } from 'convex/agent/models';
 import { defineSchema, defineTable } from 'convex/server';
 import { v } from 'convex/values';
 
@@ -73,7 +75,7 @@ export default defineSchema({
   }).index('by_clerk_id', ['clerkId']),
 
   podcasts: defineTable({
-    podcastId: v.string(), // podcast index guid ??
+    podcastId: v.string(), // podcast index guid
     feedUrl: v.string(),
     link: v.optional(v.union(v.string(), v.null())),
     title: v.string(),
@@ -82,8 +84,9 @@ export default defineSchema({
     description: v.string(),
     imageUrl: v.union(v.string(), v.null()),
     itunesId: v.union(v.number(), v.null()),
-    lastFetchedAt: v.number(), // ms
-    mostRecentEpisode: v.optional(v.union(v.number(), v.null())), // ms
+    lastFetchedAt: v.number(), // ms - when episodes were last fetched from index
+    // lastUpdatedAt: v.optional(v.number()), // ms
+    mostRecentEpisode: v.optional(v.union(v.number(), v.null())), // ms - when most recent episode was published
     language: v.optional(v.string()),
     episodeCount: v.optional(v.union(v.number(), v.null())), // aggregate count from db query ??
     categories: v.optional(v.any()),
@@ -98,6 +101,7 @@ export default defineSchema({
     .index('by_podId', ['podcastId'])
     // .index('by_itunesId', ['itunesId'])
     .index('by_lastFetched', ['lastFetchedAt'])
+    .index('by_mostRecentEp', ['mostRecentEpisode'])
     // .index('by_podId_lastFetched', ['podcastId', 'lastFetchedAt'])
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
@@ -170,6 +174,12 @@ export default defineSchema({
         })
       )
     ),
+    // LLM computed data
+    summaryTitle: v.optional(v.string()),
+    oneSentenceSummary: v.optional(v.string()),
+    detailedSummary: v.optional(v.string()),
+    keyTopics: v.optional(v.array(v.string())),
+    notableQuotes: v.optional(v.array(v.string())),
   })
     .index('by_podId', ['podcastId'])
     .index('by_episodeId', ['episodeId'])
@@ -233,6 +243,28 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index('by_episodeId', ['episodeId']),
 
+  transcripts: defineTable({
+    // podcastId: v.string(),
+    episodeId: v.string(),
+    // convexEpId: v.id('episodes'),
+    audioUrl: v.string(),
+    fullText: v.string(),
+    segments: v.array(
+      v.object({
+        id: v.union(v.string(), v.number()),
+        start: v.number(),
+        end: v.number(),
+        text: v.string(),
+      })
+    ),
+    summaryTitle: v.optional(v.string()),
+    oneSentenceSummary: v.optional(v.string()),
+    detailedSummary: v.optional(v.string()),
+    keyTopics: v.optional(v.array(v.string())),
+    notableQuotes: v.optional(v.array(v.string())),
+    createdAt: v.number(),
+  }).index('by_episodeId', ['episodeId']),
+
   ads: defineTable({
     podcastId: v.string(),
     episodeId: v.string(),
@@ -249,33 +281,36 @@ export default defineSchema({
   })
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
-      dimensions: 1536, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
+      dimensions: embeddingDimension, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
       filterFields: ['podcastId'],
     })
     .index('by_episodeId', ['episodeId']),
 
   adJobs: defineTable({
+    workflowId: vWorkflowId,
     episodeId: v.string(),
     audioUrl: v.string(),
     status: v.string(),
     createdAt: v.number(),
     completedAt: v.optional(v.number()),
-    // audioStorageId: v.optional(v.string()), // not used - throws if removed (extra field error)
-    transcript: v.optional(
-      v.object({
-        text: v.string(),
-        segments: v.optional(
-          v.array(
-            v.object({
-              end: v.number(),
-              id: v.union(v.number(), v.string()),
-              start: v.number(),
-              text: v.string(),
-            })
-          )
-        ),
-      })
-    ), // TODO: type
+    transcriptId: v.optional(v.id('transcripts')),
+    transcript: v.optional(v.any()),
+    // DELETE ?? saving to transcripts table instead
+    // transcript: v.optional(
+    //   v.object({
+    //     text: v.string(),
+    //     segments: v.optional(
+    //       v.array(
+    //         v.object({
+    //           end: v.number(),
+    //           id: v.union(v.number(), v.string()),
+    //           start: v.number(),
+    //           text: v.string(),
+    //         })
+    //       )
+    //     ),
+    //   })
+    // ), // TODO: type (and rename to adSegments ??)
     segments: v.optional(
       v.array(
         v.object({

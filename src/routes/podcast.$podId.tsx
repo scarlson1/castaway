@@ -7,10 +7,12 @@ import {
 } from '@mui/icons-material';
 import {
   Box,
+  Button,
   Divider,
   IconButton,
   Link,
   Rating,
+  Skeleton,
   Stack,
   Tooltip,
   Typography,
@@ -26,7 +28,9 @@ import {
 } from 'date-fns';
 import { Suspense, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { EpisodesOptionsButton } from '~/components/EpisodesList';
 import { FollowingButtons } from '~/components/FollowingButtons';
+import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
 import { episodesQueryOptions, podDetailsQueryOptions } from '~/queries';
@@ -52,9 +56,21 @@ function RouteComponent() {
       <PodDetails feed={data.feed} />
 
       <Box sx={{ py: 4 }}>
-        {/* TODO: add error boundary */}
+        <Stack
+          direction='row'
+          spacing={2}
+          sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
+        >
+          <Typography variant='h6' gutterBottom>
+            Episodes
+          </Typography>
+          <Box>
+            <EpisodesOptionsButton podId={podId} />
+          </Box>
+        </Stack>
+        <Divider />
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
-          <Suspense>
+          <Suspense fallback={<SuspenseEpisodeList numItems={8} />}>
             <EpisodesList
               podId={data.feed.podcastGuid}
               podTitle={data.feed.title}
@@ -67,12 +83,11 @@ function RouteComponent() {
 }
 
 function PodDetails({ feed }: { feed: PodcastFeed }) {
+  const navigate = Route.useNavigate();
+
   return (
     <Stack direction='row' spacing={2}>
       <Box
-        // component='img'
-        // src={feed?.artwork}
-        // alt={`${feed.title} cover art`}
         sx={{
           // height: { xs: 100, sm: 160, md: 200 },
           // width: { xs: 100, sm: 160, md: 200 },
@@ -101,8 +116,20 @@ function PodDetails({ feed }: { feed: PodcastFeed }) {
         >
           <Typography variant='h5'>{feed?.title}</Typography>
           <ErrorBoundary fallback={<div />}>
-            <Suspense>
-              <FollowingButtons podId={feed.podcastGuid} />
+            <Suspense
+              fallback={
+                <Skeleton variant='rounded'>
+                  <Button size='small'>Follow</Button>
+                </Skeleton>
+              }
+            >
+              <FollowingButtons
+                podId={feed.podcastGuid}
+                onSubscribe={(podId) => {
+                  console.log('ON SUBSCRIBED CALLED');
+                  navigate({ to: '/podcasts/$podId', params: { podId } });
+                }}
+              />
             </Suspense>
           </ErrorBoundary>
         </Stack>

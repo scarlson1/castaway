@@ -35,9 +35,15 @@ See `.env.example` for required environment variables.
 
 ## TODO
 
+- skeleton suspense loading states
 - feedback score for ad segments
 - search ad segments with embedding before sending to classifier (only send if unsure whether segment is ad)
 - subscription notifications
+- Refactor to use [Convex workflows](https://www.convex.dev/components/workflow)
+  - adPipeline
+  - transcribe episode
+  - import podcast ?
+- global playback/user preferences (playback speed, notifications, etc.)
 - fingerprint ad detection (repeated segments across episodes)
   - Use audio fingerprints (Chromaprint/AcoustID-like, or embeddings hashed + approximate nearest neighbors).
 - Rule / heuristic based ad detection
@@ -82,6 +88,7 @@ See `.env.example` for required environment variables.
 ### Collections / tables
 
 - `podcasts` - canonical podcast metadata
+
   ```json
   {
     "_id": "podcast:xxxxx",
@@ -100,9 +107,10 @@ See `.env.example` for required environment variables.
     "categoryArray": ["news"],
     "explicit": false,
     "funding": {},
-    "embedding": [0.23234, 0.3498]
+    "embedding": [0.23234, 0.3498] // TODO: delete ?? use convex rag component instead
   }
   ```
+
 - `episodes` - canonical episode references (one doc per episode GUID)
   ```json
   {
@@ -135,7 +143,9 @@ See `.env.example` for required environment variables.
     "socialInteract": []
   }
   ```
+  TODO: delete ?? use convex RAG component instead ??
 - `episodeEmbedding` - vector embedding for episodes
+
   ```json
   {
     "episodeConvexId": "2l3k4j",
@@ -151,7 +161,9 @@ See `.env.example` for required environment variables.
     "createdAt": 29348002
   }
   ```
+
 - `subscriptions` - user subscribes to a podcast
+
   ```json
   {
     "_id": "subscription:zzz",
@@ -165,7 +177,9 @@ See `.env.example` for required environment variables.
     }
   }
   ```
+
 - `user_playback` - per (user, episode) progress & state
+
   ```json
   {
     "_id": "0293848sslksdjfl",
@@ -180,7 +194,9 @@ See `.env.example` for required environment variables.
     "podcastTitle": "Pod Title"
   }
   ```
+
 - `ads` - ad segments
+
   ```json
   {
     "_id": "0293848sslksdjfl",
@@ -197,7 +213,9 @@ See `.env.example` for required environment variables.
     "createdAt": 293840293849
   }
   ```
+
 - `adJobs` - ad job workflow
+
   ```json
   {
     "_id": "0293848sslksdjfl",
@@ -218,6 +236,7 @@ See `.env.example` for required environment variables.
     ]
   }
   ```
+
 - `adJobWindows` - ad job windows - intermediate step in workflow - sent to classifier before being stitched into ad segments if determined to be an ad
 
   ```json
@@ -272,11 +291,11 @@ See `.env.example` for required environment variables.
 
 ### Subscribe flow
 
-1. UI: user clicks “Subscribe” → client performs optimistic mutation: add a `subscription` doc in Convex via a mutation function (use TanStack Query mutate with onMutate to optimistically update UI).
+1. UI: user clicks “Subscribe” → client performs optimistic mutation:
 
-2. Server: Convex mutation stores subscription and returns acknowledgement. Server (or external worker) triggers a feed fetch job: lookup the podcast by feedUrl in `podcasts`; if not present, create it and enqueue fetchFeed(podcastId) in your worker. The worker will call PodcastIndex to get feed/episode info and insert/merge episodes.
+2. Check if podcast already exists in DB, if not, add podcast to the `podcasts` table and `ctx.scheduler.runAfter(0, fetchEpisodes)` --> save `episodes` from Podcast Index.
 
-3. Worker: inserts/updates episodes with guid as idempotency key; then optionally notify users (push / notification flag) or update podcasts.lastFetchedAt.
+3. add a `subscription` doc in Convex.
 
 Idempotency: worker should upsert by GUID/enclosure URL — PodcastIndex and feeds sometimes change GUIDs; use a composite of feedUrl + episode GUID + publishedAt for safe dedupe.
 
@@ -312,16 +331,16 @@ Persist `user_playback` per episode (position + lastUpdatedAt). Writes are small
 
 Persist `user_queues` as per-item docs (see above) so reordering is cheap (update one or two docs). Use floating indices (1000, 2000, 1500) so reorders avoid rewriting all items. When indices get dense, rebalance in the background.
 
+TODO:
 Mark an episode `completed` when `position >= duration * 0.95` (or when user presses “mark played”).
 
 _Sync frontend_
 
-Local immediate state: keep Howler play state (current Howl instance, `isPlaying`, `seek`) in ephemeral local state (React + a tiny store like Zustand or context). This is the real-time playback source of truth while the user is in the session.
+Local immediate state: keep Howler play state (current Howl instance, `isPlaying`, `seek`) in ephemeral local state (React + Zustand or context). This is the real-time playback source of truth while the user is in the session.
 
-Debounced persistence: every N seconds (e.g., 5–10s) while playing, write `user_playback.positionSeconds` to Convex (via TanStack Query mutation). Also write on pause/seek/stop and when the tab unloads. Debounce to coalesce writes; but write at least every 10s so progress is not lost. (If you want more robust offline, persist to IndexedDB then sync.)
+Debounced persistence: every N seconds (e.g., 5–10s) while playing, write `user_playback.positionSeconds` to Convex (via TanStack Query mutation). [TODO:]Also write on pause/seek/stop and when the tab unloads. Debounce to coalesce writes; but write at least every 10s so progress is not lost. (If we want more robust offline, persist to IndexedDB then sync.)
 
 Optimistic UI + TanStack Query: when the user seeks or marks completed, optimistically update the cached `user_playback/user_queues` using `onMutate` and rollback on error. Use `invalidateQueries/refetch` on settle if needed.
-TanStack
 
 Realtime mirroring via Convex: subscribe to `user_playback` and `user_queues` queries so changes from other devices (or background jobs) push to the client in realtime. When a remote update comes in while the user is actively playing locally, prefer the local ephemeral Howler state and only apply remote updates if `lastUpdatedAt` is newer than the local last persisted timestamp. This prevents remote writes from stomping live playback
 
@@ -339,19 +358,19 @@ If devices both play, last-write-wins on `lastUpdatedAt`. You can reduce race wi
 
 - Create one Howl instance per playing audio (or reuse single Howl and swap `src` depending on complexity). Howler defaults to Web Audio and falls back to HTML5 audio; resume/seek behavior differs by mode — ensure `html5` is set appropriately for long streams vs. short sounds.
 
-- To resume playback from saved position: create Howl, then call `howl.seek(savedPosition)` before h`owl.play()`. If you see restarts, make sure html5 flag and buffering choices are appropriate (some browsers need html5: true for large files). See common Howler usage notes for resume.
+- To resume playback from saved position: create Howl, then call `howl.seek(savedPosition)` before `howl.play()`. If you see restarts, make sure html5 flag and buffering choices are appropriate (some browsers need html5: true for large files). See common Howler usage notes for resume.
 
 - Handle `onplay`, `onseek`, `onpause`, `onend` callbacks to trigger your persistence (debounced writes). On `onend`, mark `completed` and increment “played” counts server-side.
 
-- Preload next episode’s small portion (or preconnect) for seamless gapless playback: create a Howl for next item with `preload: true` (but be cautious with mobile data).
+- TODO: Preload next episode’s small portion (or preconnect) for seamless gapless playback: create a Howl for next item with `preload: true` (but be cautious with mobile data).
 
-### Queue order & conflict resolution
+### [TODO:] Queue order & conflict resolution
 
 - Use per-item `positionIndex` floats (like 1000,2000...). Reordering is update of one or two items instead of rewriting whole queue. If many concurrent edits happen, normalize indices in background job.
 
 - For strict ordering across devices, implement a tiny server-side sequencing function: when a client requests to move item to top, call a Convex mutation that sets `positionIndex = getSmallestIndex() - 1000` (atomic on server) so you avoid read-modify-write races. Convex mutations are atomic so they help here.
 
-### Offline support
+### [TODO:] Offline support
 
 Persist in IndexedDB (e.g., localforage) the ephemeral queue + latest playback timestamp. When back online, sync:
 
@@ -360,32 +379,6 @@ Push any local `user_playback` with the device timestamp.
 For queue changes, send a batch mutation to Convex. Use `onMutate` and optimistic updates so UI remains snappy.
 
 If you need robust offline-first (edits on many devices), consider a CRDT or a local DB (e.g., TanStack DB / Electric) — but for most podcast apps last-write-wins with timestamps + user reconciliation is acceptable. (If you want to explore local-first DB integrations, TanStack DB docs have patterns for local-first sync.)
-
-### Practical examples & API calls
-
-_Subscribe_ (client):
-
-mutate -> Convex createSubscription(userId, podcastFeedUrl, options)
-
-onSuccess enqueue worker job enqueueFetchFeed(podcastId) (via your worker queue)
-
-_Update playback_ (client):
-
-debounced mutation `updatePlayback(userId, episodeId, positionSeconds, lastUpdatedAt)` (Convex mutation)
-
-optimistic update via TanStack Query `onMutate` to set local cached `positionSeconds`.
-
-_Move queue item_ (client):
-
-call Convex mutation `moveQueueItem(userId, itemId, newPositionIndex)` which is atomic and returns latest queue snapshot.
-
-### Notes
-
-- _Rate limits_: PodcastIndex has API limits — cache feed results and batch updates. Don’t re-fetch the same feed too frequently; use podcasts.lastFetchedAt with exponential backoff.
-
-- _Testing_: simulate multi-device races (two clients writing playback/queue at same time) to validate your conflict rules.
-
-- _Monitoring_: track worker failures (feed fetch errors), and surface admin dashboard to retry failed jobs.
 
 ## Ad Detection Implementation
 
@@ -424,14 +417,10 @@ call Convex mutation `moveQueueItem(userId, itemId, newPositionIndex)` which is 
 
 1. mutation -> create `adJobs` doc (audioUrl, podId, episodeId, status, createdAt)
 
-- trigger process to process audio
-- await ctx.scheduler.runAfter(0, "adPipeline.fetchAudio", { jobId });
+- trigger process to process audio transcription
 
 ```typescript
 // convex/adPipeline/start.ts
-import { mutation } from 'convex/server';
-import { v } from 'convex/values';
-
 export const startAdDetection = mutation({
   args: {
     audioUrl: v.string(),
@@ -444,194 +433,551 @@ export const startAdDetection = mutation({
     });
 
     // schedule next step
-    await ctx.scheduler.runAfter(0, 'adPipeline.fetchAudio', { jobId });
+    await ctx.scheduler.runAfter(0, internal.adPipeline.transcribe.fn, {
+      jobId,
+    });
 
     return jobId;
   },
 });
 ```
 
-2. process audio
+2. Transcribe audio
 
-- update `adJobs` with audio storage ID
-  - await ctx.db.patch(jobId, { audioStorageId: storageId });
-- trigger transcription
-  - await ctx.scheduler.runAfter(0, "adPipeline.transcribe", { jobId });
-
-```typescript
-// convex/adPipeline/fetchAudio.ts
-import { action } from 'convex/server';
-import { v } from 'convex/values';
-
-export const fetchAudio = action({
-  args: { jobId: v.id('adJobs') },
-  handler: async (ctx, { jobId }) => {
-    const job = await ctx.db.get(jobId);
-    const resp = await fetch(job.audioUrl);
-
-    const arrayBuffer = await resp.arrayBuffer();
-    const storageId = await ctx.storage.store(arrayBuffer);
-
-    await ctx.db.patch(jobId, { audioStorageId: storageId });
-
-    // continue pipeline
-    await ctx.scheduler.runAfter(0, 'adPipeline.transcribe', { jobId });
-  },
-});
-```
-
-3. transcibe audio
+- `transcribeUrl` - breaks audio into chunks of <25MB --> openAI.transcribe --> combine & return transcript segments & text
+- `transcribeEpisodeAndSaveTranscript` calls LLM again to generate summary & tags which are passed to Convex RAG component which will create embedding (`internal.rag.insertEpisodeTranscript`)
 
 ```typescript
 // convex/adPipeline/transcribe.ts
-import { job } from 'convex/server';
-import { v } from 'convex/values';
-
-export const transcribe = job({
+export const fn = internalAction({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
-    const jobRow = await ctx.db.get(jobId);
-
-    const audio = await ctx.storage.get(jobRow.audioStorageId);
-    if (!audio) throw new Error('Audio missing');
-
-    const resp = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-      },
-      body: (() => {
-        const fd = new FormData();
-        fd.append('model', 'gpt-4o-audio-transcribe');
-        fd.append(
-          'file',
-          new Blob([audio], { type: 'audio/mpeg' }),
-          'audio.mp3'
-        );
-        fd.append('response_format', 'verbose_json');
-        return fd;
-      })(),
+    const job = await ctx.runQuery(api.adJobs.getById, { id: jobId });
+    // ... redacted for brevity
+    const transcript = await transcribeUrl(job.audioUrl, {});
+    const transcriptId = await ctx.runMutation(internal.transcripts.save, {
+      episodeId: job.episodeId,
+      audioUrl: job.audioUrl,
+      fullText: transcript.text,
+      segments: transcript.segments || [],
     });
 
-    const transcript = await resp.json();
-
-    await ctx.db.patch(jobId, {
-      transcript,
-      status: 'transcribed',
+    await ctx.runMutation(internal.adJobs.patch, {
+      id: jobId,
+      updates: { transcriptId, status: 'transcribed' },
     });
 
-    // next step
-    await ctx.scheduler.runAfter(0, 'adPipeline.chunkTranscript', { jobId });
+    await ctx.scheduler.runAfter(0, internal.adPipeline.chunkTranscript.fn, {
+      jobId,
+    });
   },
 });
 ```
 
-4. Chunk transcript
+3. Chunk transcript
+
+- `buildWindows` - combine segments into windows of X duration (12s) with overlap of Y duration (6s)
+- save windows to DB to be processed by classifier
 
 ```typescript
 // convex/adPipeline/chunkTranscript.ts
-import { mutation } from 'convex/server';
-import { v } from 'convex/values';
-
-export const chunkTranscript = mutation({
+export const fn = internalMutation({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
-    const job = await ctx.db.get(jobId);
-
-    const windows = createSlidingWindows(job.transcript.segments);
+    // ... fetch job & transcript
+    const windows = buildWindows(
+      job.transcript?.segments || [],
+      WINDOW_SIZE, // 12s
+      WINDOW_OVERLAP // 4s
+    );
 
     // store windows in DB
     for (const w of windows) {
-      await ctx.db.insert('windows', {
+      await ctx.db.insert('adJobWindows', {
         jobId,
         ...w,
         classified: false,
-        label: null,
       });
     }
 
     // schedule classification batches
-    await ctx.scheduler.runAfter(0, 'adPipeline.classifyWindows', { jobId });
+    await ctx.scheduler.runAfter(0, internal.adPipeline.classifyWindows.fn, {
+      jobId,
+    });
   },
 });
 ```
 
-5. Batch LLM classification (Convex Job)
+4. Batch LLM classification (Convex Job)
 
-- most likely to timeout ==> classify maybe 5 windows at a time:
+- recursively classify X number of windows at a time to avoid convex action timeout
+- once all windows have been marked as classified in DB --> continue to next step: merge segments
 
 ```typescript
 // convex/adPipeline/classifyWindows.ts
-import { job } from 'convex/server';
-import { v } from 'convex/values';
-
-export const classifyWindows = job({
+export const fn = internalAction({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
-    const windows = await ctx.db
-      .query('windows')
-      .withIndex('by_jobId_classified', (q) =>
-        q.eq('jobId', jobId).eq('classified', false)
-      )
-      .take(5);
+    const windows = await ctx.runQuery(internal.adJobs.getWindows, {
+      jobId,
+      classified: false,
+      count: 20,
+    });
 
     if (windows.length === 0) {
-      await ctx.scheduler.runAfter(0, 'adPipeline.mergeSegments', { jobId });
+      await ctx.scheduler.runAfter(0, internal.adPipeline.mergeSegments.fn, {
+        jobId,
+      });
       return;
     }
 
-    // LLM call for the batch
-    const prompt = windows.map((w) => w.text).join('\n---\n');
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [{ role: 'user', content: `Classify each:\n${prompt}` }],
-      }),
-    });
+    // TODO: check ad table for similar windows labelled as an ad ??
+    // if high confidence --> label as ad or not ad ??
 
-    const result = await resp.json();
-    const labels = parseClassificationOutput(result);
+    // LLM call for the batch
+    const classifiedWindows = await classifyWindowsBatch(windows);
 
     // write results
-    for (let i = 0; i < windows.length; i++) {
-      await ctx.db.patch(windows[i]._id, {
-        classified: true,
-        label: labels[i],
-      });
-    }
+    await ctx.runMutation(internal.adJobs.patchWindows, {
+      windows: classifiedWindows.map((w) => ({ ...w, classified: true })),
+    });
 
     // schedule next batch
-    await ctx.scheduler.runAfter(0, 'adPipeline.classifyWindows', { jobId });
+    await ctx.scheduler.runAfter(0, internal.adPipeline.classifyWindows.fn, {
+      jobId,
+    });
   },
 });
 ```
 
-6. Merge classified windows into ad segments
+5. Merge classified windows into ad segments
 
 ```typescript
 // convex/adPipeline/mergeSegments.ts
-import { mutation } from 'convex/server';
-import { v } from 'convex/values';
-
-export const mergeSegments = mutation({
+export const fn = internalMutation({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
     const windows = await ctx.db
-      .query('windows')
-      .withIndex('by_jobId', (q) => q.eq('jobId', jobId))
+      .query('adJobWindows')
+      .withIndex('by_jobId_classified', (q) => q.eq('jobId', jobId))
       .collect();
 
-    const segments = mergeAdjacentAds(windows);
+    const segments = mergeAdWindows(
+      windows as ClassifiedWindow[],
+      MIN_SEGMENT_LENGTH, // 5s
+      MERGE_GAP // 2s
+    );
 
     await ctx.db.patch(jobId, {
       segments,
-      status: 'complete',
+      status: 'classified',
+    });
+
+    await ctx.scheduler.runAfter(0, internal.adPipeline.saveToAds.fn, {
+      jobId,
     });
   },
 });
+```
+
+6. Save ad segments to `ads` table
+
+```typescript
+// convex/adPipeline/saveToAds.ts
+export const fn = internalAction({
+  args: { jobId: v.id('adJobs') },
+  handler: async (ctx, { jobId }) => {
+    const adJob = await ctx.runQuery(api.adJobs.getById, { id: jobId });
+
+    const episode = await ctx.runQuery(api.episodes.getByGuid, {
+      id: adJob.episodeId,
+    });
+
+    for (let segment of adJob.segments) {
+      await ctx.runAction(internal.node.saveAdSegment, {
+        episodeId: adJob.episodeId,
+        podcastId: episode.podcastId,
+        audioUrl: adJob.audioUrl,
+        convexEpId: episode._id,
+        start: segment.start,
+        end: segment.end,
+        transcript: segment.transcript,
+        confidence: segment.confidence,
+      });
+    }
+
+    await ctx.runMutation(internal.adJobs.patch, {
+      id: jobId,
+      updates: { status: 'complete', completedAt: Date.now() },
+    });
+  },
+});
+```
+
+## Agent Chat/Search
+
+## **3. Personalized Episode Highlights**
+
+Use Agent Mode to:
+
+- Analyze the transcript and detect “high-value moments”
+- Generate:
+
+  - quotes
+  - takeaways
+  - timestamps
+
+- Store highlight cards
+
+You can personalize based on user interests (stored in Convex).
+
+---
+
+## **4. AI Search Across All Podcasts**
+
+Index transcripts with embeddings and store them in Convex.
+
+Supports:
+
+- “Find me episodes where they talk about self-driving cars”
+- Cross-episode and cross-show semantic search
+- Question answering over all transcript content
+
+Convex Agent Mode can:
+
+- Generate embeddings
+- Build vector index entries
+- Re-index periodically or incrementally
+
+---
+
+## **5. Ask Questions About an Episode (RAG)**
+
+Users ask:
+
+> “What did the guest say about remote work?”
+
+Agent Mode retrieves transcript chunks and uses GPT to answer.
+
+Workflow:
+
+- Retrieve transcript (local or external)
+- Chunk + embed
+- Run retrieval
+- Generate answer
+- Return final result
+
+## **7. Intelligent Recommendations**
+
+Convex workflow:
+
+- Process transcripts + metadata
+- Build embeddings per episode
+- Match to user profile embeddings
+- Push new recommendations periodically
+
+Types:
+
+- “Because you liked hard-science episodes…”
+- “Episodes similar to what you listened to today…”
+
+---
+
+## Agent Implementation
+
+1. new episode is added
+
+- create transcript using OpenAI whisper
+- save transcript to DB (used for ad detection)
+
+2. RAG
+
+- pass to Convex's agent for RAG [docs](https://docs.convex.dev/agents/rag)
+- calc transcript summary instead of embedding entire transcript? (title + description + transcript summary)
+  - how Convex agent filter/namespace by episode ??
+
+3. Recommendations
+
+- occasionally compute user taste vector (cron) & save to user doc
+
+```typescript
+ctx.db
+  .query('podcastEpisodes')
+  .withVectorIndex('by_embedding', (q) => q.near(userEmbedding, { limit: 20 }));
+```
+
+TODO: currently saving episode embeddings to `episodeEmbeddings` table & passing to RAG agent component
+
+### Chat
+
+- create a new thread
+- updateThreadTitle tool summarizes the query to create title
+- Agent can be scoped to specific podcast/episode for search (use tool ??)
+
+---
+
+# ✅ **User-Facing AI Features You Can Build Using Convex Agent Mode**
+
+Agent Mode lets you run long-running, multi-step workflows that call external APIs and update Convex database state. That’s perfect for podcast intelligence features that require background processing, enrichment, or periodic updates.
+
+---
+
+## **1. Automatic Episode Summaries**
+
+When a new episode is published:
+
+- The agent fetches audio
+- Transcribes it (Whisper API)
+- Summarizes it (GPT model)
+- Stores the summary in your Convex database
+
+Use cases:
+
+- “What’s this episode about?” quickly shows an AI-generated synopsis.
+- Generate multiple summary lengths: 1-sentence, 1-paragraph, bullet points.
+
+**Agent Mode is ideal** because transcription + summarization may take multiple minutes and involve several API calls.
+
+---
+
+## **2. Chapter Generation / Topic Segmentation**
+
+TODO: can this be done with same token cost as classifyAds ??
+
+Agent workflow:
+
+1. Transcribe the episode
+2. Segment transcript based on topic embeddings
+3. Generate chapter titles
+4. Save them for the client app UI
+
+Result: Users can jump to sections like _“Interview begins”_, _“Key takeaway #3”_, etc.
+
+---
+
+## **3. Personalized Episode Highlights**
+
+Use Agent Mode to:
+
+- Analyze the transcript and detect “high-value moments”
+- Generate:
+
+  - quotes
+  - takeaways
+  - timestamps
+
+- Store highlight cards
+
+You can personalize based on user interests (stored in Convex).
+
+---
+
+## **4. AI Search Across All Podcasts**
+
+Index transcripts with embeddings and store them in Convex.
+
+Supports:
+
+- “Find me episodes where they talk about self-driving cars”
+- Cross-episode and cross-show semantic search
+- Question answering over all transcript content
+
+Convex Agent Mode can:
+
+- Generate embeddings
+- Build vector index entries
+- Re-index periodically or incrementally
+
+---
+
+## **5. Ask Questions About an Episode (RAG)**
+
+Users ask:
+
+> “What did the guest say about remote work?”
+
+Agent Mode retrieves transcript chunks and uses GPT to answer.
+
+Workflow:
+
+- Retrieve transcript (local or external)
+- Chunk + embed
+- Run retrieval
+- Generate answer
+- Return final result
+
+---
+
+## **6. AI Playback Features**
+
+### Real-time or pre-computed:
+
+- “Explain this topic at a beginner level”
+- “Give me context about this reference”
+- “Summarize the last 5 minutes”
+- “Translate this episode”
+
+Agent Mode can generate segment-by-segment contextual notes.
+
+---
+
+## **7. Intelligent Recommendations**
+
+Convex workflow:
+
+- Process transcripts + metadata
+- Build embeddings per episode
+- Match to user profile embeddings
+- Push new recommendations periodically
+
+Types:
+
+- “Because you liked hard-science episodes…”
+- “Episodes similar to what you listened to today…”
+
+---
+
+## **8. Auto-Generated Episode Notes / Newsletters**
+
+Agent Mode can:
+
+- Monitor new episode releases from RSS
+- Generate:
+
+  - show notes
+  - bullet summary
+  - newsletter blurb
+
+- Store in Convex
+- Push to your email pipeline / social posts
+
+This allows creators using your app to _automatically get polished episode notes_.
+
+---
+
+# 🚀 **Backend / Operational Features via Agent Mode**
+
+## **9. Smart RSS & Feed Monitoring Agents**
+
+Agents can:
+
+- Monitor podcast feeds on schedules
+- Detect new episodes
+- Fetch audio + metadata
+- Trigger downstream tasks like transcription
+
+Good for maintaining fully-updated episode catalogs without manual intervention.
+
+---
+
+## **10. Automated Content Moderation or Classification**
+
+Useful if users upload their own podcasts.
+
+Agents can:
+
+- Classify episodes by category (tech, politics, comedy…)
+- Detect content flags
+- Auto-label episodes for browsing / filtering
+
+---
+
+## **11. Multi-Step Publishing Workflow for Podcasters**
+
+If your app serves podcast creators:
+
+- Upload → transcription → cleanup → summary → show notes → social posts
+- The whole pipeline can run as an Agent Mode workflow.
+
+Pods upload once; everything else happens automatically.
+
+---
+
+# 🔧 **Why Convex Agent Mode Fits Podcast Workflows So Well**
+
+Podcast features often require:
+
+- **Long-running jobs** (transcription, indexing)
+- **Chained API calls** (Whisper → GPT → embeddings → storage)
+- **Background tasks** (feed monitoring, recommendations)
+- **Updating the Convex DB progressively** (progress indicators, partial results)
+
+Agent Mode provides:
+
+- long-running durable workers
+- native state ←→ worker interaction
+- API integrations
+- reliable workflows with automatic retries
+
+So it maps naturally onto audio processing.
+
+## **Development**
+
+### Environment Variables
+
+[Vite env docs](https://vite.dev/guide/env-and-mode)
+
+- **Prod/Dev env vars**
+  - insensitive - stored in .env.development and .env.production
+  - could be added to vercel development env and imported via CLI if prefer storing together
+
+```env
+# .env.development / .env.production
+VITE_CLERK_PUBLISHABLE_KEY=pk_test_2LKJA09sflkjwelrkj
+VITE_SENTRY_DNS=https://someAlphaNumeric.ingest.us.sentry.io/02938402934
+IMPORT_EPISODE_LIMIT=25
+```
+
+- **Shared env vars**
+  - `envPrefix: ['CLERK_SIGN_IN_', 'CLERK_SIGN_UP_', 'VITE_']` in `vite.config.ts` exposes clerk env vars to client
+
+```env
+VITE_APP_NAME=Castaway
+CLERK_SIGN_IN_URL=/auth/signin
+CLERK_SIGN_UP_URL=/auth/signup
+PODCHASER_URL=https://api.podchaser.com/graphql
+```
+
+- **Vercel** (or deployment platform)
+  - can be added to .env.local using Vercel CLI (`vercel env pull`)
+
+```env
+# .env.local
+CLERK_FRONTEND_API_URL=https://[PROJECT_ID].clerk.accounts.dev
+CLERK_SECRET_KEY=sk_test_[KEY]
+CLERK_WEBHOOK_SECRET=whsec_[SECRET]
+CONVEX_DEPLOY_KEY=dev:[PROJECT_ID]|[SOME_HASH]
+CONVEX_SITE_URL=https://[PROJECT_ID].convex.site
+COOKIE_SECRET=[KEY]
+OPENAI_API_KEY=[KEY]
+PODCAST_INDEX_KEY=[KEY]
+PODCAST_INDEX_SECRET=[PODCAST_SECRET]
+PODCHASER_API_KEY=[PODCHASER_KEY]
+PODCHASER_SECRET=[PODCHASER_TOKEN]
+PODCHASER_TOKEN=[TOKEN]
+PODCHASER_URL=https://api.podchaser.com/graphql
+SPOTIFY_CLIENT_SECRET=[CLIENT_SECRET]
+VERCEL_OIDC_TOKEN=token # alternative to API key. good for 12 hours. generated by `vercel env pull`
+VITE_APP_NAME=Castaway
+VITE_CONVEX_URL=https://[PROJECT_ID].convex.cloud
+VITE_REDIRECT_TARGET=http://127.0.0.1:3000
+VITE_SPOTIFY_CLIENT_ID=[CLIENT_ID]
+
+# production
+CONVEX_SITE_URL=
+CONVEX_DEPLOYMENT=
+CONVEX_DEPLOY_KEY=prod:[PROJECT_ID]|[SOME_HASH]
+COOKIE_SECRET=
+```
+
+- **Convex**
+
+```env
+CLERK_FRONTEND_API_URL=https://[PROJECT_ID].clerk.accounts.dev
+CLERK_WEBHOOK_SECRET=whsec_[SECRET]
+OPENAI_API_KEY=[KEY]
+PODCAST_INDEX_KEY=[KEY]
+PODCAST_INDEX_SECRET=[SECRET]
+SPOTIFY_CLIENT_ID=[CLIENT_ID]
+SPOTIFY_CLIENT_SECRET=[CLIENT_SECRET]
 ```

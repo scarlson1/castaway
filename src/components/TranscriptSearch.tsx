@@ -7,7 +7,7 @@ import {
   type TranscriptSearchOptions,
 } from '~/serverFn/podchaser';
 
-// not using - requires podchaser paid plan
+// not using - requires podchaser paid plan (DELETE)
 
 export const TranscriptSearch = (
   props: Omit<TranscriptSearchOptions, 'term'>

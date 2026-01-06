@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 
 export interface TranscriptSegment {
-  id: number;
+  id: number | string;
   start: number;
   end: number;
   text: string;
@@ -37,13 +37,17 @@ export interface TranscribeOptions {
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
+// fetches audio from url --> breaks into chunks <25MB --> transcribe --> combine transcribed chunks into array of segments ([{ id, start, end, text }])
+
 export async function transcribeUrl(
   url: string,
   options: TranscribeOptions
 ): Promise<TranscriptionResponse> {
+  // break audio into chunks of < 25MB
   const chunks = await fetchAndChunkAudio(url);
   console.log(`audio broken into ${chunks.length} chunks`);
 
+  // transcribe each chunk
   const transcripts: WhisperResponse[] = [];
   for (const c of chunks) {
     console.log(`transcribing chunk...`);
@@ -51,7 +55,7 @@ export async function transcribeUrl(
   }
   console.log(`finished transcribing chunks`);
 
-  // Merge timestamps and text
+  // Merge chunks into array of timestamps and text (transcript)
   let offset = 0;
   const merged: TranscriptSegment[] = [];
   let fullText = '';
@@ -153,92 +157,3 @@ async function toReadableFile(
   const buffer = new Uint8Array(bytes);
   return new File([buffer], filename, { type: 'audio/mpeg' });
 }
-
-// ATTEMPT USING FETCH INSTEAD OF OPEN AI CLIENT
-
-// export function sleep(ms: number) {
-//   return new Promise((res) => setTimeout(res, ms));
-// }
-
-// const OPENAI_URL = 'https://api.openai.com/v1/audio/transcriptions';
-
-// /**
-//  * Transcribe an audio chunk (Uint8Array) by POSTing multipart/form-data to OpenAI.
-//  * Uses Blob instead of File for Convex compatibility.
-//  */
-// export async function transcribeChunkWithFetch(
-//   chunk: Uint8Array,
-//   {
-//     model = 'whisper-1',
-//     language = 'en',
-//     responseFormat = 'verbose_json',
-//     maxAttempts = 3,
-//     backoffMs = 1000,
-//   }: TranscribeOptions & { maxAttempts?: number; backoffMs?: number }
-// ) {
-//   // const maxAttempts = opts?.maxAttempts ?? 3;
-//   // const baseBackoff = opts?.backoffMs ?? 1000;
-//   // const response_format = opts?.response_format ?? "verbose_json";
-
-//   // Prepare form data
-//   // Using Blob (works in Node 18 / Convex). Do NOT rely on `File`.
-//   const buffer = new Uint8Array(chunk);
-//   const blob = new Blob([buffer], { type: 'audio/mpeg' }); // or audio/webm, adjust if needed
-
-//   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-//     try {
-//       const form = new FormData();
-//       // Name the file; extension helps server guess audio type
-//       form.append('file', blob, 'chunk.mp3');
-//       form.append('model', model);
-//       form.append('response_format', responseFormat);
-//       form.append('language', language);
-
-//       const resp = await fetch(OPENAI_URL, {
-//         method: 'POST',
-//         headers: {
-//           Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-//           // DO NOT set Content-Type header — the browser/Fetch sets the multipart boundary
-//         },
-//         body: form,
-//         // no manual timeout here — Convex may have its own action timeout
-//       });
-
-//       if (!resp.ok) {
-//         const body = await resp.text().catch(() => '<unreadable body>');
-//         // For 4xx/5xx show the body (OpenAI typically returns JSON error)
-//         const err = new Error(
-//           `OpenAI transcription failed [status=${resp.status}]: ${body}`
-//         );
-//         // If it's a 5xx server error, we might retry
-//         if (resp.status >= 500 && attempt < maxAttempts) {
-//           const wait = backoffMs * Math.pow(2, attempt - 1);
-//           console.warn(
-//             `transcription attempt ${attempt} failed (status ${resp.status}), retry after ${wait}ms...`
-//           );
-//           await sleep(wait);
-//           continue;
-//         }
-//         throw err;
-//       }
-
-//       // Parse JSON (verbose_json or text)
-//       const json = await resp.json();
-//       return json; // contains segments for verbose_json
-//     } catch (e) {
-//       // Network or parse error
-//       if (attempt < maxAttempts) {
-//         const wait = backoffMs * Math.pow(2, attempt - 1);
-//         console.warn(
-//           `transcription attempt ${attempt} error: ${
-//             (e as Error).message
-//           }; retry in ${wait}ms`
-//         );
-//         console.log(e);
-//         await sleep(wait);
-//         continue;
-//       }
-//       throw e;
-//     }
-//   }
-// }

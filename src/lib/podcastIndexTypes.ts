@@ -7,7 +7,7 @@ export const searchByTermSchema = z.object({
   appleOnly: z.boolean().optional(),
   clean: z.boolean().optional(),
   similar: z.boolean().optional(),
-  fullText: z.boolean().optional(),
+  fulltext: z.boolean().optional(),
   pretty: z.boolean().optional(),
 });
 

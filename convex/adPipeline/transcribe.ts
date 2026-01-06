@@ -1,8 +1,7 @@
-'use node';
+// 'use node';
 
 import { api, internal } from 'convex/_generated/api';
 import { internalAction } from 'convex/_generated/server';
-import { transcribeUrl } from 'convex/utils/transcribeUrl';
 import { v } from 'convex/values';
 
 // fetch audio from url --> break into chunks (open AI 25MB limit)
@@ -13,9 +12,7 @@ import { v } from 'convex/values';
 export const fn = internalAction({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
-    // const jobRow = await ctx.db.get(jobId);
     const job = await ctx.runQuery(api.adJobs.getById, { id: jobId });
-    // if (!job?.audioStorageId) throw new Error('job missing audioStorageId');
     if (!job?.audioUrl) throw new Error('job missing audioUrl');
     await ctx.runMutation(internal.adJobs.patch, {
       id: jobId,
@@ -24,25 +21,47 @@ export const fn = internalAction({
       },
     });
 
-    // const audio = await ctx.storage.get(job.audioStorageId);
-    // if (!audio) throw new Error('Audio missing');
-    // const audioStorageUrl = await ctx.storage.getUrl(job.audioStorageId);
-    // if (!audioStorageUrl) throw new Error('Audio missing from storage');
+    let transcript;
+    let transcriptId;
 
-    // TODO: need to batch --> call helper fn
-    // BUG:  hits memory limits ??
-    const transcript = await transcribeUrl(job.audioUrl, {});
+    // use transcript from DB if existing
+    const existingTranscript = await ctx.runQuery(
+      api.transcripts.getByEpisodeId,
+      { episodeId: job.episodeId }
+    );
 
-    await ctx.runMutation(internal.adJobs.patch, {
-      id: jobId,
-      updates: {
-        transcript,
-        status: 'transcribed',
-      },
-    });
+    if (existingTranscript) {
+      transcript = {
+        text: existingTranscript.fullText,
+        segments: existingTranscript.segments,
+      };
+      transcriptId = existingTranscript._id;
+    } else {
+      const result = await ctx.runAction(
+        internal.node.transcribeEpisodeAndSaveTranscript,
+        {
+          episodeId: job.episodeId,
+          audioUrl: job.audioUrl,
+        }
+      );
+      transcript = result.transcript;
+      transcriptId = result.transcriptId;
+    }
 
-    await ctx.scheduler.runAfter(0, internal.adPipeline.chunkTranscript.fn, {
-      jobId,
-    });
+    if (!transcriptId) throw new Error('failed to save transcript to DB');
+
+    // await ctx.runMutation(internal.adJobs.patch, {
+    //   id: jobId,
+    //   updates: {
+    //     transcriptId,
+    //     status: 'transcribed',
+    //   },
+    // });
+
+    // await ctx.scheduler.runAfter(0, internal.adPipeline.chunkTranscript.fn, {
+    //   jobId,
+    // });
+
+    return { transcript, transcriptId };
   },
 });

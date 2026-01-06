@@ -210,15 +210,11 @@ export const getMultipleById = internalQuery({
 export const getByGuid = query({
   args: { id: v.string() },
   handler: async ({ db }, { id }) => {
-    return await db
-      .query('episodes')
-      .withIndex('by_episodeId', (q) => q.eq('episodeId', id))
-      .first();
-    //.unique(); // TODO: uncomment once the duplication problem is fixed
+    return getEpisodeById(db, id);
   },
 });
 
-export const saveEpisodesToDb = internalMutation({
+export const saveEpisodes = internalMutation({
   // args: { episodes: Doc<"episodes"> },
   handler: async (
     { db, scheduler },
@@ -247,6 +243,7 @@ export const saveEpisodesToDb = internalMutation({
     );
 
     if (episodeIds.length) {
+      // embed title + description (delete - use rag instead --> trigger transcript ??)
       await scheduler.runAfter(0, internal.episodeEmbeddings.embedNewEpisodes, {
         episodeIds,
       });
@@ -310,7 +307,7 @@ export const refreshByPodId = action({
       podcastTitle: mostRecentEpisode?.podcastTitle,
     }));
 
-    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
       episodes: eps,
     });
 
@@ -323,7 +320,7 @@ export const updatePods = internalMutation({
     updates: v.array(
       v.object({
         podId: v.id('podcasts'),
-        lastUpdatedAt: v.number(),
+        lastFetchedAt: v.number(),
         mostRecentEpisode: v.optional(v.number()),
       })
     ),
@@ -336,6 +333,27 @@ export const updatePods = internalMutation({
         // lastUpdatedAt: update.lastUpdatedAt,
       });
     }
+  },
+});
+
+export const updateEpisode = internalMutation({
+  args: {
+    episodeId: v.string(),
+    updates: v
+      .object({
+        summaryTitle: v.optional(v.string()),
+        oneSentenceSummary: v.optional(v.string()),
+        detailedSummary: v.optional(v.string()),
+        keyTopics: v.optional(v.array(v.string())),
+        notableQuotes: v.optional(v.array(v.string())),
+      })
+      .partial(),
+  },
+  handler: async ({ db }, { episodeId, updates }) => {
+    const episode = await getEpisodeById(db, episodeId);
+    if (!episode) throw new Error('episode not found');
+    console.log('UPDATING EPISODE: ', episodeId, updates.summaryTitle);
+    await db.patch(episode._id, updates);
   },
 });
 
@@ -353,7 +371,7 @@ export const fetchNewEpisodes = internalAction({
 
     let podLastUpdated: {
       podId: Id<'podcasts'>;
-      lastUpdatedAt: number;
+      lastFetchedAt: number;
       mostRecentEpisode?: number;
     }[] = [];
 
@@ -379,16 +397,26 @@ export const fetchNewEpisodes = internalAction({
         newEpisodesQueue.push({ ...episode, podcastTitle: pod.title });
       }
 
-      if (newEpisodes.length) {
-        let update = {
-          podId: pod._id,
-          lastUpdatedAt: new Date().getTime(),
-        };
-        let mostRecentEpisode = newEpisodes[0].datePublished;
-        if (mostRecentEpisode)
-          update['mostRecentEpisode'] = mostRecentEpisode * 1000;
-        podLastUpdated.push(update);
-      }
+      // if (newEpisodes.length) {
+      //   let update = {
+      //     podId: pod._id,
+      //     lastUpdatedAt: Date.now(),
+      //     lastFetchedAt: Date.now(),
+      //   };
+      //   let mostRecentEpisode = newEpisodes[0].datePublished;
+      //   if (mostRecentEpisode)
+      //     update['mostRecentEpisode'] = mostRecentEpisode * 1000;
+      //   podLastUpdated.push(update);
+      // }
+
+      let update = {
+        podId: pod._id,
+        // lastUpdatedAt: Date.now(),
+        lastFetchedAt: Date.now(),
+      };
+      let mostRecentEp = newEpisodes[0].datePublished;
+      if (mostRecentEp) update['mostRecentEpisode'] = mostRecentEp * 1000;
+      podLastUpdated.push(update);
     }
 
     if (podLastUpdated.length) {
@@ -398,7 +426,7 @@ export const fetchNewEpisodes = internalAction({
     }
 
     if (podLastUpdated.length) {
-      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
+      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
         episodes: newEpisodesQueue,
       });
     }
@@ -439,7 +467,6 @@ export const fetchPodcastForRefresh = internalQuery({
       )
       // .filter((q) => Date.now() - (q.lastFetchedAt || 0) > POLL_INTERVAL)
       .take(50);
-    // .collect();
   },
 });
 
@@ -503,6 +530,11 @@ export const cleanUpEpisodeDelete = mutation({
       const playbacks = await getPlaybackByEpisodeId(ctx.db, episodeId);
       if (playbacks.length)
         for (let p of playbacks) promises.push(ctx.db.delete(p._id));
+
+      // promises.push(ctx.scheduler.runAfter(0, internal.rag.deleteByKey, {
+      //   key: episodeId,
+      //   noThrow: true
+      // }))
     }
     console.log(
       `cleaning up ${promises.length} related records for ${episodeGuids.length} deleted episodes`
@@ -526,12 +558,12 @@ async function getRecentEpisodes(
 
 export async function fetchPodEpisodesFromIndex(
   podcastId: string,
-  options: { max?: string; since?: string; fullText?: string } = {}
+  options: { max?: string; since?: string; fulltext?: string } = {}
 ) {
   const params = new URLSearchParams({
     guid: podcastId,
     max: '1000',
-    fullText: 'true', // '',
+    fulltext: 'true', // '',
     ...options,
   });
   const res = await api<EpisodesByPodGuidResult>(
@@ -573,4 +605,11 @@ function podIndexEpToConvexEp(
     socialInteract: ep.socialInteract || [],
     chaptersUrl: ep.chaptersUrl || null,
   };
+}
+
+export async function getEpisodeById(db: QueryCtx['db'], episodeId: string) {
+  return await db
+    .query('episodes')
+    .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+    .first();
 }

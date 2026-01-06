@@ -10,15 +10,30 @@ import { api } from 'convex/_generated/api';
 import { useRef, type RefObject } from 'react';
 import { useHover } from '~/hooks/useHover';
 
-export function FollowingButtons({ podId }: { podId: string }) {
+export function FollowingButtons({
+  podId,
+  onSubscribe,
+  onUnsubscribe,
+}: {
+  podId: string;
+  onSubscribe?: (podGuid: string) => void;
+  onUnsubscribe?: () => void;
+}) {
   const ref = useRef<HTMLButtonElement>(null);
   const [isHovering] = useHover(ref as RefObject<HTMLButtonElement>);
+
   const { mutate: subscribe, isPending } = useMutation({
     mutationFn: useConvexAction(api.actions.subscribe),
+    onSuccess: () => {
+      onSubscribe && onSubscribe(podId);
+    },
   });
 
   const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
     mutationFn: useConvexMutation(api.subscribe.remove),
+    onSuccess: () => {
+      onUnsubscribe && onUnsubscribe();
+    },
   });
 
   const { data: isFollowing } = useSuspenseQuery(

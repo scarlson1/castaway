@@ -6,6 +6,7 @@ import {
   InputLabel,
   MenuItem,
   Select,
+  Stack,
   Typography,
 } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
@@ -14,6 +15,7 @@ import { api } from 'convex/_generated/api';
 import { sortBy } from 'lodash-es';
 import { useMemo, useState } from 'react';
 import { Card } from '~/components/Card';
+import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
 export const Route = createFileRoute('/_authed/podcasts/')({
@@ -28,7 +30,9 @@ function RouteComponent() {
 
   const sorted = useMemo(() => {
     if (sort === 'recent')
-      return data.sort((a, b) => b.lastFetchedAt - a.lastFetchedAt);
+      return data.sort(
+        (a, b) => (b.mostRecentEpisode || 0) - (a.mostRecentEpisode || 0)
+      );
     else if (sort === 'alpha') return sortBy(data, 'title');
     return data;
   }, [data, sort]);
@@ -61,6 +65,17 @@ function RouteComponent() {
           </Select>
         </FormControl>
       </Box>
+
+      {sorted.length === 0 ? (
+        <Stack direction='column' spacing={2} sx={{ alignItems: 'center' }}>
+          <Typography variant='subtitle1'>
+            Your followed podcasts will show up here
+          </Typography>
+          <MuiButtonLink to='/discover' variant='contained'>
+            Explore
+          </MuiButtonLink>
+        </Stack>
+      ) : null}
 
       <Grid
         container

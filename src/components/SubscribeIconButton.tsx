@@ -10,8 +10,16 @@ import {
   Tooltip,
   type IconButtonProps,
 } from '@mui/material';
-import { useMutation, useSuspenseQuery } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQueryClient,
+  useSuspenseQuery,
+} from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
+import { useCallback } from 'react';
+import { useClerkAuth } from '~/hooks/useClerkAuth';
+
+// TODO: need to invalidate episodes and podcasts cache after subscribing ??
 
 interface SubscribeIconButtonProps extends IconButtonProps {
   podcastId: string;
@@ -24,18 +32,33 @@ export const SubscribeIconButton = ({
   ...props
 }: SubscribeIconButtonProps) => {
   // don't need to invalidate cache b/c convex reactively updates ??
+  const { isAuthenticated } = useClerkAuth();
   const { data: subscribed } = useSuspenseQuery(
     convexQuery(api.subscribe.all, {})
   );
 
+  const queryClient = useQueryClient();
+  const invalidateQueries = useCallback(async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['episodesFeed'] }),
+      queryClient.invalidateQueries({
+        queryKey: convexQuery(api.subscribe.allDetails, {}).queryKey,
+      }),
+    ]);
+  }, [queryClient]);
+
   const { mutate: subscribe, isPending } = useMutation({
     mutationFn: useConvexAction(api.actions.subscribe),
+    onSuccess: invalidateQueries,
   });
 
   const { mutate: unsubscribe, isPending: unsubPending } = useMutation({
     mutationFn: useConvexMutation(api.subscribe.remove),
+    onSuccess: invalidateQueries,
   });
   // TODO: optimistic update instead of isPending
+
+  if (!isAuthenticated) return null;
 
   const isFollowing = subscribed?.some((s) => s.podcastId === podcastId);
 

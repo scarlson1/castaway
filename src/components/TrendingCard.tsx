@@ -1,4 +1,11 @@
-import { Box, Stack, styled, Typography } from '@mui/material';
+import {
+  Box,
+  IconButton,
+  Skeleton,
+  Stack,
+  styled,
+  Typography,
+} from '@mui/material';
 import type { Doc } from 'convex/_generated/dataModel';
 import { Suspense } from 'react';
 import { MuiStackLink } from '~/components/MuiStackLink';
@@ -19,7 +26,6 @@ const ClampedTypography = styled(Typography)({
 interface TrendingCardProps {
   title: string;
   secondaryText: string;
-  // actionText?: string;
   publishedAt: number;
   orientation?: 'vertical' | 'horizontal';
   rank?: number;
@@ -73,24 +79,22 @@ TrendingCardProps) {
         </Typography>
       ) : null}
 
-      <Box sx={{ position: 'relative' }}>
-        <Box
-          sx={{
-            width: 52,
-            height: 52,
-            flex: '0 0 52px',
-            objectFit: 'cover',
-            aspectRatio: '1/1',
-            overflow: 'hidden',
-            borderRadius: 1,
-            backgroundColor: 'rgba(0,0,0,0.08)',
-            '& > img': {
-              width: '100%',
-            },
-          }}
-        >
-          <img src={imgSrc} alt={`${title} cover art`} />
-        </Box>
+      <Box
+        sx={{
+          width: 52,
+          height: 52,
+          flex: '0 0 52px',
+          objectFit: 'cover',
+          aspectRatio: '1/1',
+          overflow: 'hidden',
+          borderRadius: 1,
+          backgroundColor: 'rgba(0,0,0,0.08)',
+          '& > img': {
+            width: '100%',
+          },
+        }}
+      >
+        <img src={imgSrc} alt={`${title} cover art`} />
       </Box>
 
       <Stack
@@ -117,14 +121,6 @@ TrendingCardProps) {
         >
           {formatRelativeTime(new Date(publishedAt))}
         </Typography>
-        {/* <Stack direction='column' spacing={0.5} sx={{ minWidth: 0, pr: 2 }}>
-          <ClampedTypography variant='body1' color='textPrimary'>
-            {title}
-          </ClampedTypography>
-          <ClampedTypography variant='body2' color='textSecondary'>
-            {secondaryText}
-          </ClampedTypography>
-        </Stack> */}
         <Box sx={{ minWidth: 0, pr: 2, width: '100%' }}>
           <ClampedTypography
             variant='body1'
@@ -167,7 +163,13 @@ TrendingCardProps) {
         </Box>
       </Stack>
       <Box sx={{ display: 'flex', alignItems: 'center' }}>
-        <Suspense>
+        <Suspense
+          fallback={
+            <Skeleton variant='circular'>
+              <IconButton size='small' />
+            </Skeleton>
+          }
+        >
           <PlaybackButton
             episode={
               {
@@ -180,6 +182,7 @@ TrendingCardProps) {
                 audioUrl,
               } as Doc<'episodes'>
             }
+            color='primary'
           />
         </Suspense>
       </Box>

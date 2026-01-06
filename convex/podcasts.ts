@@ -10,7 +10,6 @@ import {
 } from 'convex/_generated/server';
 import { getTimestamp } from 'convex/playback';
 import { WithoutSystemFields } from 'convex/server';
-import { getClerkId } from 'convex/utils/auth';
 import { createEmbedding } from 'convex/utils/embeddings';
 import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
@@ -29,7 +28,7 @@ export const add = internalMutation({
     { db, scheduler },
     { podcastId, ...rest }: WithoutSystemFields<Doc<'podcasts'>>
   ) => {
-    // possible to add table constraint (userId & podcastId unique)
+    // possible to add table constraint (userId & podcastId unique) ??
     let existingSub = await checkExisting(db, podcastId);
 
     if (existingSub) return { success: true, new: false };
@@ -40,6 +39,8 @@ export const add = internalMutation({
       lastFetchedAt: getTimestamp(),
     });
 
+    // TODO: use RAG component for embedding ??
+    // should podcast embedding be recomputed from episode summaries ??
     // add embedding to podcast
     await scheduler.runAfter(0, internal.podcasts.generateEmbedding, {
       podConvexId: id,
@@ -81,7 +82,7 @@ export const setLastUpdated = internalMutation({
     updates: v.array(
       v.object({
         podId: v.id('podcasts'),
-        lastUpdatedAt: v.number(),
+        lastFetchedAt: v.number(),
         mostRecentEpisode: v.optional(v.number()),
       })
     ),
@@ -89,9 +90,6 @@ export const setLastUpdated = internalMutation({
   handler: async ({ db }, { updates }) => {
     for (const { podId, ...rest } of updates) {
       await db.patch(podId, { ...rest });
-      // const id = await db.insert('episodes', {
-      //   ...podIndexEpToConvexEp(episode, podcastTitle),
-      // });
     }
   },
 });
@@ -106,11 +104,14 @@ export const getAllById = internalQuery({
 export const recentlyUpdated = query({
   args: { limit: v.optional(v.number()) },
   handler: async ({ db }, { limit = 8 }) => {
-    return db
-      .query('podcasts')
-      .withIndex('by_lastFetched')
-      .order('desc')
-      .take(limit);
+    return (
+      db
+        .query('podcasts')
+        // .withIndex('by_lastFetched')
+        .withIndex('by_mostRecentEp')
+        .order('desc')
+        .take(limit)
+    );
   },
 });
 
@@ -129,6 +130,7 @@ export const saveEmbedding = internalMutation({
     embedding: v.array(v.number()),
   },
   handler: async ({ db }, { podConvexId, embedding }) => {
+    console.log(`saving embedding for podcast ${podConvexId}...`);
     await db.patch(podConvexId, {
       embedding,
     });
@@ -202,7 +204,7 @@ export const getPersonalizedRecommendations = action({
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit = 10 }) => {
-    const clerkId = await getClerkId(ctx.auth);
+    // const clerkId = await getClerkId(ctx.auth);
 
     // TODO: need to add podcastId to playback
     // const listens: Doc<'user_playback'>[] = await ctx.runQuery(
@@ -215,7 +217,11 @@ export const getPersonalizedRecommendations = action({
 
     const subscribed = await ctx.runQuery(api.subscribe.all);
 
-    if (!subscribed?.length) return [];
+    // TODO: return fallback to most listened
+    // https://github.com/get-convex/aggregate/blob/main/example/convex/shuffle.ts
+    if (!subscribed?.length) {
+      return await ctx.runQuery(api.podcasts.recentlyUpdated, { limit });
+    }
 
     const podIds = subscribed.map((s) => s.podConvexId);
 
@@ -274,97 +280,6 @@ export async function getEmbedding(
   categories?: string
 ) {
   const text = [title, description, categories ?? ''].join('\n\n');
-  return createEmbedding(text);
+  const embeddingResult = await createEmbedding(text);
+  return embeddingResult[0].embedding;
 }
-
-// movies example https://github.com/get-convex/convex-demos/blob/main/vector-search/convex/movies.ts
-
-// ------ VECTOR EXAMPLE --------
-
-// export async function embed(text: string): Promise<number[]> {
-//   const key = process.env.OPENAI_KEY;
-//   if (!key) {
-//     throw new Error("OPENAI_KEY environment variable not set!");
-//   }
-//   const req = { input: text, model: "text-embedding-3-small" };
-//   const resp = await fetch("https://api.openai.com/v1/embeddings", {
-//     method: "POST",
-//     headers: {
-//       "Content-Type": "application/json",
-//       Authorization: `Bearer ${key}`,
-//     },
-//     body: JSON.stringify(req),
-//   });
-//   if (!resp.ok) {
-//     const msg = await resp.text();
-//     throw new Error(`OpenAI API error: ${msg}`);
-//   }
-//   const json = await resp.json();
-//   const vector = json["data"][0]["embedding"];
-//   console.log(`Computed embedding of "${text}": ${vector.length} dimensions`);
-//   return vector;
-// }
-
-// export const insert = mutation({
-//   args: { title: v.string(), description: v.string(), genre: v.string() },
-//   handler: async (ctx, args) => {
-//     const movieId = await ctx.db.insert("movies", {
-//       description: args.description,
-//       genre: args.genre,
-//       title: args.title,
-//       votes: 0,
-//     });
-//     // Kick off an action to generate an embedding for this movie
-//     await ctx.scheduler.runAfter(0, internal.movies.generateAndAddEmbedding, {
-//       movieId,
-//       description: args.description,
-//     });
-//   },
-// });
-
-// export const generateAndAddEmbedding = internalAction({
-//   args: { movieId: v.id("movies"), description: v.string() },
-//   handler: async (ctx, args) => {
-//     const embedding = await embed(args.description);
-//     await ctx.runMutation(internal.movies.addEmbedding, {
-//       movieId: args.movieId,
-//       embedding,
-//     });
-//   },
-// });
-
-// export const addEmbedding = internalMutation({
-//   args: { movieId: v.id("movies"), embedding: v.array(v.number()) },
-//   handler: async (ctx, args) => {
-//     const movie = await ctx.db.get(args.movieId);
-//     if (movie === null) {
-//       // No movie to update
-//       return;
-//     }
-//     const movieEmbeddingId = await ctx.db.insert("movieEmbeddings", {
-//       embedding: args.embedding,
-//       genre: movie.genre,
-//     });
-//     await ctx.db.patch(args.movieId, {
-//       embeddingId: movieEmbeddingId,
-//     });
-//   },
-// });
-
-// // RUNNING VECTOR SEARCH: https://docs.convex.dev/search/vector-search#running-vector-searches
-// // export const findSimilar = action({
-// //   args: {
-// //     descriptionQuery: v.string(),
-// //   },
-// //   handler: async (ctx, args) => {
-// //     // 1. Generate an embedding from your favorite third party API:
-// //     const embedding = await embed(args.descriptionQuery);
-// //     // 2. Then search for similar foods!
-// //     const results = await ctx.vectorSearch("foods", "by_embedding", {
-// //       vector: embedding,
-// //       limit: 16,
-// //       filter: (q) => q.eq("cuisine", "French"),
-// //     });
-// //     // ...
-// //   },
-// // })

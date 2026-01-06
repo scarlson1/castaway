@@ -3,8 +3,10 @@ import {
   useConvexAction,
   useConvexMutation,
 } from '@convex-dev/react-query';
+import type { WorkflowId, WorkflowStatus } from '@convex-dev/workflow';
 import {
   DownloadRounded,
+  HistoryEduRounded,
   IosShareRounded,
   PauseCircleFilledRounded,
   PlayCircleFilledRounded,
@@ -13,8 +15,15 @@ import {
 import {
   Box,
   Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   IconButton,
+  List,
+  ListItem,
+  ListItemText,
   Stack,
   Tooltip,
   Typography,
@@ -24,12 +33,13 @@ import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import type { Doc, Id } from 'convex/_generated/dataModel';
 import { formatDate, formatDuration } from 'date-fns';
-import { Suspense, useCallback } from 'react';
+import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { AdsTimeline } from '~/components/AdsTimeline';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
 import { SimilarEpisodes } from '~/components/SimilarEpisodes';
+import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 import { useAudioStore } from '~/hooks/useAudioStore';
 import { useQueueStore } from '~/hooks/useQueueStore';
@@ -64,7 +74,7 @@ function RouteComponent() {
   );
 
   const { mutate: startJob, isPending: jobPending } = useMutation<
-    { jobId: string },
+    { workflowId: string },
     Error,
     { episodeId: string; audioUrl: string }
   >({
@@ -102,7 +112,19 @@ function RouteComponent() {
 
   return (
     <>
-      <Stack direction='row' spacing={4} sx={{ mb: 2 }}>
+      <Stack
+        direction='row'
+        spacing={{ xs: 0, sm: 3, md: 4 }}
+        sx={{
+          mb: 2,
+          maxWidth: 760,
+          flexWrap: {
+            xs: 'wrap',
+            sm: 'nowrap',
+          },
+          justifyContent: { xs: 'center', sm: 'flex-start' },
+        }}
+      >
         <Box
           sx={{
             objectFit: 'contain',
@@ -131,7 +153,20 @@ function RouteComponent() {
             alt={`${data.podcastTitle} cover`}
           />
         </Box>
-        <Stack direction='column' spacing={1} sx={{ alignItems: 'flex-start' }}>
+        <Stack
+          direction='column'
+          spacing={1}
+          sx={{
+            alignItems: 'flex-start',
+            maxHeight: {
+              xs: 220, // 120,
+              sm: 200, // 160,
+              md: 200,
+              lg: 220,
+            },
+            overflow: 'hidden',
+          }}
+        >
           <Stack direction='row' spacing={2}>
             {/* <Typography variant='overline' color='textSecondary'>
               {data?.podcastTitle}
@@ -142,6 +177,7 @@ function RouteComponent() {
               underline='none'
               variant='overline'
               color='textSecondary'
+              lineHeight={1.8}
             >
               {data?.podcastTitle}
             </MuiLink>
@@ -149,7 +185,16 @@ function RouteComponent() {
               {getEpisodeLabel(data)}
             </Typography>
           </Stack>
-          <Typography variant='h5' gutterBottom>
+          <Typography
+            variant='h5'
+            gutterBottom
+            sx={{
+              whiteSpace: 'nowrap',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              maxWidth: '100%',
+            }}
+          >
             {data?.title}
           </Typography>
           {isPlaying && curEpId === episodeId ? (
@@ -169,6 +214,20 @@ function RouteComponent() {
               <PlayCircleFilledRounded fontSize='inherit' />
             </IconButton>
           )}
+          {data.oneSentenceSummary ? (
+            <Typography
+              variant='subtitle1'
+              sx={{
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 3, // { xs: 1, sm: 3, md: 3, lg: 3 }, // adjust as needed
+                // display: { xs: 'none', sm: '-webkit-box' },
+              }}
+            >
+              {data.oneSentenceSummary}
+            </Typography>
+          ) : null}
         </Stack>
       </Stack>
 
@@ -194,15 +253,68 @@ function RouteComponent() {
           </Stack>
 
           <Box sx={{ ml: 'auto' }}>
-            <EpisodeActions />
+            <EpisodeActions
+              episodeId={episodeId}
+              isTranscribed={Boolean(data.detailedSummary)}
+            />
           </Box>
         </Stack>
         <Divider sx={{ my: 1 }} />
-        <Typography variant='h6' gutterBottom>
-          Episode Description
-        </Typography>
+        <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+          <Typography variant='h6' gutterBottom>
+            Episode Description{' '}
+          </Typography>
+          {data.detailedSummary ? (
+            <Typography
+              component='span'
+              variant='body2'
+              color='textSecondary'
+              sx={{ pl: 1 }}
+            >
+              (AI generated summary)
+            </Typography>
+          ) : null}
+        </Stack>
         <Typography component='div' variant='body2'>
-          <div dangerouslySetInnerHTML={{ __html: data.summary }} />
+          {data.detailedSummary ? (
+            <Stack spacing={1}>
+              <Typography variant='body2'>{data.detailedSummary}</Typography>
+              {data.notableQuotes?.length ? (
+                <>
+                  <Typography variant='overline' color='textSecondary'>
+                    Notable Quotes
+                  </Typography>
+                  <Quotes quotes={data.notableQuotes} />
+                </>
+              ) : null}
+              {data.keyTopics?.length ? (
+                <Box>
+                  <Typography
+                    variant='overline'
+                    color='textSecondary'
+                    lineHeight={1.8}
+                  >
+                    Key Topics
+                  </Typography>
+                  <List dense>
+                    {data.keyTopics.map((topic) => (
+                      <ListItem key={topic}>
+                        <ListItemText primary={topic} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </Box>
+              ) : null}
+              <Divider flexItem />
+              <Typography variant='overline' color='textSecondary'>
+                Description from the podcast host:
+              </Typography>
+
+              <div dangerouslySetInnerHTML={{ __html: data.summary }} />
+            </Stack>
+          ) : (
+            <div dangerouslySetInnerHTML={{ __html: data.summary }} />
+          )}
         </Typography>
         <Stack direction={{ xs: 'column', md: 'row' }} spacing={1}>
           <MuiButtonLink to='/podcasts/$podId' params={{ podId }}>
@@ -220,13 +332,24 @@ function RouteComponent() {
             Transcribe & classify job
           </Button>
           <EmbedEpisode convexId={data._id} />
+          <ViewTranscript episodeId={episodeId} />
         </Stack>
 
         <Typography variant='h6' gutterBottom>
           Ads Timeline
         </Typography>
-        <ErrorBoundary fallback={<div>an error occurred</div>}>
-          <Suspense>
+        <ErrorBoundary
+          fallback={
+            <Typography color='error'>Error loading ad segments</Typography>
+          }
+        >
+          <Suspense
+            fallback={
+              <Typography variant='body2' color='textSecondary'>
+                Loading ad segments...
+              </Typography>
+            }
+          >
             <AdSegments
               // ads={[]} audioUrl={data.audioUrl}
               episodeId={episodeId}
@@ -237,28 +360,50 @@ function RouteComponent() {
         <Typography variant='h6' gutterBottom>
           Ad Jobs
         </Typography>
-        <ErrorBoundary fallback={<div>an error occurred</div>}>
-          <Suspense>
+        <ErrorBoundary
+          fallback={
+            <Typography color='error'>Error loading ad jobs</Typography>
+          }
+        >
+          <Suspense
+            fallback={
+              <Typography variant='body2' color='textSecondary'>
+                Loading ad jobs...
+              </Typography>
+            }
+          >
             <AdJobs episodeId={episodeId} />
           </Suspense>
         </ErrorBoundary>
 
-        <ErrorBoundary fallback={null}>
-          <Suspense>
-            <Box sx={{ py: 3 }}>
-              <Divider sx={{ mb: 3 }} />
-              <Typography variant='h6' gutterBottom>
-                You might also like
-              </Typography>
+        <Box sx={{ py: 3 }}>
+          <Divider sx={{ mb: 3 }} />
+          <Typography variant='h6' gutterBottom>
+            You might also like
+          </Typography>
+          <ErrorBoundary
+            fallback={<Typography>Error loading similar episodes</Typography>}
+          >
+            <Suspense
+              fallback={
+                <SuspenseGridCards
+                  numItems={4}
+                  columnSpacing={2}
+                  rowSpacing={1}
+                  columns={16}
+                  childGridProps={{ size: { xs: 8, sm: 4, md: 4, lg: 2 } }}
+                />
+              }
+            >
               <SimilarEpisodes
                 limit={4}
                 episodeConvexId={data._id}
                 gridItemProps={{ size: { xs: 8, sm: 4 } }}
               />
-              <Divider sx={{ my: 3 }} />
-            </Box>
-          </Suspense>
-        </ErrorBoundary>
+            </Suspense>
+          </ErrorBoundary>
+          <Divider sx={{ my: 3 }} />
+        </Box>
       </Box>
     </>
   );
@@ -283,7 +428,25 @@ function AdSegments({ episodeId }: { episodeId: string }) {
   );
 }
 
-function EpisodeActions() {
+function EpisodeActions({
+  episodeId,
+  isTranscribed,
+}: {
+  episodeId: string;
+  isTranscribed: boolean;
+}) {
+  const toast = useAsyncToast();
+  const { mutate: transcribeEpisode, isPending: transcribePending } =
+    useMutation({
+      mutationFn: useConvexMutation(api.transcripts.create),
+      // onMutate: () => toast.loading('transcribing episode...'),
+      onError: () => toast.error('error transcribing episode'),
+      onSuccess: ({ workflowId }) => {
+        toast.success('episode transcription started');
+        console.log('Transcript workflowId: ', workflowId);
+      },
+    });
+
   return (
     <Stack direction='row' spacing={1}>
       <Tooltip title='share'>
@@ -301,6 +464,16 @@ function EpisodeActions() {
           <PlaylistAddRounded fontSize='inherit' />
         </IconButton>
       </Tooltip>
+      <Tooltip title='transcribe'>
+        <IconButton
+          size='small'
+          loading={transcribePending}
+          // disabled={isTranscribed}
+          onClick={() => transcribeEpisode({ episodeId })}
+        >
+          <HistoryEduRounded fontSize='inherit' />
+        </IconButton>
+      </Tooltip>
     </Stack>
   );
 }
@@ -312,25 +485,79 @@ function AdJobs({ episodeId }: { episodeId: string }) {
 
   if (!data?.length) return <Typography>No classification jobs</Typography>;
 
+  const sorted = useMemo(
+    () => data.sort((a, b) => b._creationTime - a._creationTime),
+    [data]
+  );
+
   return (
-    <>
-      {data.map((j) => {
+    <Stack spacing={1} divider={<Divider flexItem />}>
+      {sorted.map((j) => {
         const { transcript, ...job } = j;
         return (
-          <Typography
-            component='div'
-            variant='body2'
-            key={j._id}
-            sx={{
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            <pre>{JSON.stringify(job, null, 2)}</pre>
-          </Typography>
+          <Box key={j._id}>
+            <Typography variant='overline' color='textSecondary'>
+              {`Job Status ${data.length > 1 ? job._id : ''}`.trim()}
+            </Typography>
+            <Typography
+              variant='body2'
+              sx={{
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {`Job status: ${job.status}`}
+            </Typography>
+
+            {job.workflowId ? (
+              <ErrorBoundary
+                fallback={
+                  <Typography>Error loading workflow status</Typography>
+                }
+              >
+                <Suspense>
+                  <WorkflowStatus workflowId={job.workflowId} />
+                </Suspense>
+              </ErrorBoundary>
+            ) : null}
+          </Box>
         );
       })}
+    </Stack>
+  );
+}
+
+function WorkflowStatus({ workflowId }: { workflowId: WorkflowId }) {
+  const { data } = useSuspenseQuery(
+    convexQuery(api.adPipeline.workflow.status, { workflowId })
+  );
+
+  if (!data) return <Typography>Workflow not found</Typography>;
+
+  return (
+    <>
+      <Typography variant='overline' color='textSecondary'>
+        Workflow Status
+      </Typography>
+      <Typography variant='body2'>{`Status: ${data.type}`}</Typography>
+
+      {data.type === 'inProgress'
+        ? data.running.map((step) => (
+            <Typography
+              variant='body2'
+              key={step.name}
+            >{`Step: ${step.name}`}</Typography>
+          ))
+        : null}
+
+      {data.type === 'completed' ? (
+        <Typography variant='body2'>{`Result: ${data.result}`}</Typography>
+      ) : null}
+
+      {data.type === 'failed' ? (
+        <Typography variant='body2'>{data.error}</Typography>
+      ) : null}
     </>
   );
 }
@@ -358,5 +585,94 @@ function EmbedEpisode({ convexId }: { convexId: Id<'episodes'> }) {
     >
       Embed Episode
     </Button>
+  );
+}
+
+function ViewTranscript({ episodeId }: { episodeId: string }) {
+  const [open, setOpen] = useState(false);
+  const { data } = useSuspenseQuery(
+    convexQuery(api.transcripts.getByEpisodeId, { episodeId })
+  );
+
+  const toast = useAsyncToast();
+  const { mutate: transcribeEpisode, isPending } = useMutation({
+    mutationFn: useConvexMutation(api.transcripts.create),
+    // onMutate: () => toast.loading('transcribing episode...'),
+    onError: () => toast.error('error transcribing episode'),
+    onSuccess: () => toast.success('episode transcription started'),
+  });
+
+  return (
+    <>
+      <Button onClick={() => setOpen(true)}>View Transcript</Button>
+      <Dialog
+        open={open}
+        onClose={() => setOpen(false)}
+        maxWidth={!data?.fullText ? 'xs' : 'md'}
+        fullWidth={!data?.fullText}
+      >
+        <DialogTitle>Transcript</DialogTitle>
+        <DialogContent dividers>
+          {data?.fullText ? (
+            <Typography variant='body2' fontSize='0.875rem'>
+              {data.fullText}
+            </Typography>
+          ) : (
+            <Stack
+              direction='column'
+              spacing={2}
+              sx={{ alignItems: 'center', py: 2 }}
+            >
+              <Typography>Transcript not found</Typography>
+              <Button
+                disabled={isPending}
+                onClick={() => transcribeEpisode({ episodeId })}
+                variant='contained'
+              >
+                Transcribe
+              </Button>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  );
+}
+
+function Quotes({ quotes }: { quotes: string[] }) {
+  return (
+    <Stack direction='column' spacing={1}>
+      {quotes.map((q) => (
+        <QuoteBlock key={q} quote={q} author='Host' />
+      ))}
+    </Stack>
+  );
+}
+
+function QuoteBlock({ quote, author }) {
+  return (
+    <Box
+      sx={{
+        borderLeft: '4px solid #1976d2', // A classic Material Design blue border
+        paddingLeft: 2,
+        marginLeft: 2,
+        fontStyle: 'italic',
+        color: 'text.secondary', // Uses theme's secondary text color
+      }}
+    >
+      <Typography variant='body1' component='p' sx={{ mb: 1 }}>
+        "{quote}"
+      </Typography>
+      <Typography
+        variant='caption'
+        component='cite'
+        sx={{ display: 'block', textAlign: 'right' }}
+      >
+        — {author}
+      </Typography>
+    </Box>
   );
 }

@@ -1,16 +1,10 @@
 import { useConvexPaginatedQuery } from '@convex-dev/react-query';
-import {
-  Box,
-  Button,
-  Divider,
-  Skeleton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Divider, Stack, Typography } from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { Suspense } from 'react';
+import { Suspense, useId } from 'react';
 import { useInView } from 'react-intersection-observer';
+import { SuspenseTrendingCard } from '~/components/suspense/SuspenseTrendingCard';
 import { TrendingCard } from '~/components/TrendingCard';
 
 export const Route = createFileRoute('/_authed/podcasts_/progress')({
@@ -25,7 +19,7 @@ function RouteComponent() {
         In Progress
       </Typography>
       {/* <ErrorBoundary fallback=> */}
-      <Suspense>
+      <Suspense fallback={<SkeletonUserPlayback numItems={10} />}>
         <UserPlayback />
       </Suspense>
       {/* </ErrorBoundary> */}
@@ -80,28 +74,31 @@ function UserPlayback() {
   );
 }
 
-// function WrappedEpisodeRow({ playback }: { playback: Doc<'user_playback'> }) {
-//   const { data: episode } = useSuspenseQuery(
-//     convexQuery(api.episodes.getByGuid, { id: playback.episodeId })
-//   );
+function SkeletonUserPlayback({ numItems }: { numItems: number }) {
+  const id = useId();
+  const data = Array.from({ length: numItems }, (_, i) => `${id}-${i}`);
 
-//   if (!episode) return null;
-
-//   return <EpisodeRow episode={episode} playback={playback} />;
-// }
-
-function EpisodeRowSkeleton({ orientation }: { orientation: string }) {
-  let isRow = orientation === 'horizontal';
   return (
-    <Stack direction={isRow ? 'row' : 'column'} spacing={isRow ? 2 : 0.5}>
-      <Skeleton variant='rounded' width={52} height={52} />
-      <Stack direction='column' spacing={0.5} sx={{ minWidth: 0, pr: 2 }}>
-        <Skeleton variant='text' sx={{ fontSize: '1rem' }} />
-        <Skeleton variant='text' sx={{ fontSize: '0.825rem' }} />
-        <Box sx={{ ml: 'auto !important', flex: `0 0 100px` }}>
-          <Skeleton variant='text' sx={{ fontSize: '0.825rem' }} />
-        </Box>
-      </Stack>
+    <Stack direction='column' spacing={1} divider={<Divider />}>
+      {data.map((d) => (
+        <SuspenseTrendingCard key={d} />
+      ))}
     </Stack>
   );
 }
+
+// function EpisodeRowSkeleton({ orientation }: { orientation: string }) {
+//   let isRow = orientation === 'horizontal';
+//   return (
+//     <Stack direction={isRow ? 'row' : 'column'} spacing={isRow ? 2 : 0.5}>
+//       <Skeleton variant='rounded' width={52} height={52} />
+//       <Stack direction='column' spacing={0.5} sx={{ minWidth: 0, pr: 2 }}>
+//         <Skeleton variant='text' sx={{ fontSize: '1rem' }} />
+//         <Skeleton variant='text' sx={{ fontSize: '0.825rem' }} />
+//         <Box sx={{ ml: 'auto !important', flex: `0 0 100px` }}>
+//           <Skeleton variant='text' sx={{ fontSize: '0.825rem' }} />
+//         </Box>
+//       </Stack>
+//     </Stack>
+//   );
+// }

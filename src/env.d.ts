@@ -31,6 +31,9 @@ declare global {
       readonly PODCHASER_URL: string;
       readonly PODCHASER_SECRET: string;
       readonly PODCHASER_API_KEY: string;
+      readonly IMPORT_EPISODE_LIMIT: string;
+      readonly SPOTIFY_CLIENT_ID: string;
+      readonly SPOTIFY_CLIENT_SECRET: string;
       // readonly JWT_SECRET: string
       // readonly AUTH0_CLIENT_SECRET: string
       // readonly STRIPE_SECRET_KEY: string

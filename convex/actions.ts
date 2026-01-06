@@ -3,10 +3,12 @@ import { fetchPodEpisodesFromIndex } from 'convex/episodes';
 import { v } from 'convex/values';
 import type { PodcastsByFeedIdResult } from '~/lib/podcastIndexTypes';
 import { internal } from './_generated/api';
-import { action, type ActionCtx } from './_generated/server';
+import { action, internalAction, type ActionCtx } from './_generated/server';
 
 // ALTERNATIVELY: SCHEDULE FN TO RUN AFTER TO FETCH POD * EPISODES
 // https://docs.convex.dev/tutorial/actions#hooking-it-up-to-your-app
+
+const IMPORT_EPISODE_LIMIT = parseInt(process.env.DB_MAX_CONNECTIONS || '25');
 
 export const subscribe = action({
   args: { podcastId: v.string() },
@@ -33,8 +35,13 @@ export const subscribe = action({
       itunesId = feed.itunesId;
 
       try {
-        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
-        await fetchNewEpisodes(ctx, feed);
+        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodes
+        await ctx.scheduler.runAfter(0, internal.actions.fetchNewEpisodes, {
+          podcastConvexId: id,
+          podcastGuid: feed.podcastGuid,
+          podcastTitle: feed.title,
+          limit: IMPORT_EPISODE_LIMIT,
+        });
       } catch (err) {
         console.error(
           'failed to fetch episodes for newly created pod subscription',
@@ -57,7 +64,8 @@ export const subscribe = action({
   },
 });
 
-export const subscribeitunesId = action({
+// when podcast GUID isn't available (pod index trending includes itunes ID but not GUID)
+export const subscribeItunesId = action({
   args: { itunesId: v.number() },
   handler: async (ctx, { itunesId }) => {
     const feed = await fetchPodIndexByitunesId(ctx, {
@@ -77,8 +85,13 @@ export const subscribeitunesId = action({
       id = newId as Id<'podcasts'>;
 
       try {
-        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodesToDb
-        await fetchNewEpisodes(ctx, feed);
+        // runAfter --> fetch episodes from pod index --> internal.episodes.saveEpisodes
+        // await fetchNewEpisodesOld(ctx, feed, IMPORT_EPISODE_LIMIT);
+        await ctx.scheduler.runAfter(0, internal.actions.fetchNewEpisodes, {
+          podcastGuid: feed.podcastGuid,
+          podcastTitle: feed.title,
+          limit: IMPORT_EPISODE_LIMIT,
+        });
       } catch (err) {
         console.error(
           'failed to fetch episodes for newly created pod subscription',
@@ -98,6 +111,40 @@ export const subscribeitunesId = action({
     });
 
     return { subscriptionId: id };
+  },
+});
+
+export const fetchNewEpisodes = internalAction({
+  args: {
+    podcastConvexId: v.id('podcasts'),
+    podcastGuid: v.string(),
+    podcastTitle: v.optional(v.string()),
+    limit: v.optional(v.number()),
+  },
+  handler: async (
+    ctx,
+    { podcastConvexId, podcastGuid, podcastTitle, limit = 100 }
+  ) => {
+    const episodes = await fetchPodEpisodesFromIndex(podcastGuid, {
+      max: `${limit}`,
+    });
+    console.log(`${episodes?.length} episodes found - scheduling job`);
+
+    if (episodes.length) {
+      await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodes, {
+        episodes,
+        podcastTitle,
+      });
+    }
+    await ctx.scheduler.runAfter(0, internal.episodes.updatePods, {
+      updates: [
+        {
+          podId: podcastConvexId,
+          lastFetchedAt: Date.now(),
+          mostRecentEpisode: episodes[0].datePublished * 1000 || 0,
+        },
+      ],
+    });
   },
 });
 
@@ -128,24 +175,6 @@ async function saveNewPod(
   console.log(`Added podcast to DB ${feed.podcastGuid} ${newId}`);
 
   return newId;
-}
-
-async function fetchNewEpisodes(
-  ctx: ActionCtx,
-  feed: PodcastsByFeedIdResult['feed'],
-  limit: number = 100
-) {
-  const episodes = await fetchPodEpisodesFromIndex(feed.podcastGuid, {
-    max: `${limit}`,
-  });
-  console.log(`${episodes?.length} episodes found - scheduling job`);
-
-  if (episodes.length) {
-    await ctx.scheduler.runAfter(0, internal.episodes.saveEpisodesToDb, {
-      episodes,
-      podcastTitle: feed.title,
-    });
-  }
 }
 
 const BASE_API_URL = 'https://api.podcastindex.org/api/1.0'; // replace with your base URL

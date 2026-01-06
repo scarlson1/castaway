@@ -1,4 +1,3 @@
-import { internal } from 'convex/_generated/api';
 import { internalMutation } from 'convex/_generated/server';
 import type { ClassifiedWindow } from 'convex/adSegments';
 import { mergeAdWindows } from 'convex/utils/mergeWindows';
@@ -13,9 +12,13 @@ const MERGE_GAP = 2;
 export const fn = internalMutation({
   args: { jobId: v.id('adJobs') },
   handler: async (ctx, { jobId }) => {
+    await ctx.db.patch(jobId, {
+      status: 'mergingWindows',
+    });
+
     const windows = await ctx.db
       .query('adJobWindows')
-      .withIndex('by_jobId', (q) => q.eq('jobId', jobId))
+      .withIndex('by_jobId_classified', (q) => q.eq('jobId', jobId))
       .collect();
 
     const segments = mergeAdWindows(
@@ -29,8 +32,10 @@ export const fn = internalMutation({
       status: 'classified',
     });
 
-    await ctx.scheduler.runAfter(0, internal.adPipeline.saveToAds.fn, {
-      jobId,
-    });
+    // await ctx.scheduler.runAfter(0, internal.adPipeline.saveToAds.fn, {
+    //   jobId,
+    // });
+
+    return segments;
   },
 });

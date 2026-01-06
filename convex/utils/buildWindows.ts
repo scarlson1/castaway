@@ -4,7 +4,7 @@ import type { TranscriptSegment } from 'convex/utils/transcribeUrl';
 export function buildWindows(
   segments: TranscriptSegment[],
   windowSec: number = 12,
-  stepSec: number = 6
+  stepSec: number = 4
 ): Window[] {
   const duration = segments.at(-1)?.end ?? 0;
   const windows: Window[] = [];

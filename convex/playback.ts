@@ -223,5 +223,5 @@ export async function getPlaybackByEpisodeId(
 }
 
 export function getTimestamp() {
-  return new Date().getTime();
+  return Date.now(); // new Date().getTime();
 }

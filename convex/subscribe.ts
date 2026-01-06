@@ -6,14 +6,15 @@ import {
   type QueryCtx,
 } from 'convex/_generated/server';
 import { getTimestamp } from 'convex/playback';
-import { getClerkId } from 'convex/utils/auth';
+import { getClerkId, getClerkIdIfExists } from 'convex/utils/auth';
 import { v } from 'convex/values';
 
 export const all = query({
   // args: {}
   handler: async ({ db, auth }) => {
     // console.log('CONVEX - GET ALL SUBS CALLED');
-    const clerkId = await getClerkId(auth);
+    const clerkId = await getClerkIdIfExists(auth);
+    if (!clerkId) return [];
 
     // TODO: order by most recent episode (updated when episodes are fetched )
     return await getUserSubscriptions(db, clerkId);
@@ -160,15 +161,3 @@ async function getPod(db: QueryCtx['db'], podId: string) {
 
   return sub;
 }
-// async function ensureBoardExists(
-//   ctx: QueryCtx,
-//   boardId: string,
-// ): Promise<Doc<'boards'>> {
-//   const board = await ctx.db
-//     .query('boards')
-//     .withIndex('id', (q) => q.eq('id', boardId))
-//     .unique()
-
-//   invariant(board, `missing board ${boardId}`)
-//   return board
-// }
