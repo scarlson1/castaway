@@ -1,3 +1,4 @@
+import { asyncMap } from 'convex-helpers';
 import { getAll } from 'convex-helpers/server/relationships';
 import { internal } from 'convex/_generated/api';
 import { Doc, type Id } from 'convex/_generated/dataModel';
@@ -187,7 +188,7 @@ export const unauthedRecentEpisodes = query({
   handler: async ({ db }, { limit = 10 }) => {
     return await db
       .query('episodes')
-      .withIndex('by_creation_time')
+      .withIndex('by_publishedAt')
       .order('desc')
       .take(limit);
   },
@@ -211,6 +212,13 @@ export const getByGuid = query({
   args: { id: v.string() },
   handler: async ({ db }, { id }) => {
     return getEpisodeById(db, id);
+  },
+});
+
+export const getMultipleByGuid = internalQuery({
+  args: { ids: v.array(v.string()) },
+  handler: async ({ db }, { ids }) => {
+    return await asyncMap(ids, (id) => getEpisodeById(db, id));
   },
 });
 

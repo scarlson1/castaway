@@ -1,5 +1,6 @@
 import { asyncMap } from 'convex-helpers';
 import { internal } from 'convex/_generated/api';
+import type { Doc } from 'convex/_generated/dataModel';
 import { paginationOptsValidator } from 'convex/server';
 import { getClerkIdIfExists } from 'convex/utils/auth';
 import { isNotNullish } from 'convex/utils/helpers';
@@ -113,7 +114,7 @@ export const getAllForUser = query({
 
 export const getAllByClerkId = internalQuery({
   args: { clerkId: v.string() },
-  handler: async ({ db }, { clerkId }) => {
+  handler: async ({ db }, { clerkId }): Promise<Doc<'user_playback'>[]> => {
     return await getAllPlaybackByUser(db, clerkId);
   },
 });

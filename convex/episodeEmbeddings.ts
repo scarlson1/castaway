@@ -10,6 +10,7 @@ import {
 } from 'convex/_generated/server';
 import { getClerkId } from 'convex/utils/auth';
 import {
+  calcAverageVector,
   createEmbedding,
   formatEpisodeEmbeddingText,
 } from 'convex/utils/embeddings';
@@ -139,58 +140,52 @@ export const getSimilarEpisodes = action({
   },
 });
 
+// TODO: use rag component (use rag.embed(concatenatedSummaries of all the previously listened episodes) to produce user interest)
+// TODO: occasionally compute user taste vector (cron) & save to user doc
 export const getPersonalizedRecommendations = action({
   args: {
     limit: v.optional(v.number()),
   },
   handler: async (ctx, { limit = 10 }): Promise<Doc<'episodes'>[]> => {
     const clerkId = await getClerkId(ctx.auth);
-    const listens: Doc<'user_playback'>[] = await ctx.runQuery(
-      internal.playback.getAllByClerkId,
-      {
-        clerkId,
-      }
-    );
+    const user = await ctx.runQuery(internal.users.getUser, { clerkId });
+    let queryVector = user?.interestEmbedding;
 
-    if (!listens || listens.length === 0) {
-      return await ctx.runQuery(api.episodes.unauthedRecentEpisodes, { limit });
-    }
+    if (!queryVector) {
+      const listens: Doc<'user_playback'>[] = await ctx.runQuery(
+        internal.playback.getAllByClerkId,
+        {
+          clerkId,
+        }
+      );
 
-    // const episodeIds = listens.map(l => l.episodeId);
-    // const embRows = await ctx.db
-    //   .query("episodeEmbeddings")
-    //   .withIndex("by_episodeConvexId", q => q.in("episodeConvexId", episodeIds))
-    //   .collect();
-    const embRows: (Doc<'episodeEmbeddings'> | null)[] = await asyncMap(
-      listens,
-      async (listen) => {
-        return await ctx.runQuery(api.episodeEmbeddings.getEpEmbByEpGuid, {
-          episodeGuid: listen.episodeId,
+      if (!listens || listens.length === 0) {
+        return await ctx.runQuery(api.episodes.unauthedRecentEpisodes, {
+          limit,
         });
       }
-    );
-    const filtered = embRows.filter(isNotNullish);
 
-    if (!filtered || filtered.length === 0) return [];
+      // const episodeIds = listens.map(l => l.episodeId);
+      // const embRows = await ctx.db
+      //   .query("episodeEmbeddings")
+      //   .withIndex("by_episodeConvexId", q => q.in("episodeConvexId", episodeIds))
+      //   .collect();
+      const embRows: (Doc<'episodeEmbeddings'> | null)[] = await asyncMap(
+        listens,
+        async (listen) => {
+          return await ctx.runQuery(api.episodeEmbeddings.getEpEmbByEpGuid, {
+            episodeGuid: listen.episodeId,
+          });
+        }
+      );
+      const filtered = embRows.filter(isNotNullish);
 
-    // compute average vector
-    const dim = filtered[0].embedding.length;
-    const sum = new Array<number>(dim).fill(0);
-    for (const r of filtered) {
-      for (let i = 0; i < dim; i++) sum[i] += r.embedding[i];
+      if (!filtered || filtered.length === 0) return [];
+
+      queryVector = calcAverageVector(filtered.map((f) => f.embedding));
     }
-    const avg = sum.map((v) => v / filtered.length);
-
-    // optional: normalize
-    // normalize even if not normalizing when saving vector ??
-    const norm = Math.sqrt(avg.reduce((s, x) => s + x * x, 0));
-    const queryVector = norm > 0 ? avg.map((x) => x / norm) : avg;
 
     // vector search
-    // const res = await ctx.db
-    //   .query("episodeEmbeddings")
-    //   .vectorSearch("vector", queryVector, { limit: limit + 4 }) // fetch some extras
-    //   .collect();
     const res = await ctx.vectorSearch('episodeEmbeddings', 'by_embedding', {
       vector: queryVector,
       limit: limit + 5, // fetch some extras
@@ -286,39 +281,39 @@ export const embedNewEpisodes = internalAction({
 
 // TODO: delete the above function and use this instead (less likely to timeout)
 // cron job or explicitly call ??
-export const embedNewEpisodesBatch = internalAction({
-  args: {
-    episodeIds: v.array(v.id('episodes')),
-  },
-  handler: async (ctx, { episodeIds }) => {
-    const episodes: (Doc<'episodes'> | null)[] = await ctx.runQuery(
-      internal.episodes.getMultipleById,
-      {
-        convexIds: episodeIds,
-      }
-    );
-    const filtered = episodes.filter(isNotNullish);
-    // Build embedding inputs (CLEAN + SHORT)
-    const inputs = filtered.map(formatEpisodeEmbeddingText);
+// export const embedNewEpisodesBatch = internalAction({
+//   args: {
+//     episodeIds: v.array(v.id('episodes')),
+//   },
+//   handler: async (ctx, { episodeIds }) => {
+//     const episodes: (Doc<'episodes'> | null)[] = await ctx.runQuery(
+//       internal.episodes.getMultipleById,
+//       {
+//         convexIds: episodeIds,
+//       }
+//     );
+//     const filtered = episodes.filter(isNotNullish);
+//     // Build embedding inputs (CLEAN + SHORT)
+//     const inputs = filtered.map(formatEpisodeEmbeddingText);
 
-    const embeddingResult = await createEmbedding(inputs);
+//     const embeddingResult = await createEmbedding(inputs);
 
-    for (let i = 0; i < filtered.length; i++) {
-      await ctx.runMutation(api.mutations.saveEpisodeEmbedding, {
-        episodeId: filtered[i]._id,
-        vector: embeddingResult[i].embedding,
-        metadata: {
-          title: filtered[i].title,
-        },
-      });
-    }
+//     for (let i = 0; i < filtered.length; i++) {
+//       await ctx.runMutation(api.mutations.saveEpisodeEmbedding, {
+//         episodeId: filtered[i]._id,
+//         vector: embeddingResult[i].embedding,
+//         metadata: {
+//           title: filtered[i].title,
+//         },
+//       });
+//     }
 
-    return {
-      status: 'ok',
-      processed: filtered.length,
-    };
-  },
-});
+//     return {
+//       status: 'ok',
+//       processed: filtered.length,
+//     };
+//   },
+// });
 
 // run periodically (cron job) to ensure all episodes are embedded
 // TODO: change to internal & run as cron job

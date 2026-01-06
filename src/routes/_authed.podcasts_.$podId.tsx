@@ -90,29 +90,6 @@ function RouteComponent() {
               </InputAdornment>
             }
           />
-          {/* <TextField
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            fullWidth
-            placeholder='search episodes'
-            variant='standard'
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <InputAdornment position='end'>
-                    <IconButton
-                      aria-label={'clear search'}
-                      onClick={() => setQuery('')}
-                      edge='end'
-                      size='small'
-                    >
-                      <ClearRounded fontSize='inherit' />
-                    </IconButton>
-                  </InputAdornment>
-                ),
-              },
-            }}
-          /> */}
         </Box>
         <Box>
           <EpisodesOptionsButton podId={podId} />

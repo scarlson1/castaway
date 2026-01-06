@@ -1,7 +1,15 @@
 import { openai } from '@ai-sdk/openai';
 import { RAG, vNamespaceId } from '@convex-dev/rag';
-import { api, components } from 'convex/_generated/api';
-import { action, internalAction } from 'convex/_generated/server';
+import { asyncMap } from 'convex-helpers';
+import { api, components, internal } from 'convex/_generated/api';
+import type { Doc } from 'convex/_generated/dataModel';
+import {
+  action,
+  internalAction,
+  internalMutation,
+} from 'convex/_generated/server';
+import { calcAverageVector } from 'convex/utils/embeddings';
+import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
 
 // TODO: remove from RAG when doc is deleted ??
@@ -73,7 +81,7 @@ export const insertEpisodeTranscript = internalAction({
         keyTopics.join(', '),
       ]
         .filter(Boolean)
-        .join('/n/n'),
+        .join('\n\n'),
 
       filterValues: [
         {
@@ -140,7 +148,7 @@ export const insertEpisodeTranscript = internalAction({
 //         keyTopics.join(', '),
 //       ]
 //         .filter(Boolean)
-//         .join('/n/n'),
+//         .join('\n\n'),
 
 //       filterValues: [
 //         {
@@ -281,3 +289,122 @@ export const deleteByKey = internalAction({
     await rag.deleteByKeyAsync(ctx, { key, namespaceId });
   },
 });
+
+// compute user interest vector
+export const computeUserInterestEmbedding = internalAction({
+  args: {
+    clerkId: v.string(),
+  },
+  handler: async (ctx, { clerkId }) => {
+    // fetch user playback
+    const playback: Doc<'user_playback'>[] = await ctx.runQuery(
+      internal.playback.getAllByClerkId,
+      {
+        clerkId,
+      }
+    );
+    // TODO: move to separate fn - should never happen b/c fn in called from playback within last 24 hours
+    if (!playback.length) return;
+    const episodeIds = playback.map((p) => p.episodeId);
+
+    // TODO: could also combine vectors from the user's subscribed podcasts to capture topics the user is interested in by may not have listened (but playback = revealed preference)
+
+    // get embeddings for played episodes ?? or use existing embedding and recalc with new episodes ?? or get episode summaries and calc new embedding ??
+
+    // const episodes = await ctx.runQuery(internal.episodes.getMultipleByGuid, {
+    //   ids: episodeIds,
+    // });
+    // const agg = episodes
+    //   .filter(Boolean)
+    //   .map((ep) => formatEpisodeEmbeddingText(ep))
+    //   .join('\n\n');
+
+    // unable to query embedding in RAG component by episodeId ==> need to use episodeEmbeddings
+    const embRows: (Doc<'episodeEmbeddings'> | null)[] = await asyncMap(
+      episodeIds,
+      async (episodeGuid: string) => {
+        return await ctx.runQuery(api.episodeEmbeddings.getEpEmbByEpGuid, {
+          episodeGuid,
+        });
+      }
+    );
+    const filtered = embRows.filter(isNotNullish);
+    if (!filtered || filtered.length === 0) return [];
+
+    // compute pref embedding
+    const interestEmbedding = calcAverageVector(
+      filtered.map((f) => f.embedding)
+    );
+
+    // save to user doc
+    await ctx.runMutation(internal.users.updateByClerkId, {
+      clerkId,
+      updates: { interestEmbedding },
+    });
+  },
+});
+
+export const calcInterestEmbeddingFromFollowing = internalAction({
+  args: { clerkId: v.string() },
+  handler: async (ctx, { clerkId }) => {
+    const subscribed: Doc<'subscriptions'>[] = await ctx.runQuery(
+      internal.subscribe.allByClerkId,
+      { clerkId }
+    );
+    const podIds = subscribed.map((s) => s.podConvexId).filter(isNotNullish);
+    if (podIds.length) {
+      const pods = await ctx.runQuery(internal.podcasts.getAllById, {
+        convexIds: podIds,
+      });
+      const embeddings = pods.map((p) => p?.embedding).filter(isNotNullish);
+      if (!embeddings.length) return;
+
+      const avgVector = calcAverageVector(embeddings);
+      await ctx.runMutation(internal.users.updateByClerkId, {
+        clerkId,
+        updates: { interestEmbedding: avgVector },
+      });
+    }
+  },
+});
+
+// fetch users with listening history within the last 24 hours
+export const getUsersForInterestEmbedding = internalMutation({
+  handler: async (ctx) => {
+    const playback = await ctx.db
+      .query('user_playback')
+      .withIndex('by_creation_time', (q) =>
+        q.gt('_creationTime', Date.now() - minusTwentyFourHours())
+      )
+      .collect();
+
+    const userIds = playback.map((p) => p.clerkId);
+    const uniqueUserIds = [...new Set(userIds)];
+
+    for (let clerkId of uniqueUserIds) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.rag.computeUserInterestEmbedding,
+        {
+          clerkId,
+        }
+      );
+    }
+
+    const usersWithoutEmbedding = await ctx.db
+      .query('users')
+      .filter((q) => q.eq(q.field('interestEmbedding'), undefined))
+      .collect();
+    for (let u of usersWithoutEmbedding) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.rag.calcInterestEmbeddingFromFollowing,
+        { clerkId: u.clerkId }
+      );
+    }
+  },
+});
+
+function minusTwentyFourHours() {
+  return Date.now() - 86400000; // 1 day in ms
+}

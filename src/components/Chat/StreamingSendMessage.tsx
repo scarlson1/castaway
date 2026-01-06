@@ -25,12 +25,6 @@ export function StreamingSendMessage({
 
   const form = useAppForm({
     ...chatFormOpts,
-    // defaultValues: {
-    //   message: '',
-    // },
-    // validators: {
-    //   onChange: chatSchema,
-    // },
     onSubmit: async ({ value, formApi }) => {
       await sendMessage({ threadId, prompt: value.message });
 
@@ -71,17 +65,3 @@ export function StreamingSendMessage({
     </Box>
   );
 }
-// actions={
-//   <IconButton
-//     size='small'
-//     onClick={(e) => {
-//       e.preventDefault();
-//       e.stopPropagation();
-//       const order =
-//         messages.find((m) => m.status === 'streaming')?.order ?? 0;
-//       void abortStreamByOrder({ threadId, order });
-//     }}
-//   >
-//     <StopRounded fontSize='inherit' />
-//   </IconButton>
-// }

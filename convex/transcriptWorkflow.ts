@@ -11,14 +11,13 @@ export const workflow = new WorkflowManager(components.workflow);
 export const transcribeWorkflow = workflow.define({
   args: {
     episodeId: v.string(),
-    // audioUrl: v.string(),
     forceTranscribe: v.optional(v.boolean()),
   },
   returns: v.string(),
   handler: async (step, { episodeId, forceTranscribe }): Promise<string> => {
     const episode = await step.runQuery(api.episodes.getByGuid, {
       id: episodeId,
-    }); // getEpisodeById(ctx.db, episodeId);
+    });
     if (!episode?.audioUrl) throw new Error('episode not found');
 
     // transcribe

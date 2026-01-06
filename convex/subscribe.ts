@@ -1,6 +1,7 @@
 import type { Doc } from 'convex/_generated/dataModel';
 import {
   internalMutation,
+  internalQuery,
   mutation,
   query,
   type QueryCtx,
@@ -42,6 +43,13 @@ export const isFollowing = query({
     let sub = await getSubscription(db, clerkId, podId);
 
     return !!sub;
+  },
+});
+
+export const allByClerkId = internalQuery({
+  args: { clerkId: v.string() },
+  handler: async ({ db }, { clerkId }): Promise<Doc<'subscriptions'>[]> => {
+    return await getUserSubscriptions(db, clerkId);
   },
 });
 

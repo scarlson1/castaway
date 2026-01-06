@@ -10,7 +10,7 @@ import {
 } from 'convex/_generated/server';
 import { getTimestamp } from 'convex/playback';
 import { WithoutSystemFields } from 'convex/server';
-import { createEmbedding } from 'convex/utils/embeddings';
+import { calcAverageVector, createEmbedding } from 'convex/utils/embeddings';
 import { isNotNullish } from 'convex/utils/helpers';
 import { v } from 'convex/values';
 import { Doc } from '../convex/_generated/dataModel';
@@ -103,15 +103,13 @@ export const getAllById = internalQuery({
 
 export const recentlyUpdated = query({
   args: { limit: v.optional(v.number()) },
-  handler: async ({ db }, { limit = 8 }) => {
-    return (
-      db
-        .query('podcasts')
-        // .withIndex('by_lastFetched')
-        .withIndex('by_mostRecentEp')
-        .order('desc')
-        .take(limit)
-    );
+  handler: async ({ db }, { limit = 8 }): Promise<Doc<'podcasts'>[]> => {
+    return await db
+      .query('podcasts')
+      // .withIndex('by_lastFetched')
+      .withIndex('by_mostRecentEp')
+      .order('desc')
+      .take(limit);
   },
 });
 
@@ -235,16 +233,7 @@ export const getPersonalizedRecommendations = action({
     if (!filtered || filtered.length === 0) return [];
 
     // compute average vector
-    const dim = filtered[0]!.embedding!.length;
-    const sum = new Array<number>(dim).fill(0);
-    for (const r of filtered) {
-      for (let i = 0; i < dim; i++) sum[i] += r!.embedding![i];
-    }
-    const avg = sum.map((v) => v / filtered.length);
-
-    // optional: normalize
-    const norm = Math.sqrt(avg.reduce((s, x) => s + x * x, 0));
-    const queryVector = norm > 0 ? avg.map((x) => x / norm) : avg;
+    const queryVector = calcAverageVector(filtered.map((f) => f.embedding));
 
     const results = await ctx.vectorSearch('podcasts', 'by_embedding', {
       vector: queryVector,
