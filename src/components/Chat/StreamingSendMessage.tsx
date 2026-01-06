@@ -4,7 +4,7 @@ import { Box, IconButton, Tooltip } from '@mui/material';
 import { api } from 'convex/_generated/api';
 import { useMutation } from 'convex/react';
 import 'highlight.js/styles/github.css';
-import { ChatForm, chatSchema } from '~/components/ChatForm';
+import { ChatForm, chatFormOpts } from '~/components/ChatForm';
 import { useAppForm } from '~/hooks/form';
 
 export function StreamingSendMessage({
@@ -24,19 +24,17 @@ export function StreamingSendMessage({
   );
 
   const form = useAppForm({
-    // ...chatFormOpts,
-    defaultValues: {
-      message: '',
-    },
-    validators: {
-      onChange: chatSchema,
-    },
+    ...chatFormOpts,
+    // defaultValues: {
+    //   message: '',
+    // },
+    // validators: {
+    //   onChange: chatSchema,
+    // },
     onSubmit: async ({ value, formApi }) => {
       await sendMessage({ threadId, prompt: value.message });
 
-      // BUG: text not cleared after submitting
-      // formApi.reset({ message: '' });
-      form.reset();
+      formApi.reset({ message: '' });
     },
   });
 

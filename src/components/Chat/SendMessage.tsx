@@ -20,7 +20,6 @@ export function SendMessage({ threadId }: { threadId: string }) {
       await sendMessage({ threadId, prompt: value.message });
 
       formApi.reset({ message: '' });
-      // form.reset();
     },
   });
 
