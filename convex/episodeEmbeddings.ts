@@ -143,7 +143,7 @@ export const getPersonalizedRecommendations = action({
   args: {
     limit: v.optional(v.number()),
   },
-  handler: async (ctx, { limit = 10 }) => {
+  handler: async (ctx, { limit = 10 }): Promise<Doc<'episodes'>[]> => {
     const clerkId = await getClerkId(ctx.auth);
     const listens: Doc<'user_playback'>[] = await ctx.runQuery(
       internal.playback.getAllByClerkId,
