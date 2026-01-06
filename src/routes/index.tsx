@@ -1,12 +1,11 @@
 import { SignedIn } from '@clerk/tanstack-react-start';
-import { convexQuery } from '@convex-dev/react-query';
+import { convexQuery, useConvexAuth } from '@convex-dev/react-query';
 import { Box, Divider, Grid, Stack, styled, Typography } from '@mui/material';
 import { ErrorBoundary } from '@sentry/tanstackstart-react';
 import { useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense } from 'react';
-import { Authed } from '~/components/Authed';
 import { CategoryCard } from '~/components/CategoryCard';
 import { EpisodeCard } from '~/components/EpisodeCard';
 import { Featured } from '~/components/Featured';
@@ -26,7 +25,9 @@ export const Route = createFileRoute('/')({
 });
 
 function Home() {
-  const homeItems = [
+  const { isAuthenticated } = useConvexAuth();
+
+  const stackItems = [
     <Featured />,
 
     <Box>
@@ -68,7 +69,7 @@ function Home() {
       </ErrorBoundary>
     </Box>,
 
-    <Authed>
+    isAuthenticated && (
       <Box sx={{ width: '100%' }}>
         <Box>
           <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
@@ -98,9 +99,9 @@ function Home() {
           </Suspense>
         </ErrorBoundary>
       </Box>
-    </Authed>,
+    ),
 
-    <Authed>
+    isAuthenticated && (
       <Box sx={{ width: '100%' }}>
         <Box>
           <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
@@ -117,7 +118,7 @@ function Home() {
           <RecommendedEpisodes limit={8} />
         </ErrorBoundary>
       </Box>
-    </Authed>,
+    ),
 
     <Box>
       <Typography variant='h5' gutterBottom>
@@ -135,8 +136,6 @@ function Home() {
       <PodcastGenreCards />
     </Box>,
   ].filter(Boolean);
-
-  const stackItems = homeItems.filter(Boolean);
 
   return (
     <Stack
