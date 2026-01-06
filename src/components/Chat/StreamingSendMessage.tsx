@@ -19,7 +19,8 @@ export function StreamingSendMessage({
   const sendMessage = useMutation(
     api.agent.streaming.initiateAsyncStreaming
   ).withOptimisticUpdate(
-    optimisticallySendMessage(api.chat.streaming.listThreadMessages)
+    // optimisticallySendMessage(api.chat.streaming.listThreadMessages)
+    optimisticallySendMessage(api.agent.streaming.listThreadMessages)
   );
 
   const form = useAppForm({
@@ -33,6 +34,7 @@ export function StreamingSendMessage({
     onSubmit: async ({ value, formApi }) => {
       await sendMessage({ threadId, prompt: value.message });
 
+      // BUG: text not cleared after submitting
       // formApi.reset({ message: '' });
       form.reset();
     },

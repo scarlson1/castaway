@@ -4,7 +4,10 @@ import { api, internal } from 'convex/_generated/api';
 import type { Doc, Id } from 'convex/_generated/dataModel';
 import { action, internalAction } from 'convex/_generated/server';
 import { embeddingModelName } from 'convex/agent/models';
-import { summarizeTranscript } from 'convex/utils/summarizeTranscript';
+import {
+  summarizeTranscript,
+  type EpisodeSummary,
+} from 'convex/utils/summarizeTranscript';
 import { transcribeUrl } from 'convex/utils/transcribeUrl';
 import { v } from 'convex/values';
 import OpenAI from 'openai';
@@ -170,7 +173,10 @@ export const transcribe = internalAction({
     // episodeTitle: v.optional(v.string()),
     forceTranscribe: v.optional(v.boolean()),
   },
-  handler: async (ctx, { audioUrl, episodeId, forceTranscribe = false }) => {
+  handler: async (
+    ctx,
+    { audioUrl, episodeId, forceTranscribe = false }
+  ): Promise<{ transcriptId: Id<'transcripts'>; exists: boolean }> => {
     if (!forceTranscribe) {
       let existingTranscript: Doc<'transcripts'> | null = await ctx.runQuery(
         api.transcripts.getByEpisodeId,
@@ -201,11 +207,13 @@ export const transcribe = internalAction({
 // part of transcribeWorkflow
 export const summarize = internalAction({
   args: {
-    // episodeId: v.string(),
     transcriptId: v.id('transcripts'),
     forceSummarize: v.optional(v.boolean()),
   },
-  handler: async (ctx, { transcriptId, forceSummarize }) => {
+  handler: async (
+    ctx,
+    { transcriptId, forceSummarize }
+  ): Promise<EpisodeSummary & { exists: boolean }> => {
     const transcript: Doc<'transcripts'> | null = await ctx.runQuery(
       api.transcripts.getByConvexId,
       { id: transcriptId }
@@ -215,11 +223,11 @@ export const summarize = internalAction({
     if (transcript.detailedSummary && !forceSummarize) {
       console.log('already summarized. using previous summary');
       return {
-        title: transcript.summaryTitle,
-        oneSentenceSummary: transcript.oneSentenceSummary,
+        title: transcript.summaryTitle || '',
+        oneSentenceSummary: transcript.oneSentenceSummary || '',
         detailedSummary: transcript.detailedSummary,
-        keyTopics: transcript.keyTopics,
-        notableQuotes: transcript.notableQuotes,
+        keyTopics: transcript.keyTopics || [],
+        notableQuotes: transcript.notableQuotes || [],
         exists: true,
       };
     }

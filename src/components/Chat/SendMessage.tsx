@@ -43,16 +43,6 @@ export function SendMessage({ threadId }: { threadId: string }) {
       }}
     >
       <ChatForm form={form} actions={null} />
-      {/* <button
-        onClick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('resetting form');
-          form.reset();
-        }}
-      >
-        reset
-      </button> */}
     </Box>
   );
 }

@@ -7,6 +7,8 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import {
+  Box,
+  CircularProgress,
   IconButton,
   List,
   ListItem,
@@ -55,6 +57,13 @@ export const ThreadsList = () => {
     },
     // onError
   });
+
+  if (status === 'LoadingFirstPage')
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+        <CircularProgress size={20} />
+      </Box>
+    );
 
   return (
     <List dense>

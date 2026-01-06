@@ -10,12 +10,12 @@ const embeddingDimension = 1536;
 
 export const defaultNamespace = 'global';
 
-export type Filters = {
+export type RagFilters = {
   podcastId: string;
   category: string | null;
   object: string | null;
 };
-type Metadata = {
+type RagMetadata = {
   image?: string | null;
   podcastId: string;
   podcastTitle: string;
@@ -26,7 +26,7 @@ type Metadata = {
   audioUrl?: string | null;
 };
 
-export const rag = new RAG<Filters, Metadata>(components.rag, {
+export const rag = new RAG<RagFilters, RagMetadata>(components.rag, {
   textEmbeddingModel: openai.embedding('text-embedding-3-small'), // openai.embedding(embeddingModelName),
   embeddingDimension,
   filterNames: ['podcastId', 'category', 'object'],
@@ -207,7 +207,7 @@ export const search = action({
         after: number;
       };
       vectorScoreThreshold?: number;
-      filters?: { name: keyof Filters; value: string }[];
+      filters?: { name: keyof RagFilters; value: string }[];
     } = {
       namespace: defaultNamespace, // args.globalNamespace ? "global" : userId,
       query: args.query,

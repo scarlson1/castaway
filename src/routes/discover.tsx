@@ -91,7 +91,6 @@ function RouteComponent() {
 
       <Authed>
         <SimilarToLastListened />
-        <Divider />
       </Authed>
 
       <Authed>
@@ -248,6 +247,7 @@ function SimilarToLastListened() {
       </Box>
 
       <SimilarPodcasts podId={data.podcastId} />
+      <Divider />
     </>
   );
 }

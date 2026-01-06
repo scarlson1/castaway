@@ -1,5 +1,6 @@
 import type { UIMessage } from '@convex-dev/agent';
-import { Button, Stack, Typography } from '@mui/material';
+import { Button, CircularProgress, Stack, Typography } from '@mui/material';
+import type { UsePaginatedQueryResult } from 'convex/react';
 import 'highlight.js/styles/github.css';
 import {
   useCallback,
@@ -17,11 +18,13 @@ export function MessageList({
   messages,
   loadMore,
   status,
-}: {
+}: // isLoading
+{
   messages: UIMessage[];
   loadMore: (numItems: number) => void;
-  status: string;
+  status: UsePaginatedQueryResult<UIMessage>['status']; // UsePaginatedQueryResult<UIMessagesQueryResult<Query>> // string;
   threadId: string;
+  // isLoading
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -72,8 +75,10 @@ export function MessageList({
       sx={{ overflowY: 'auto', flex: 1 }}
       onScroll={console.log}
     >
-      {/* Messages area - scrollable */}
-      {messages.length > 0 ? (
+      {status === 'LoadingFirstPage' ? (
+        <CircularProgress size={20} sx={{ alignSelf: 'center' }} />
+      ) : //  Messages area - scrollable
+      messages.length > 0 ? (
         <>
           {status === 'CanLoadMore' ? (
             <Button onClick={() => loadMore(4)}>Load more</Button>
@@ -88,6 +93,22 @@ export function MessageList({
           No messages yet. Start a conversation!
         </Typography>
       )}
+
+      {/* {messages.length > 0 ? (
+        <>
+          {status === 'CanLoadMore' ? (
+            <Button onClick={() => loadMore(4)}>Load more</Button>
+          ) : null}
+          {messages.map((msg, i) => (
+            <Message key={msg.key} message={msg} />
+          ))}
+          <div ref={messagesEndRef} />
+        </>
+      ) : (
+        <Typography variant='body2' color='textSecondary' gutterBottom>
+          No messages yet. Start a conversation!
+        </Typography>
+      )} */}
     </Stack>
   );
 }

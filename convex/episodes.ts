@@ -414,7 +414,7 @@ export const fetchNewEpisodes = internalAction({
         // lastUpdatedAt: Date.now(),
         lastFetchedAt: Date.now(),
       };
-      let mostRecentEp = newEpisodes[0].datePublished;
+      let mostRecentEp = newEpisodes[0]?.datePublished;
       if (mostRecentEp) update['mostRecentEpisode'] = mostRecentEp * 1000;
       podLastUpdated.push(update);
     }
