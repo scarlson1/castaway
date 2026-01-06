@@ -159,6 +159,11 @@ export function AppHeader() {
                   <MuiLink to='/podcasts/progress'>In Progress</MuiLink>
                 </li>
               </SignedIn>
+              <SignedIn>
+                <li>
+                  <MuiLink to='/chat'>Chat</MuiLink>
+                </li>
+              </SignedIn>
             </ul>
           </Navigation>
         </Box>

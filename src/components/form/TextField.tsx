@@ -15,7 +15,7 @@ export function TextField(props: TextFieldProps) {
       variant='outlined'
       color='primary'
       {...props}
-      defaultValue={state.value}
+      value={state.value}
       onChange={(e) => handleChange(e.target.value)}
       onBlur={handleBlur}
       error={Boolean(state.meta.errors.length)}

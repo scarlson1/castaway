@@ -19,4 +19,12 @@ export const agent = new Agent(components.agent, {
   },
   // stopWhen?: StopCondition<any> | StopCondition<any>[] | undefined;
   maxSteps: 10,
+  // rawRequestResponseHandler: async (ctx, { request, response }) => {
+  //   console.log('request', request);
+  //   console.log('response', response);
+  // },
+  // contextHandler: async (ctx, { allMessages }) => {
+  //   console.log('context', allMessages);
+  //   return allMessages;
+  // },
 });

@@ -24,9 +24,10 @@ export const Chat = ({ threadId }: { threadId: string }) => {
     loadMore,
     isLoading,
   } = useUIMessages(
-    stream
-      ? api.agent.streaming.listThreadMessages
-      : api.agent.chat.listThreadMessages,
+    api.agent.streaming.listThreadMessages,
+    // stream
+    //   ? api.agent.streaming.listThreadMessages
+    //   : api.agent.chat.listThreadMessages,
     { threadId },
     { initialNumItems: 10, stream }
   );
@@ -39,6 +40,7 @@ export const Chat = ({ threadId }: { threadId: string }) => {
     () => messages.some((m) => m.status === 'streaming'),
     [messages]
   );
+
   const handleAbortStream = useCallback(() => {
     const order = messages.find((m) => m.status === 'streaming')?.order ?? 0;
     void abortStreamByOrder({ threadId, order });

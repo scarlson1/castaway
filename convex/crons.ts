@@ -9,4 +9,13 @@ crons.interval(
   internal.episodes.fetchNewEpisodes
 );
 
+// Generate invoices for the previous month
+crons.monthly(
+  'generateInvoices',
+  // Wait a day after the new month starts to generate invoices
+  { day: 2, hourUTC: 0, minuteUTC: 0 },
+  internal.agent.usage.generateInvoices,
+  {}
+);
+
 export default crons;

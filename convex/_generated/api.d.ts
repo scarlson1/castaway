@@ -23,6 +23,7 @@ import type * as agent_chat from "../agent/chat.js";
 import type * as agent_models from "../agent/models.js";
 import type * as agent_streaming from "../agent/streaming.js";
 import type * as agent_threads from "../agent/threads.js";
+import type * as agent_usage from "../agent/usage.js";
 import type * as aggregates from "../aggregates.js";
 import type * as clerk from "../clerk.js";
 import type * as crons from "../crons.js";
@@ -74,6 +75,7 @@ declare const fullApi: ApiFromModules<{
   "agent/models": typeof agent_models;
   "agent/streaming": typeof agent_streaming;
   "agent/threads": typeof agent_threads;
+  "agent/usage": typeof agent_usage;
   aggregates: typeof aggregates;
   clerk: typeof clerk;
   crons: typeof crons;

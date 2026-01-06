@@ -23,7 +23,7 @@ import { v } from 'convex/values';
 export const initiateAsyncStreaming = mutation({
   args: { prompt: v.string(), threadId: v.string() },
   handler: async (ctx, { prompt, threadId }) => {
-    await authorizeThreadAccess(ctx, threadId);
+    await authorizeThreadAccess(ctx, threadId, false);
     const { messageId } = await agent.saveMessage(ctx, {
       threadId,
       prompt,

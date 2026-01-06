@@ -1,5 +1,5 @@
-import { getThreadMetadata, saveMessage, vMessage } from '@convex-dev/agent';
-import { components } from 'convex/_generated/api';
+import { getThreadMetadata, vMessage } from '@convex-dev/agent';
+import { api, components } from 'convex/_generated/api';
 import {
   action,
   mutation,
@@ -24,10 +24,16 @@ export const create = mutation({
     });
 
     if (initialMessage) {
-      await saveMessage(ctx, components.agent, {
-        threadId,
-        message: initialMessage,
-      });
+      // await saveMessage(ctx, components.agent, {
+      //   threadId,
+      //   message: initialMessage,
+      // });
+      // TODO: get message from initialMessage
+      await ctx.scheduler.runAfter(
+        0,
+        api.agent.streaming.initiateAsyncStreaming,
+        { prompt: initialMessage.content as string, threadId }
+      );
       // const { thread } = await agent.continueThread(ctx, {
       //   threadId,
       //   userId: clerkId,
@@ -112,7 +118,7 @@ export async function authorizeThreadAccess(
   threadId: string,
   requireUser?: boolean
 ) {
-  const userId = await getClerkId(ctx.auth);
+  const userId = await getClerkIdIfExists(ctx.auth);
   if (requireUser && !userId) throw new Error('Unauthorized: user is required');
 
   const { userId: threadUserId } = await getThreadMetadata(
