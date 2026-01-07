@@ -101,9 +101,9 @@ export const insertEpisodeTranscript = internalAction({
     });
 
     if (!created) {
-      console.debug('entry already exists, skipping upload metadata');
+      console.debug(`Updated episode in RAG DB`);
       // await ctx.storage.delete(storageId);
-    }
+    } else console.log(`added episode to RAG DB`);
 
     return { entryId };
   },

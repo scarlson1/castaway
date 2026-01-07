@@ -273,6 +273,14 @@ export const embedNewEpisodes = internalAction({
         // log and continue — robust to API hiccups (TODO: report to sentry)
         console.error('embed fail', ep._id, err);
       }
+
+      // save to RAG component (duplicates embedding, but unable to get vector directly by episode ID for computing user interest average vector)
+      await ctx.scheduler.runAfter(0, internal.rag.insertEpisodeTranscript, {
+        episodeId: ep.episodeId,
+        title: ep.title,
+        summary: ep.summary,
+        keyTopics: [],
+      });
     }
 
     return { processed: filtered.length };

@@ -384,6 +384,25 @@ See `convex/schema.tsx` for up to date schemas.
 
 3. add a `subscription` doc in Convex.
 
+### Fetching new episodes
+
+New episodes are fetched periodically - triggered by a cron job.
+
+1. `convex/episodes:fetchNewEpisodes()`
+   - fetch 50 podcasts where the `lastFetchedAt` value is greater than polling interval
+   - loop through podcasts - get most recent episode -> query Podcast Index for new episodes
+   - update pod with `lastFetchedAt` and `mostRecentEpisode` (publishedAt ms)
+   - `ctx.scheduler.runAfter(saveEpisodes)`
+2. `saveEpisodes()`
+   - save each episode to `episodes` table
+3. `embedNewEpisodes()`
+   - call OpenAI to create embedding for each episode (title, summary)
+4. `saveEpisodeEmbedding()`
+   - saves embedding to `episodeEmbeddings` table with metadata (title, podTitle, publishedAt, language)
+   - update episode doc with embeddingId
+5. `insertEpisodeTranscript()`
+   - save episode to RAG component DB
+
 ### Storing playback, progress, played state & syncing rules
 
 _Data & write patterns_
