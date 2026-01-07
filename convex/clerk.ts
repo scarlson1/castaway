@@ -18,7 +18,7 @@ export const handleClerkWebhook = httpAction(async (ctx, req) => {
     case 'user.created': // intentional fallthrough
     case 'user.updated': {
       const existingUser = await ctx.runQuery(internal.users.getUser, {
-        subject: event.data.id,
+        clerkId: event.data.id,
       });
       if (existingUser && event.type === 'user.created') {
         console.warn('Overwriting user', event.data.id, 'with', event.data);

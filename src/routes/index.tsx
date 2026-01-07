@@ -27,9 +27,11 @@ export const Route = createFileRoute('/')({
 function Home() {
   const { isAuthenticated } = useConvexAuth();
 
+  // filter out unAuthed components
   const stackItems = [
     <Featured />,
 
+    // convex db recent episodes
     <Box>
       <Box
         sx={{
@@ -48,6 +50,7 @@ function Home() {
       <RecentSubscribedEpisodes />
     </Box>,
 
+    // Podcast Index recent episodes
     <Box>
       <Typography variant='h5' gutterBottom>
         New Episode Releases
@@ -240,6 +243,7 @@ function RandomEpisodes() {
 }
 
 function RecentEpisodes() {
+  // podcast index recent episodes
   const { data } = useSuspenseQuery(recentEpisodesQueryOptions({ max: 8 }));
 
   return (

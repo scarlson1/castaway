@@ -25,6 +25,7 @@ export function Message({
       startStreaming: message.status === 'streaming',
     }
   );
+
   // const nameToolCalls = message.parts.filter(
   //   (p): p is ToolUIPart => p.type === 'tool-getCharacterNames'
   // );
@@ -68,7 +69,8 @@ export function Message({
           }}
         >
           <Typography variant='body2' fontWeight='medium' color='textSecondary'>
-            {isUser ? 'you' : 'agent'}
+            {/* {isUser ? 'you' : 'agent'} */}
+            {message.role}
           </Typography>
           {reasoningText && (
             <Typography variant='body2' fontWeight={500} fontSize={'0.825rem'}>

@@ -21,7 +21,8 @@ import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 const Header = styled('header')(({ theme }) => [
   {
-    position: 'sticky',
+    // position: 'sticky',
+    position: 'fixed',
     top: 0,
     transition: theme.transitions.create('top'),
     // zIndex: theme.zIndex.appBar,

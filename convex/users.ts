@@ -7,6 +7,7 @@ import {
 } from './_generated/server';
 
 import { UserJSON } from '@clerk/backend';
+import schema from 'convex/schema';
 import { v } from 'convex/values';
 import { Doc, Id } from './_generated/dataModel';
 
@@ -44,9 +45,9 @@ export const currentUser = query((ctx: QueryCtx) => getCurrentUser(ctx));
 
 /** Get user by Clerk use id (AKA "subject" on auth)  */
 export const getUser = internalQuery({
-  args: { subject: v.string() },
+  args: { clerkId: v.string() },
   async handler(ctx, args) {
-    return await userByClerkId(ctx, args.subject);
+    return await userByClerkId(ctx, args.clerkId);
   },
 });
 
@@ -120,6 +121,18 @@ export const updateOrCreateUser = internalMutation({
   },
 });
 
+export const updateByClerkId = internalMutation({
+  args: {
+    clerkId: v.string(),
+    updates: schema.tables.users.validator.partial(),
+  },
+  handler: async (ctx, { clerkId, updates }) => {
+    const user = await userByClerkId(ctx, clerkId);
+    if (!user) throw new Error('user not found');
+    await ctx.db.patch(user?._id, { ...updates, updated_at: Date.now() });
+  },
+});
+
 /** Delete a user by clerk user ID. */
 export const deleteUser = internalMutation({
   args: { id: v.string() },
@@ -134,22 +147,12 @@ export const deleteUser = internalMutation({
   },
 });
 
-/** Set the user preference of the color of their text. */
-// export const setColor = mutation({
-//   args: { color: v.string() },
-//   handler: async (ctx, { color }) => {
-//     const user = await mustGetCurrentUser(ctx);
-//     await ctx.db.patch(user._id, { color });
-//   },
-// });
-
 // Helpers
 
 export async function userByClerkId(
   ctx: QueryCtx,
   clerkUserId: string
 ): Promise<Doc<'users'> | null> {
-  // ): Promise<(Omit<Doc<'users'>, 'clerkUser'> & { clerkUser: UserJSON }) | null> {
   return await ctx.db
     .query('users')
     .withIndex('by_clerk_id', (q) => q.eq('clerkId', clerkUserId))

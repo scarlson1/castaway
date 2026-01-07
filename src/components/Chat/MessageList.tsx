@@ -29,13 +29,19 @@ export function MessageList({
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
-  const { ref, inView } = useInView();
   const lastMessageKeyRef = useRef<string | null>(null);
   const firstMessageKeyRef = useRef<string | null>(null);
   const previousScrollHeightRef = useRef<number>(0);
   const isLoadingMoreRef = useRef(false);
   const hasInitialScrolledRef = useRef(false);
+
+  const [isAtBottom, setIsAtBottom] = useState(true);
+  const { ref, inView } = useInView();
+
+  // useEffect(() => {
+  //   console.log(import.meta.env);
+  //   if (import.meta.env.DEV) console.log('messages:', messages);
+  // }, [messages]);
 
   // Reset initial scroll flag when thread changes
   useEffect(() => {

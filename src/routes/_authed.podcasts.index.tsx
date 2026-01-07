@@ -12,7 +12,7 @@ import {
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { sortBy } from 'lodash-es';
+import { orderBy } from 'lodash-es';
 import { useMemo, useState } from 'react';
 import { Card } from '~/components/Card';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
@@ -33,7 +33,8 @@ function RouteComponent() {
       return data.sort(
         (a, b) => (b.mostRecentEpisode || 0) - (a.mostRecentEpisode || 0)
       );
-    else if (sort === 'alpha') return sortBy(data, 'title');
+    else if (sort === 'alpha')
+      return orderBy(data, [(p) => p.title.toLowerCase()], ['desc']); // sortBy(data, 'title', (d) => d.title.toLowercase());
     return data;
   }, [data, sort]);
 

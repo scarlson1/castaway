@@ -56,3 +56,20 @@ export function formatEpisodeEmbeddingText(episode: Doc<'episodes'>) {
     .join('\n\n')
     .slice(0, 2000); // ⛔ hard cap for cost + speed
 }
+
+export function calcAverageVector(vectors: number[][]) {
+  // const dim = filtered[0].embedding.length;
+  const dim = vectors[0].length;
+  const sum = new Array<number>(dim).fill(0);
+  for (const v of vectors) {
+    for (let i = 0; i < dim; i++) sum[i] += v[i];
+  }
+  const avg = sum.map((v) => v / vectors.length);
+
+  // optional: normalize
+  // normalize even if not normalizing when saving vector ??
+  const norm = Math.sqrt(avg.reduce((s, x) => s + x * x, 0));
+  const result = norm > 0 ? avg.map((x) => x / norm) : avg;
+
+  return result;
+}

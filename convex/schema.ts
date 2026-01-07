@@ -73,6 +73,7 @@ export default defineSchema({
     username: v.optional(v.union(v.null(), v.string())),
     verification_attempts_remaining: v.union(v.float64(), v.null()),
     web3_wallets: v.optional(v.array(v.any())),
+    interestEmbedding: v.optional(v.array(v.number())), // for recommendations
   }).index('by_clerk_id', ['clerkId']),
 
   podcasts: defineTable({
@@ -89,7 +90,7 @@ export default defineSchema({
     // lastUpdatedAt: v.optional(v.number()), // ms
     mostRecentEpisode: v.optional(v.union(v.number(), v.null())), // ms - when most recent episode was published
     language: v.optional(v.string()),
-    episodeCount: v.optional(v.union(v.number(), v.null())), // aggregate count from db query ??
+    episodeCount: v.optional(v.union(v.number(), v.null())), // aggregate count from db query ?? (or delete ?? not currently updating)
     categories: v.optional(v.any()),
     categoryArray: v.optional(v.array(v.string())),
     explicit: v.optional(v.union(v.boolean(), v.null())),
@@ -223,9 +224,7 @@ export default defineSchema({
     playedPercentage: v.optional(v.float64()),
     episodeTitle: v.optional(v.string()),
     podcastTitle: v.optional(v.string()),
-  })
-    // .index('by_clerkId', ['clerkId'])
-    .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt']),
+  }).index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt']),
   // .index('by_clerk_episode', ['clerkId', 'episodeId']),
 
   podcastStats: defineTable({

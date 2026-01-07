@@ -159,18 +159,15 @@ function RouteComponent() {
           sx={{
             alignItems: 'flex-start',
             maxHeight: {
-              xs: 220, // 120,
-              sm: 200, // 160,
+              xs: 220,
+              sm: 200,
               md: 200,
               lg: 220,
             },
             overflow: 'hidden',
           }}
         >
-          <Stack direction='row' spacing={2}>
-            {/* <Typography variant='overline' color='textSecondary'>
-              {data?.podcastTitle}
-            </Typography> */}
+          <Stack direction='row' spacing={2} sx={{ alignItems: 'center' }}>
             <MuiLink
               to='/podcasts/$podId'
               params={{ podId }}
@@ -181,7 +178,11 @@ function RouteComponent() {
             >
               {data?.podcastTitle}
             </MuiLink>
-            <Typography variant='overline' color='textSecondary'>
+            <Typography
+              variant='overline'
+              color='textSecondary'
+              lineHeight={1.8}
+            >
               {getEpisodeLabel(data)}
             </Typography>
           </Stack>
@@ -350,10 +351,7 @@ function RouteComponent() {
               </Typography>
             }
           >
-            <AdSegments
-              // ads={[]} audioUrl={data.audioUrl}
-              episodeId={episodeId}
-            />
+            <AdSegments episodeId={episodeId} />
           </Suspense>
         </ErrorBoundary>
 
