@@ -13,6 +13,7 @@ import {
   Container,
   CssBaseline,
   InitColorSchemeScript,
+  styled,
   ThemeProvider,
 } from '@mui/material';
 import { TanStackDevtools } from '@tanstack/react-devtools';
@@ -217,6 +218,8 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
+const Offset = styled(Box)(({ theme }) => theme.mixins.toolbar);
+
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   useRehydrateStore();
 
@@ -233,6 +236,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       <body>
         <Providers>
           <AppHeader />
+          <Offset />
 
           <Container component='main' sx={{ paddingBlock: 4 }}>
             {children}

@@ -38,10 +38,10 @@ export function MessageList({
   const [isAtBottom, setIsAtBottom] = useState(true);
   const { ref, inView } = useInView();
 
-  useEffect(() => {
-    console.log(import.meta.env);
-    if (import.meta.env.DEV) console.log('messages:', messages);
-  }, [messages]);
+  // useEffect(() => {
+  //   console.log(import.meta.env);
+  //   if (import.meta.env.DEV) console.log('messages:', messages);
+  // }, [messages]);
 
   // Reset initial scroll flag when thread changes
   useEffect(() => {

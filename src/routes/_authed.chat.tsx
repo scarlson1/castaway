@@ -12,11 +12,11 @@ import { createFileRoute, Outlet } from '@tanstack/react-router';
 import { ThreadsList } from '~/components/Chat/ThreadsList';
 import { MuiListItemButtonLink } from '~/components/MuiListItemButtonLink';
 
-const Offset = styled(Box)(({ theme }) => theme.mixins.toolbar);
-
 export const Route = createFileRoute('/_authed/chat')({
   component: RouteComponent,
 });
+
+const Offset = styled(Box)(({ theme }) => theme.mixins.toolbar);
 
 function RouteComponent() {
   return (
@@ -70,7 +70,6 @@ function ChatSideBar() {
       }}
     >
       <Toolbar />
-      {/* <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}> */}
       <List dense sx={{ flexShrink: 0 }}>
         <MuiListItemButtonLink
           to='/chat'
@@ -92,7 +91,6 @@ function ChatSideBar() {
       <Box sx={{ overflowY: 'auto', flex: 1 }}>
         <ThreadsList />
       </Box>
-      {/* </Box> */}
     </Drawer>
   );
 }
