@@ -9,7 +9,7 @@ import { internalAction, mutation, query } from 'convex/_generated/server';
 import { agent } from 'convex/agent/agent';
 import { authorizeThreadAccess } from 'convex/agent/threads';
 import { paginationOptsValidator } from 'convex/server';
-import { v } from 'convex/values';
+import { ConvexError, v } from 'convex/values';
 
 // Docs: https://docs.convex.dev/agents/streaming
 // Example: https://github.com/get-convex/agent/blob/main/example/convex/chat/streaming.ts
@@ -40,16 +40,40 @@ export const initiateAsyncStreaming = mutation({
 export const streamAsync = internalAction({
   args: { promptMessageId: v.string(), threadId: v.string() },
   handler: async (ctx, { promptMessageId, threadId }) => {
-    const result = await agent.streamText(
-      ctx,
-      { threadId },
-      { promptMessageId },
-      // more custom delta options (`true` uses defaults)
-      { saveStreamDeltas: { chunking: 'line', throttleMs: 100 } }
-    );
-    // We need to make sure the stream finishes - by awaiting each chunk
-    // or using this call to consume it all.
-    await result.consumeStream();
+    try {
+      const result = await agent.streamText(
+        ctx,
+        { threadId },
+        { promptMessageId },
+        // more custom delta options (`true` uses defaults)
+        { saveStreamDeltas: { chunking: 'line', throttleMs: 100 } }
+      );
+      // We need to make sure the stream finishes - by awaiting each chunk
+      // or using this call to consume it all.
+      await result.consumeStream();
+    } catch (err) {
+      console.error(err);
+
+      if (err.message?.includes('quota') || err.message?.includes('token')) {
+        await agent.saveMessage(ctx, {
+          threadId,
+          prompt: err.message || 'token quota exceeded',
+          skipEmbeddings: true,
+        });
+        throw new ConvexError({
+          code: 'TOKEN_QUOTA_EXCEEDED',
+          message:
+            'You’ve reached the AI usage limit for now. Please try again later or shorten your request.',
+        });
+      }
+
+      throw err; // unexpected → bubble up
+      // await agent.saveMessage(ctx, {
+      //   threadId,
+      //   prompt,
+      //   skipEmbeddings: true,
+      // });
+    }
   },
 });
 
@@ -71,6 +95,7 @@ export const listThreadMessages = query({
     const streams = await syncStreams(ctx, components.agent, {
       threadId,
       streamArgs,
+      // includeStatuses: ['aborted', 'finished', 'streaming'],
     });
 
     return { ...paginated, streams };

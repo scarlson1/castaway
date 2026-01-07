@@ -7,7 +7,7 @@ import {
 } from './_generated/server';
 
 import { UserJSON } from '@clerk/backend';
-import { userSchema } from 'convex/schema';
+import schema from 'convex/schema';
 import { v } from 'convex/values';
 import { Doc, Id } from './_generated/dataModel';
 
@@ -122,7 +122,10 @@ export const updateOrCreateUser = internalMutation({
 });
 
 export const updateByClerkId = internalMutation({
-  args: { clerkId: v.string(), updates: userSchema.partial() },
+  args: {
+    clerkId: v.string(),
+    updates: schema.tables.users.validator.partial(),
+  },
   handler: async (ctx, { clerkId, updates }) => {
     const user = await userByClerkId(ctx, clerkId);
     if (!user) throw new Error('user not found');

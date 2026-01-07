@@ -109,73 +109,6 @@ export const insertEpisodeTranscript = internalAction({
   },
 });
 
-// export const insertEpisodeTranscript = internalMutation({
-//   args: {
-//     episodeId: v.string(),
-//     // transcript: v.string(),
-//     title: v.string(),
-//     summary: v.string(),
-//     keyTopics: v.array(v.string()),
-//   },
-//   handler: async (ctx, { episodeId, title, summary, keyTopics }) => {
-//     const episode = await ctx.db
-//       .query('episodes')
-//       .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
-//       .first();
-//     if (!episode) throw new Error(`episode not found [ID: ${episodeId}]`);
-
-//     console.log(
-//       `Adding transcript to RAG component [episode ID: ${episodeId}]...`
-//     );
-
-//     const { entryId, created } = await rag.add(ctx, {
-//       namespace: defaultNamespace, // 'episodes', // use episodeId ?? searching within episode ?? use filter (object = 'episode' or object = 'podcast')
-
-//       title: episode.episodeId,
-//       key: episode.episodeId,
-//       metadata: {
-//         podcastId: episode.podcastId,
-//         podcastTitle: episode.podcastTitle,
-//         episodeId: episode.episodeId,
-//         episodeTitle: episode.title,
-//         publishedAt: episode.publishedAt,
-//       },
-//       // contentHash: await contentHashFromArrayBuffer(args.transcript) // To avoid re-inserting if the file contents haven't changed (for files)
-
-//       text: [
-//         title ? `Title: ${title}` : '',
-//         summary ? `Summary: ${summary}` : '',
-//         keyTopics.join(', '),
-//       ]
-//         .filter(Boolean)
-//         .join('\n\n'),
-
-//       filterValues: [
-//         {
-//           name: 'podcastId',
-//           value: episode.podcastId,
-//         },
-//         {
-//           name: 'category',
-//           value: null, // TODO: pod category not stored on episode (add to episode or fetch pod ??)
-//         },
-//         {
-//           name: 'object',
-//           value: 'episode', // TODO: pod category not stored on episode (add to episode or fetch pod ??)
-//         },
-//       ],
-//       // onComplete: internal.example.recordUploadMetadata, // Called when the entry is ready (transactionally safe with listing).
-//     });
-
-//     if (!created) {
-//       console.debug('entry already exists, skipping upload metadata');
-//       // await ctx.storage.delete(storageId);
-//     }
-
-//     return { entryId };
-//   },
-// });
-
 // can be called directly from client for search
 
 const filterName = v.union(
@@ -307,19 +240,11 @@ export const computeUserInterestEmbedding = internalAction({
     if (!playback.length) return;
     const episodeIds = playback.map((p) => p.episodeId);
 
-    // TODO: could also combine vectors from the user's subscribed podcasts to capture topics the user is interested in by may not have listened (but playback = revealed preference)
+    // could combine vectors from the user's subscribed podcasts to capture topics the user is interested in by may not have listened (but playback = revealed preference)
 
     // get embeddings for played episodes ?? or use existing embedding and recalc with new episodes ?? or get episode summaries and calc new embedding ??
 
-    // const episodes = await ctx.runQuery(internal.episodes.getMultipleByGuid, {
-    //   ids: episodeIds,
-    // });
-    // const agg = episodes
-    //   .filter(Boolean)
-    //   .map((ep) => formatEpisodeEmbeddingText(ep))
-    //   .join('\n\n');
-
-    // unable to query embedding in RAG component by episodeId ==> need to use episodeEmbeddings
+    // unable to query embedding in RAG component directly by episodeId ==> need to use episodeEmbeddings
     const embRows: (Doc<'episodeEmbeddings'> | null)[] = await asyncMap(
       episodeIds,
       async (episodeGuid: string) => {

@@ -218,7 +218,11 @@ export const getPersonalizedRecommendations = action({
     // TODO: return fallback to most listened
     // https://github.com/get-convex/aggregate/blob/main/example/convex/shuffle.ts
     if (!subscribed?.length) {
-      return await ctx.runQuery(api.podcasts.recentlyUpdated, { limit });
+      const recentlyUpdated: Doc<'podcasts'>[] = await ctx.runQuery(
+        api.podcasts.recentlyUpdated,
+        { limit }
+      );
+      return recentlyUpdated;
     }
 
     const podIds = subscribed.map((s) => s.podConvexId);

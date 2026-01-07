@@ -51,7 +51,7 @@ export function ExpandableSearchBar({
 
   return (
     <ClickAwayListener onClickAway={handleClose}>
-      <SearchContainer elevation={1} open={open}>
+      <SearchContainer elevation={0} open={open}>
         <IconButton
           size='small'
           onClick={open ? undefined : handleOpen}

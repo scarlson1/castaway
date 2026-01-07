@@ -60,33 +60,39 @@ function ChatSideBar() {
       sx={{
         width: drawerWidth,
         flexShrink: 0,
-        [`& .MuiDrawer-paper`]: { width: drawerWidth, boxSizing: 'border-box' },
+        [`& .MuiDrawer-paper`]: {
+          width: drawerWidth,
+          boxSizing: 'border-box',
+          p: 1,
+          display: 'flex',
+          flexDirection: 'column',
+        },
       }}
     >
       <Toolbar />
-      <Box sx={{ p: 1 }}>
-        <List dense>
-          <MuiListItemButtonLink
-            to='/chat'
-            disableGutters
-            sx={{ px: 1, borderRadius: 1 }}
-          >
-            <ListItemIcon sx={{ minWidth: 32 }}>
-              <EditNoteRounded />
-            </ListItemIcon>
-            <Typography variant='body2' fontSize={'0.95rem'}>
-              New chat
-            </Typography>
-          </MuiListItemButtonLink>
-        </List>
+      {/* <Box sx={{ p: 1, display: 'flex', flexDirection: 'column' }}> */}
+      <List dense sx={{ flexShrink: 0 }}>
+        <MuiListItemButtonLink
+          to='/chat'
+          disableGutters
+          sx={{ px: 1, borderRadius: 1 }}
+        >
+          <ListItemIcon sx={{ minWidth: 32 }}>
+            <EditNoteRounded />
+          </ListItemIcon>
+          <Typography variant='body2' fontSize={'0.95rem'}>
+            New chat
+          </Typography>
+        </MuiListItemButtonLink>
+      </List>
 
-        <Typography variant='overline' color='textSecondary'>
-          Your chats
-        </Typography>
-        <Box sx={{ overflow: 'auto' }}>
-          <ThreadsList />
-        </Box>
+      <Typography variant='overline' color='textSecondary'>
+        Your chats
+      </Typography>
+      <Box sx={{ overflowY: 'auto', flex: 1 }}>
+        <ThreadsList />
       </Box>
+      {/* </Box> */}
     </Drawer>
   );
 }
