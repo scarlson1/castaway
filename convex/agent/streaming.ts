@@ -41,6 +41,8 @@ export const streamAsync = internalAction({
   args: { promptMessageId: v.string(), threadId: v.string() },
   handler: async (ctx, { promptMessageId, threadId }) => {
     try {
+      // save chunks of the response as deltas as they're generated,
+      // so all clients can subscribe to the stream and get live-updating text via normal Convex queries.
       const result = await agent.streamText(
         ctx,
         { threadId },
@@ -77,6 +79,7 @@ export const streamAsync = internalAction({
   },
 });
 
+// https://docs.convex.dev/agents/streaming#retrieving-streamed-deltas
 // Query & subscribe to messages & threads
 export const listThreadMessages = query({
   args: {

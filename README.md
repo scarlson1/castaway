@@ -4,16 +4,14 @@
 
 TODO
 
-## Development
-
-See `.env.example` for required environment variables.
-
 ## Features
 
-- subscribe
-- queue
+- subscribe to podcasts
+- transcribe episodes
+- identify ads
+- personalized recommendations (vector search)
 - trending / discovery
-- notifications
+- AI chat with RAG tooling
 
 ---
 
@@ -33,22 +31,25 @@ See `.env.example` for required environment variables.
 
 ---
 
+## Development
+
+See [DEVELOPMENT.md](docs/DEVEOPMENT.md) for details
+
+## Deployment
+
+See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for details
+
 ## TODO
 
-- skeleton suspense loading states
 - feedback score for ad segments
 - search ad segments with embedding before sending to classifier (only send if unsure whether segment is ad)
 - subscription notifications
-- Refactor to use [Convex workflows](https://www.convex.dev/components/workflow)
-  - adPipeline
-  - transcribe episode
-  - import podcast ?
 - global playback/user preferences (playback speed, notifications, etc.)
 - fingerprint ad detection (repeated segments across episodes)
   - Use audio fingerprints (Chromaprint/AcoustID-like, or embeddings hashed + approximate nearest neighbors).
 - Rule / heuristic based ad detection
-  - RSS/episode chapter markers: many publishers include chapters or timestamps labeled “ad” or “sponsor” — parse first.
-- Hybrid rule+ML multi-stage pipeline (recommended)
+  - RSS/episode chapter markers: some publishers include chapters or timestamps labeled “ad” or “sponsor” — parse first.
+- Hybrid rule + ML multi-stage pipeline
   - Stage 0: cheap metadata & heuristics (chapters, silence, VAD, standard positions) → candidate windows.
   - Stage 1: fingerprint lookup against known ads (fast) → immediate labels. and/or build vector table of known ad phrases ("this episode is sponsored by...", "use promo code", etc.)
     - alt route: search against ad vector table for known patterns
@@ -65,7 +66,7 @@ See `.env.example` for required environment variables.
   - If we embed transcript text AND optionally speaker changes (via diarization), we can detect “similar-sounding” ad blocks across episodes.
 - Use vector search to chunk ads across episodes
   - if we've processed 100 episodes, we likely have “ad clusters.”
-  - You find:
+  - find:
     - recurrences of the SAME sponsor
     - similar mid-roll ad patterns
     - out-of-place segments
@@ -328,7 +329,7 @@ See `convex/schema.tsx` for up to date schemas.
   }
   ```
 
-- `rawUsage` - calc billing from `rawUsage` in cron job
+- `invoices` - calc billing from `rawUsage` in cron job
 
   ```json
   {
@@ -375,6 +376,8 @@ See `convex/schema.tsx` for up to date schemas.
     "lastSeenAt": 1699999000
   }
   ```
+
+---
 
 ### Subscribe flow
 
@@ -755,7 +758,6 @@ Use Agent Mode to:
 
 - Analyze the transcript and detect “high-value moments”
 - Generate:
-
   - quotes
   - takeaways
   - timestamps
