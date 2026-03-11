@@ -23,6 +23,7 @@ const Header = styled('header')(({ theme }) => [
   {
     // position: 'sticky',
     position: 'fixed',
+    width: '100%',
     top: 0,
     transition: theme.transitions.create('top'),
     // zIndex: theme.zIndex.appBar,

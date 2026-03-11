@@ -57,7 +57,6 @@ export const ModeToggle = () => {
     mode === 'system' ? 'light' : mode === 'light' ? 'dark' : 'system';
 
   const handleMode = useCallback(() => {
-    console.log(`setting mode: ${nextMode}`);
     setMode(nextMode);
   }, [nextMode]);
 
