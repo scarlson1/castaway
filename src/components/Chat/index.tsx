@@ -15,6 +15,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { MessageList } from '~/components/Chat/MessageList';
 import { SendMessage } from '~/components/Chat/SendMessage';
 import { StreamingSendMessage } from '~/components/Chat/StreamingSendMessage';
+import { useQueueStore } from '~/hooks/useQueueStore';
 
 export const Chat = ({ threadId }: { threadId: string }) => {
   const [stream, setStream] = useState(true);
@@ -29,16 +30,16 @@ export const Chat = ({ threadId }: { threadId: string }) => {
     //   ? api.agent.streaming.listThreadMessages
     //   : api.agent.chat.listThreadMessages,
     { threadId },
-    { initialNumItems: 10, stream }
+    { initialNumItems: 10, stream },
   );
 
   const abortStreamByOrder = useMutation(
-    api.agent.streaming.abortStreamByOrder
+    api.agent.streaming.abortStreamByOrder,
   );
 
   const isStreaming = useMemo(
     () => messages.some((m) => m.status === 'streaming'),
-    [messages]
+    [messages],
   );
 
   const handleAbortStream = useCallback(() => {
@@ -50,8 +51,17 @@ export const Chat = ({ threadId }: { threadId: string }) => {
     (event: React.ChangeEvent<HTMLInputElement>) => {
       setStream(event.target.checked);
     },
-    []
+    [],
   );
+
+  const isPlaying = useQueueStore((state) => Boolean(state.nowPlaying));
+
+  const AUDIO_PLAYER_HEIGHT = 73;
+  const BOTTOM_NAV_HEIGHT = 56;
+
+  const inputBottom = isPlaying
+    ? AUDIO_PLAYER_HEIGHT + BOTTOM_NAV_HEIGHT
+    : BOTTOM_NAV_HEIGHT;
 
   return (
     <Container
@@ -67,6 +77,10 @@ export const Chat = ({ threadId }: { threadId: string }) => {
           flex: 1,
           overflowY: 'auto',
           py: 2,
+          pb: {
+            xs: 'calc(var(--Castaway-bottom-nav-height) + var(--Castaway-audio-player-height, 0px) + 80px)',
+            md: 2,
+          },
         }}
       >
         <FormControlLabel
@@ -92,14 +106,22 @@ export const Chat = ({ threadId }: { threadId: string }) => {
         sx={{
           pt: 2,
           pb: 2,
+          px: { xs: 2, md: 0 },
           borderTop: '1px solid',
           borderColor: 'divider',
-          position: 'sticky',
-          bottom: 0, // 20,
+          position: { xs: 'fixed', md: 'sticky' },
+          // bottom: 0, // 20,
+          bottom: {
+            // xs: 'calc(var(--Castaway-bottom-nav-height) + var(--Castaway-audio-player-height, 0px))',
+            xs: inputBottom,
+            md: 0,
+          },
           display: 'flex',
           gap: 1,
           bgcolor: 'background.default',
           zIndex: 1200,
+          left: { xs: 0, md: 'auto' },
+          right: { xs: 0, md: 'auto' },
         }}
       >
         {stream ? (

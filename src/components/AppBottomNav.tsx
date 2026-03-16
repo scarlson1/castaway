@@ -2,6 +2,7 @@ import { UserAvatar } from '@clerk/tanstack-react-start';
 import {
   ChatRounded,
   ListRounded,
+  PlaylistPlayRounded,
   PodcastsRounded,
   SearchRounded,
 } from '@mui/icons-material';
@@ -17,6 +18,11 @@ const NAV_ITEMS = [
 
 const SIGNED_IN_ITEMS = [
   { label: 'New', to: '/podcasts/feed', icon: <ListRounded /> },
+  {
+    label: 'In Progress',
+    to: '/podcasts/progress',
+    icon: <PlaylistPlayRounded />,
+  },
   { label: 'Chat', to: '/chat', icon: <ChatRounded /> },
   { label: 'Profile', to: '/profile', icon: <UserAvatar /> },
 ];

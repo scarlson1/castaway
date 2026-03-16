@@ -25,7 +25,7 @@ import { useNavigate, useParams } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useState } from 'react';
 
-export const ThreadsList = () => {
+export const ThreadsList = ({ onSelect }: { onSelect?: () => void }) => {
   const navigate = useNavigate();
   const params = useParams({ strict: false }); // from: '/_authed/chat/$threadId'
   const currentChatId = params?.threadId;
@@ -33,7 +33,7 @@ export const ThreadsList = () => {
   const { results, status, loadMore, isLoading } = useConvexPaginatedQuery(
     api.agent.threads.list,
     {},
-    { initialNumItems: 10 }
+    { initialNumItems: 10 },
   );
 
   const { mutate: overrideTitle } = useMutation({
@@ -96,6 +96,7 @@ interface ChatListItemProps {
   selected?: boolean;
   onRename: (threadId: string, newTitle: string) => void;
   onDelete: (threadId: string) => void;
+  onSelect?: () => void;
 }
 
 export function ChatListItem({
@@ -104,6 +105,7 @@ export function ChatListItem({
   selected,
   onRename,
   onDelete,
+  onSelect,
 }: ChatListItemProps) {
   const navigate = useNavigate();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -161,12 +163,13 @@ export function ChatListItem({
       <ListItemButton
         selected={selected}
         disabled={isRenaming}
-        onClick={() =>
+        onClick={() => {
+          if (onSelect) onSelect();
           navigate({
             to: '/chat/$threadId',
             params: { threadId },
-          })
-        }
+          });
+        }}
         sx={{
           borderRadius: 1,
           px: 1.5,

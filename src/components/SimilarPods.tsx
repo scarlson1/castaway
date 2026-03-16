@@ -23,10 +23,15 @@ export function SimilarPodcasts({
   });
 
   return (
-    <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
+    <Grid
+      container
+      columnSpacing={{ xs: 1, sm: 2, md: 2, lg: 2 }}
+      rowSpacing={1}
+      columns={16}
+    >
       {data.map((pod) => (
         <Grid
-          size={{ xs: 8, sm: 4, md: 4, lg: 2 }}
+          size={{ xs: 4, sm: 4, md: 4, lg: 2 }}
           key={pod._id}
           {...gridItemProps}
         >

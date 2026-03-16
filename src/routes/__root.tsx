@@ -12,6 +12,7 @@ import {
   Box,
   Container,
   CssBaseline,
+  GlobalStyles,
   InitColorSchemeScript,
   styled,
   ThemeProvider,
@@ -344,20 +345,29 @@ function AudioPlayerBottomSpacer() {
   const show = Boolean(episode);
 
   return (
-    <Box
-      // sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
-      sx={{
-        height: show
-          ? {
-              xs: 'calc(140px + var(--Castaway-bottom-nav-height))',
-              md: '140px',
-            }
-          : {
-              xs: 'var(--Castaway-bottom-nav-height)',
-              md: 0,
-            },
-        transition: 'height 0.3s ease-in-out',
-      }}
-    />
+    <>
+      <GlobalStyles
+        styles={{
+          ':root': {
+            '--Castaway-audio-player-height': episode ? '140px' : '0px',
+          },
+        }}
+      />
+      <Box
+        // sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
+        sx={{
+          height: show
+            ? {
+                xs: 'calc(140px + var(--Castaway-bottom-nav-height))',
+                md: '140px',
+              }
+            : {
+                xs: 'var(--Castaway-bottom-nav-height)',
+                md: 0,
+              },
+          transition: 'height 0.3s ease-in-out',
+        }}
+      />
+    </>
   );
 }

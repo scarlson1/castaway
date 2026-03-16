@@ -108,7 +108,7 @@ export default function AudioPlayer({
     <Widget
       sx={{
         display: 'flex',
-        // alignItems: 'center', // { xs: 'center' },
+        alignItems: 'center',
       }}
     >
       <CoverImage>
