@@ -42,7 +42,7 @@ export function PlaybackControls({
       <IconButton
         aria-label='previous song'
         onClick={() => seek(position - 10)}
-        sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+        // sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
       >
         <Replay10 fontSize='inherit' />
       </IconButton>
@@ -50,7 +50,7 @@ export function PlaybackControls({
       <IconButton
         aria-label='skip 30 seconds'
         onClick={() => seek(position + 30)}
-        sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
+        // sx={{ display: { xs: 'none', sm: 'inline-flex' } }}
       >
         <Forward30 fontSize='inherit' />
       </IconButton>

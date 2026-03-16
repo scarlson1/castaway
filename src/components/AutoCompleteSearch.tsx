@@ -17,8 +17,10 @@ import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 export const AutoCompleteSearch = ({
   onSelect,
+  fullWidth = false,
 }: {
   onSelect?: (val: PodcastFeed) => void;
+  fullWidth?: boolean;
 }) => {
   const search = useServerFn(searchPodIndex);
   const [query, setQuery] = useState('');
@@ -45,10 +47,12 @@ export const AutoCompleteSearch = ({
     }, 400);
   };
 
+  const width = fullWidth ? '100%' : isExpanded ? 400 : 200;
+
   return (
     <Autocomplete
       sx={{
-        width: isExpanded ? 400 : 200,
+        width,
         transition: 'width 0.3s ease-in-out',
       }}
       size='small'
@@ -116,7 +120,7 @@ export const AutoCompleteSearch = ({
         },
         paper: {
           sx: {
-            width: isExpanded ? 400 : 200,
+            width,
             transition: 'width 0.3s ease-in-out',
           },
         },
@@ -194,17 +198,3 @@ function AutoCompleteOption({ option }: { option: PodcastFeed }) {
     </Grid>
   );
 }
-
-// function RepositionPopper(props) {
-//   const { anchorEl, open, popperRef, ...other } = props;
-
-//   useEffect(() => {
-//     if (popperRef?.current) {
-//       popperRef.current.update();
-//     }
-//   });
-
-//   return (
-//     <Popper anchorEl={anchorEl} open={open} popperRef={popperRef} {...other} />
-//   );
-// }

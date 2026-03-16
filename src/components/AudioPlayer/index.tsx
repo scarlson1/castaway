@@ -18,6 +18,9 @@ import { useAudioStore } from '~/hooks/useAudioStore';
 
 const Widget = styled('div')(({ theme }) => ({
   padding: 16,
+  [theme.breakpoints.down('sm')]: {
+    padding: '8px 12px',
+  },
   // width: 343,
   maxWidth: '100%',
   margin: 'auto',
@@ -32,11 +35,12 @@ const Widget = styled('div')(({ theme }) => ({
 }));
 
 const CoverImage = styled('div')(({ theme }) => ({
-  width: 80,
+  width: 56, // smaller on mobile
+  height: 56,
   [theme.breakpoints.up('sm')]: {
     width: 100,
+    height: 100,
   },
-  height: 100,
   objectFit: 'cover',
   overflow: 'hidden',
   flexShrink: 0,
@@ -104,6 +108,7 @@ export default function AudioPlayer({
     <Widget
       sx={{
         display: 'flex',
+        alignItems: 'center',
       }}
     >
       <CoverImage>
@@ -114,7 +119,14 @@ export default function AudioPlayer({
         display='flex'
         alignItems='center'
         justifyContent='center'
-        position='relative'
+        // position='relative'
+        sx={{
+          position: { xs: 'absolute', sm: 'static' },
+          left: { xs: 0, sm: 'auto' },
+          right: { xs: 0, sm: 'auto' },
+          // direction: ''
+          flexDirection: { xs: 'row-reverse', sm: 'row' },
+        }}
       >
         <ErrorBoundary fallback={<div />}>
           <Suspense>
@@ -219,7 +231,7 @@ function SliderWithAdMarks({
     isPending,
     isError,
   } = useSuspenseQuery(
-    convexQuery(api.adSegments.getByEpisodeId, { id: episodeId })
+    convexQuery(api.adSegments.getByEpisodeId, { id: episodeId }),
   );
 
   const marks = useMemo(() => {

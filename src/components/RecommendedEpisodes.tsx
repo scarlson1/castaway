@@ -6,7 +6,7 @@ import { EpisodeCard } from '~/components/EpisodeCard';
 
 export const RecommendedEpisodes = ({ limit = 8 }: { limit?: number }) => {
   const getPersonalizedRecommendations = useAction(
-    api.episodeEmbeddings.getPersonalizedRecommendations
+    api.episodeEmbeddings.getPersonalizedRecommendations,
   );
   const { data } = useSuspenseQuery({
     queryKey: ['recs', 'episodes', { limit }],
@@ -14,9 +14,14 @@ export const RecommendedEpisodes = ({ limit = 8 }: { limit?: number }) => {
   });
 
   return (
-    <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
+    <Grid
+      container
+      columnSpacing={{ xs: 1, sm: 2 }}
+      rowSpacing={1}
+      columns={16}
+    >
       {data.map((ep) => (
-        <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={ep._id}>
+        <Grid size={{ xs: 4, sm: 4, md: 4, lg: 2 }} key={ep._id}>
           <EpisodeCard
             title={ep.title}
             podName={ep.podcastTitle}

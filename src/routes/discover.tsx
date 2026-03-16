@@ -272,9 +272,14 @@ function IndependentPodcastAwardWinners({
   const items = useMemo(() => data?.tracks?.items.slice(0, limit), [limit]);
 
   return (
-    <Grid container columnSpacing={2} rowSpacing={1} columns={16}>
+    <Grid
+      container
+      columnSpacing={{ xs: 1, sm: 2 }}
+      rowSpacing={1}
+      columns={16}
+    >
       {items?.map((t) => (
-        <Grid size={{ xs: 8, sm: 4, md: 4, lg: 2 }} key={t.track.id}>
+        <Grid size={{ xs: 4, sm: 4, md: 4, lg: 2 }} key={t.track.id}>
           <Card
             title={
               <Link

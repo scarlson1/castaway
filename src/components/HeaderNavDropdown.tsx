@@ -7,6 +7,8 @@ import { createLink, type LinkComponent } from '@tanstack/react-router';
 import { forwardRef, useRef, useState, type AnchorHTMLAttributes } from 'react';
 import SvgHamburgerMenu from '~/components/icons/SvgHamburgerMenu';
 
+// TODO: delete - replaced by bottom nav on mobile
+
 interface AnchorProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   noLinkStyle?: boolean;
 }
@@ -48,7 +50,7 @@ const Anchor = styled('a')<AnchorProps>(({ theme }) => [
 ]);
 
 const MUIAnchorComponent = forwardRef<HTMLAnchorElement, AnchorProps>(
-  (props, ref) => <Anchor ref={ref} {...props} />
+  (props, ref) => <Anchor ref={ref} {...props} />,
 );
 
 const CreatedAnchorComponent = createLink(MUIAnchorComponent);

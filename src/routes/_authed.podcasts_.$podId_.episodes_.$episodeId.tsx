@@ -47,15 +47,15 @@ import { getEpisodeLabel } from '~/routes/podcast.$podId';
 import { toFormattedDuration } from '~/utils/format';
 
 export const Route = createFileRoute(
-  '/_authed/podcasts_/$podId_/episodes_/$episodeId'
+  '/_authed/podcasts_/$podId_/episodes_/$episodeId',
 )({
   component: RouteComponent,
   loader: async ({ context: { queryClient }, params }) => {
     queryClient.prefetchQuery(
-      convexQuery(api.episodes.getByGuid, { id: params.episodeId })
+      convexQuery(api.episodes.getByGuid, { id: params.episodeId }),
     );
     queryClient.prefetchQuery(
-      convexQuery(api.adSegments.getByEpisodeId, { id: params.episodeId })
+      convexQuery(api.adSegments.getByEpisodeId, { id: params.episodeId }),
     );
   },
   // onError((error, to) => {
@@ -70,7 +70,7 @@ function RouteComponent() {
   const toast = useAsyncToast();
 
   const { data } = useSuspenseQuery(
-    convexQuery(api.episodes.getByGuid, { id: episodeId })
+    convexQuery(api.episodes.getByGuid, { id: episodeId }),
   );
 
   const { mutate: startJob, isPending: jobPending } = useMutation<
@@ -389,14 +389,14 @@ function RouteComponent() {
                   columnSpacing={2}
                   rowSpacing={1}
                   columns={16}
-                  childGridProps={{ size: { xs: 8, sm: 4, md: 4, lg: 2 } }}
+                  childGridProps={{ size: { xs: 4, sm: 4, md: 4, lg: 2 } }}
                 />
               }
             >
               <SimilarEpisodes
                 limit={4}
                 episodeConvexId={data._id}
-                gridItemProps={{ size: { xs: 8, sm: 4 } }}
+                gridItemProps={{ size: { xs: 4, sm: 4 } }}
               />
             </Suspense>
           </ErrorBoundary>
@@ -409,7 +409,7 @@ function RouteComponent() {
 
 function AdSegments({ episodeId }: { episodeId: string }) {
   const { data } = useSuspenseQuery(
-    convexQuery(api.adSegments.getByEpisodeId, { id: episodeId })
+    convexQuery(api.adSegments.getByEpisodeId, { id: episodeId }),
   );
 
   if (!data?.length)
@@ -478,14 +478,14 @@ function EpisodeActions({
 
 function AdJobs({ episodeId }: { episodeId: string }) {
   const { data } = useSuspenseQuery(
-    convexQuery(api.adJobs.getByEpisodeId, { episodeId })
+    convexQuery(api.adJobs.getByEpisodeId, { episodeId }),
   );
 
   if (!data?.length) return <Typography>No classification jobs</Typography>;
 
   const sorted = useMemo(
     () => data.sort((a, b) => b._creationTime - a._creationTime),
-    [data]
+    [data],
   );
 
   return (
@@ -528,7 +528,7 @@ function AdJobs({ episodeId }: { episodeId: string }) {
 
 function WorkflowStatus({ workflowId }: { workflowId: WorkflowId }) {
   const { data } = useSuspenseQuery(
-    convexQuery(api.adPipeline.workflow.status, { workflowId })
+    convexQuery(api.adPipeline.workflow.status, { workflowId }),
   );
 
   if (!data) return <Typography>Workflow not found</Typography>;
@@ -565,7 +565,7 @@ function EmbedEpisode({ convexId }: { convexId: Id<'episodes'> }) {
   const { data } = useQuery(
     convexQuery(api.episodeEmbeddings.getEpEmbByEpId, {
       episodeConvexId: convexId,
-    })
+    }),
   );
 
   const { mutate, isPending } = useMutation({
@@ -589,7 +589,7 @@ function EmbedEpisode({ convexId }: { convexId: Id<'episodes'> }) {
 function ViewTranscript({ episodeId }: { episodeId: string }) {
   const [open, setOpen] = useState(false);
   const { data } = useSuspenseQuery(
-    convexQuery(api.transcripts.getByEpisodeId, { episodeId })
+    convexQuery(api.transcripts.getByEpisodeId, { episodeId }),
   );
 
   const toast = useAsyncToast();

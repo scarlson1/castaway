@@ -12,6 +12,7 @@ import {
   Box,
   Container,
   CssBaseline,
+  GlobalStyles,
   InitColorSchemeScript,
   styled,
   ThemeProvider,
@@ -33,6 +34,7 @@ import { format } from 'date-fns';
 import { Suspense, useMemo, type ReactNode } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import castawayLogo from '~/assets/castaway-light.png';
+import { AppBottomNav } from '~/components/AppBottomNav';
 import { AppHeader } from '~/components/AppHeader';
 import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
@@ -238,7 +240,14 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
           <AppHeader />
           <Offset />
 
-          <Container component='main' sx={{ paddingBlock: 4 }}>
+          <Container
+            component='main'
+            // sx={{ paddingBlock: 4 }}
+            sx={{
+              pt: 'var(--Castaway-header-height)',
+              pb: { xs: 'var(--Castaway-bottom-nav-height)', md: 0 },
+            }}
+          >
             {children}
           </Container>
 
@@ -248,7 +257,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                 <Box
                   sx={{
                     position: 'fixed',
-                    bottom: 0,
+                    bottom: { xs: 'var(--Castaway-bottom-nav-height)', md: 0 },
                     left: 0,
                     right: 0,
                     zIndex: (theme) => theme.zIndex.drawer,
@@ -262,6 +271,8 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
               </>
             </Suspense>
           </ErrorBoundary>
+
+          <AppBottomNav />
         </Providers>
 
         <TanStackDevtools
@@ -295,7 +306,7 @@ function WrappedPlayer() {
 
   const dbPlayback = useMemo(() => {
     const playbackIndex = userPlayback?.data?.findIndex(
-      (pb) => pb.episodeId === episode?.episodeId
+      (pb) => pb.episodeId === episode?.episodeId,
     );
     if (!playbackIndex || playbackIndex < 0) return {};
 
@@ -334,8 +345,29 @@ function AudioPlayerBottomSpacer() {
   const show = Boolean(episode);
 
   return (
-    <Box
-      sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
-    />
+    <>
+      <GlobalStyles
+        styles={{
+          ':root': {
+            '--Castaway-audio-player-height': episode ? '140px' : '0px',
+          },
+        }}
+      />
+      <Box
+        // sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
+        sx={{
+          height: show
+            ? {
+                xs: 'calc(140px + var(--Castaway-bottom-nav-height))',
+                md: '140px',
+              }
+            : {
+                xs: 'var(--Castaway-bottom-nav-height)',
+                md: 0,
+              },
+          transition: 'height 0.3s ease-in-out',
+        }}
+      />
+    </>
   );
 }
