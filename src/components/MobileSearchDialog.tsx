@@ -66,7 +66,7 @@ export function MobileSearchDialog() {
         </AppBar>
 
         <DialogContent sx={{ pt: 2 }}>
-          <AutoCompleteSearch onSelect={handleSelect} />
+          <AutoCompleteSearch onSelect={handleSelect} fullWidth />
         </DialogContent>
       </Dialog>
     </>

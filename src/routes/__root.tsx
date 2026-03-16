@@ -256,7 +256,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                 <Box
                   sx={{
                     position: 'fixed',
-                    bottom: 0,
+                    bottom: { xs: 'var(--Castaway-bottom-nav-height)', md: 0 },
                     left: 0,
                     right: 0,
                     zIndex: (theme) => theme.zIndex.drawer,
@@ -345,7 +345,19 @@ function AudioPlayerBottomSpacer() {
 
   return (
     <Box
-      sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
+      // sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
+      sx={{
+        height: show
+          ? {
+              xs: 'calc(140px + var(--Castaway-bottom-nav-height))',
+              md: '140px',
+            }
+          : {
+              xs: 'var(--Castaway-bottom-nav-height)',
+              md: 0,
+            },
+        transition: 'height 0.3s ease-in-out',
+      }}
     />
   );
 }
