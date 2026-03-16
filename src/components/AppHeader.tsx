@@ -11,10 +11,10 @@ import Container from '@mui/material/Container';
 import { useLocation, useNavigate } from '@tanstack/react-router';
 import { useCallback } from 'react';
 import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
-import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 // import { HeaderNavBar } from '~/components/HeaderNavBar';
 // import HeaderNavDropdown from '~/components/HeaderNavDropdown';
 import CastawayLogo from '~/components/icons/CastawayLogo';
+import { MobileSearchDialog } from '~/components/MobileSearchDialog';
 import { ModeToggle } from '~/components/ModeToggle';
 import { MuiLink } from '~/components/MuiLink';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
@@ -113,7 +113,7 @@ export function AppHeader() {
     (pod: PodcastFeed) => {
       navigate({ to: '/podcast/$podId', params: { podId: pod.id.toString() } });
     },
-    [navigate]
+    [navigate],
   );
 
   return (
@@ -122,6 +122,7 @@ export function AppHeader() {
         styles={{
           ':root': {
             '--Castaway-header-height': `${HEIGHT}px`,
+            '--Castaway-bottom-nav-height': '56px', // MUI default
           },
         }}
       />
@@ -176,12 +177,19 @@ export function AppHeader() {
           sx={{ alignItems: 'center', ml: 'auto' }}
         >
           <Box sx={{ ml: 'auto', mr: 1 }}>
-            <AutoCompleteSearch onSelect={goToPod} />
+            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
+              <AutoCompleteSearch onSelect={goToPod} />
+            </Box>
+            <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+              <MobileSearchDialog />
+            </Box>
           </Box>
           {/* <DeferredAppSearch /> */}
           <ModeToggle />
           <SignedIn>
-            <UserButton />
+            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+              <UserButton />
+            </Box>
           </SignedIn>
           <SignedOut>
             <SignInButton mode='modal' fallbackRedirectUrl={location?.href}>
@@ -202,9 +210,9 @@ export function AppHeader() {
             </SignInButton>
           </SignedOut>
         </Stack>
-        <Box sx={{ display: { md: 'none' }, ml: 1 }}>
+        {/* <Box sx={{ display: { md: 'none' }, ml: 1 }}>
           <HeaderNavDropdown />
-        </Box>
+        </Box> */}
       </Container>
     </Header>
   );

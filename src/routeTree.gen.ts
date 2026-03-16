@@ -16,6 +16,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as PodcastPodIdRouteImport } from './routes/podcast.$podId'
 import { Route as AuthSignupRouteImport } from './routes/auth.signup'
 import { Route as AuthSigninRouteImport } from './routes/auth.signin'
+import { Route as AuthedProfileRouteImport } from './routes/_authed.profile'
 import { Route as AuthedChatRouteImport } from './routes/_authed.chat'
 import { Route as AuthedPodcastsIndexRouteImport } from './routes/_authed.podcasts.index'
 import { Route as AuthedChatIndexRouteImport } from './routes/_authed.chat.index'
@@ -58,6 +59,11 @@ const AuthSigninRoute = AuthSigninRouteImport.update({
   id: '/auth/signin',
   path: '/auth/signin',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedProfileRoute = AuthedProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AuthedRoute,
 } as any)
 const AuthedChatRoute = AuthedChatRouteImport.update({
   id: '/chat',
@@ -106,6 +112,7 @@ export interface FileRoutesByFullPath {
   '/discover': typeof DiscoverRoute
   '/trending': typeof TrendingRoute
   '/chat': typeof AuthedChatRouteWithChildren
+  '/profile': typeof AuthedProfileRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/discover': typeof DiscoverRoute
   '/trending': typeof TrendingRoute
+  '/profile': typeof AuthedProfileRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
@@ -139,6 +147,7 @@ export interface FileRoutesById {
   '/discover': typeof DiscoverRoute
   '/trending': typeof TrendingRoute
   '/_authed/chat': typeof AuthedChatRouteWithChildren
+  '/_authed/profile': typeof AuthedProfileRoute
   '/auth/signin': typeof AuthSigninRoute
   '/auth/signup': typeof AuthSignupRoute
   '/podcast/$podId': typeof PodcastPodIdRoute
@@ -157,6 +166,7 @@ export interface FileRouteTypes {
     | '/discover'
     | '/trending'
     | '/chat'
+    | '/profile'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/'
     | '/discover'
     | '/trending'
+    | '/profile'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
@@ -189,6 +200,7 @@ export interface FileRouteTypes {
     | '/discover'
     | '/trending'
     | '/_authed/chat'
+    | '/_authed/profile'
     | '/auth/signin'
     | '/auth/signup'
     | '/podcast/$podId'
@@ -261,6 +273,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/auth/signin'
       preLoaderRoute: typeof AuthSigninRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/profile': {
+      id: '/_authed/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof AuthedProfileRouteImport
+      parentRoute: typeof AuthedRoute
     }
     '/_authed/chat': {
       id: '/_authed/chat'
@@ -337,6 +356,7 @@ const AuthedChatRouteWithChildren = AuthedChatRoute._addFileChildren(
 
 interface AuthedRouteChildren {
   AuthedChatRoute: typeof AuthedChatRouteWithChildren
+  AuthedProfileRoute: typeof AuthedProfileRoute
   AuthedPodcastsPodIdRoute: typeof AuthedPodcastsPodIdRoute
   AuthedPodcastsFeedRoute: typeof AuthedPodcastsFeedRoute
   AuthedPodcastsProgressRoute: typeof AuthedPodcastsProgressRoute
@@ -346,6 +366,7 @@ interface AuthedRouteChildren {
 
 const AuthedRouteChildren: AuthedRouteChildren = {
   AuthedChatRoute: AuthedChatRouteWithChildren,
+  AuthedProfileRoute: AuthedProfileRoute,
   AuthedPodcastsPodIdRoute: AuthedPodcastsPodIdRoute,
   AuthedPodcastsFeedRoute: AuthedPodcastsFeedRoute,
   AuthedPodcastsProgressRoute: AuthedPodcastsProgressRoute,

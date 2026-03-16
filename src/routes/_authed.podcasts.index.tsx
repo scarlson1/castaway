@@ -31,7 +31,7 @@ function RouteComponent() {
   const sorted = useMemo(() => {
     if (sort === 'recent')
       return data.sort(
-        (a, b) => (b.mostRecentEpisode || 0) - (a.mostRecentEpisode || 0)
+        (a, b) => (b.mostRecentEpisode || 0) - (a.mostRecentEpisode || 0),
       );
     else if (sort === 'alpha')
       return orderBy(data, [(p) => p.title.toLowerCase()], ['desc']); // sortBy(data, 'title', (d) => d.title.toLowercase());
@@ -80,11 +80,11 @@ function RouteComponent() {
 
       <Grid
         container
-        columnSpacing={{ xs: 2, sm: 1.5, md: 2 }}
+        columnSpacing={{ xs: 1.5, sm: 1.5, md: 2 }}
         rowSpacing={{ xs: 2, sm: 3, md: 4 }}
       >
         {sorted.map((pod, i) => (
-          <Grid key={pod._id} size={{ xs: 6, sm: 3, md: 2 }}>
+          <Grid key={pod._id} size={{ xs: 4, sm: 3, md: 2 }}>
             <Card
               orientation='vertical'
               imgSrc={pod.imageUrl || ''}
