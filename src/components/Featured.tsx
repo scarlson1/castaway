@@ -20,7 +20,7 @@ interface CarouselItemProps {
 const Carousel = ({ items }: { items: CarouselItemProps[] }) => {
   const [emblaRef, emblaApi] = useEmblaCarousel(
     { loop: true, containScroll: false },
-    [Autoplay({ delay: 10000 })]
+    [Autoplay({ delay: 10000 })],
   );
 
   const scrollPrev = useCallback(() => {
@@ -109,12 +109,12 @@ function CarouselItem({
           // flexShrink: 0,
           // flexBasis: { xs: '80px', sm: '100px', md: '140px', lg: '180px' },
           flex: {
-            xs: '0 0 100px',
+            xs: '0 0 140px',
             sm: '0 0 160px',
             md: '0 0 200px',
             lg: '0 0 240px',
           },
-          width: { xs: 100, sm: 160, md: 200, lg: 240 },
+          width: { xs: 140, sm: 160, md: 200, lg: 240 },
           height: 'auto',
           borderRadius: 1, // { xs: 1, md: 2 },
           '& > img': { width: '100%', borderRadius: 'inherit' },
@@ -157,7 +157,7 @@ function CarouselItem({
 
 export const Featured = () => {
   const { data } = useSuspenseQuery(
-    convexQuery(api.podcasts.recentlyUpdated, {})
+    convexQuery(api.podcasts.recentlyUpdated, {}),
   );
 
   const items = useMemo(
@@ -172,7 +172,7 @@ export const Featured = () => {
           params: { podId: pod.podcastId },
         } as LinkProps,
       })),
-    [data]
+    [data],
   );
 
   return <Carousel items={items} />;

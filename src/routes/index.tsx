@@ -44,7 +44,7 @@ function Home() {
       >
         <Typography variant='h5'>Episodes you won't want to miss</Typography>
         <SignedIn>
-          <MuiButtonLink to='/podcasts/feed'>See more</MuiButtonLink>
+          <MuiButtonLink to='/podcasts/feed'>See&nbsp;more</MuiButtonLink>
         </SignedIn>
       </Box>
       <RecentSubscribedEpisodes />
@@ -165,7 +165,7 @@ function Home() {
 
 function RecentSubscribedEpisodes() {
   const { data } = useQuery(
-    convexQuery(api.episodes.unauthedRecentEpisodes, { limit: 8 })
+    convexQuery(api.episodes.unauthedRecentEpisodes, { limit: 8 }),
   );
 
   // TODO: change UI to larger image cards with single row scroll

@@ -124,6 +124,8 @@ export default function AudioPlayer({
           position: { xs: 'absolute', sm: 'static' },
           left: { xs: 0, sm: 'auto' },
           right: { xs: 0, sm: 'auto' },
+          // direction: ''
+          flexDirection: { xs: 'row-reverse', sm: 'row' },
         }}
       >
         <ErrorBoundary fallback={<div />}>

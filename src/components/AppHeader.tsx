@@ -187,7 +187,7 @@ export function AppHeader() {
           {/* <DeferredAppSearch /> */}
           <ModeToggle />
           <SignedIn>
-            <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
+            <Box sx={{ display: { xs: 'none', md: 'block' } }}>
               <UserButton />
             </Box>
           </SignedIn>
