@@ -19,7 +19,7 @@ import { Doc, Id } from './_generated/dataModel';
  */
 export const userLoginStatus = query(
   async (
-    ctx
+    ctx,
   ): Promise<
     | ['No JWT Token', null]
     | ['No Clerk User', null]
@@ -37,7 +37,7 @@ export const userLoginStatus = query(
       return ['No Clerk User', null];
     }
     return ['Logged In', user];
-  }
+  },
 );
 
 /** The current user, containing user preferences and Clerk user info. */
@@ -54,7 +54,6 @@ export const getUser = internalQuery({
 /** Create a new Clerk user or update existing Clerk user data. */
 export const updateOrCreateUser = internalMutation({
   args: { data: v.any() }, // no runtime validation, trust Clerk
-  // async handler(ctx, { clerkUser }: { clerkUser: UserJSON }) {
   async handler(ctx, { data: clerkUser }: { data: UserJSON }) {
     const userRecord = await userByClerkId(ctx, clerkUser.id);
 
@@ -151,7 +150,7 @@ export const deleteUser = internalMutation({
 
 export async function userByClerkId(
   ctx: QueryCtx,
-  clerkUserId: string
+  clerkUserId: string,
 ): Promise<Doc<'users'> | null> {
   return await ctx.db
     .query('users')
@@ -161,7 +160,7 @@ export async function userByClerkId(
 
 export async function userById(
   ctx: QueryCtx,
-  id: Id<'users'>
+  id: Id<'users'>,
 ): Promise<Doc<'users'> | null> {
   // ): Promise<(Omit<Doc<'users'>, 'clerkUser'> & { clerkUser: UserJSON }) | null> {
   return await ctx.db.get(id);

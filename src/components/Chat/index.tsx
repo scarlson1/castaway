@@ -78,7 +78,7 @@ export const Chat = ({ threadId }: { threadId: string }) => {
           overflowY: 'auto',
           py: 2,
           pb: {
-            xs: 'calc(var(--Castaway-bottom-nav-height) + var(--Castaway-audio-player-height, 0px) + 80px)',
+            xs: `${inputBottom + 80}px`,
             md: 2,
           },
         }}
