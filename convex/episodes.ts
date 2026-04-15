@@ -463,18 +463,15 @@ export const fetchNewEpisodes = internalAction({
 
 export const fetchPodcastForRefresh = internalQuery({
   handler: async ({ db }) => {
-    // TODO: only poll pods with active subscriptions
-    // const podcastsToPoll = await db.query("subscriptions")
-    //   .groupBy("podcastId")
-    //   .filter(p => subscriberCount > 0)
-    // TODO: remove limit ?? or set interval to be shorter than cron
-    return await db
-      .query('podcasts')
-      .filter((q) =>
-        q.gt(q.sub(Date.now(), q.field('lastFetchedAt')), POLL_INTERVAL)
-      )
-      // .filter((q) => Date.now() - (q.lastFetchedAt || 0) > POLL_INTERVAL)
-      .take(50);
+    const subs = await db.query('subscriptions').collect();
+    if (!subs.length) return [];
+
+    const uniqueConvexIds = [...new Set(subs.map((s) => s.podConvexId))];
+    const pods = (await getAll(db, uniqueConvexIds)).filter(isNotNullish);
+
+    return pods
+      .filter((p) => Date.now() - p.lastFetchedAt > POLL_INTERVAL)
+      .slice(0, 50);
   },
 });
 
@@ -549,6 +546,98 @@ export const cleanUpEpisodeDelete = mutation({
     );
 
     await Promise.all(promises);
+  },
+});
+
+export const getPodcastsWithNoSubscriptions = internalQuery({
+  handler: async ({ db }) => {
+    const [pods, subs] = await Promise.all([
+      db.query('podcasts').collect(),
+      db.query('subscriptions').collect(),
+    ]);
+    const subscribedGuids = new Set(subs.map((s) => s.podcastId));
+    return pods
+      .filter((p) => !subscribedGuids.has(p.podcastId))
+      .map((p) => p.podcastId);
+  },
+});
+
+export const deleteEpisodesForPodcast = internalMutation({
+  args: { podcastId: v.string(), limit: v.optional(v.number()) },
+  handler: async (ctx, { podcastId, limit = 100 }) => {
+    const episodes = await ctx.db
+      .query('episodes')
+      .withIndex('by_podId', (q) => q.eq('podcastId', podcastId))
+      .take(limit);
+
+    const episodeIds: string[] = [];
+    for (const ep of episodes) {
+      episodeIds.push(ep.episodeId);
+      if (ep.embeddingId) await ctx.db.delete(ep.embeddingId);
+      await ctx.db.delete(ep._id);
+    }
+
+    return { episodeIds, hasMore: episodes.length === limit };
+  },
+});
+
+// Like cleanUpEpisodeDelete but preserves user_playback records
+export const cleanUpEpisodesRelated = internalMutation({
+  args: { episodeGuids: v.array(v.string()) },
+  handler: async (ctx, { episodeGuids }) => {
+    for (const episodeId of episodeGuids) {
+      const ads = await getAdsByEpisodeId(ctx.db, episodeId);
+      for (const ad of ads) await ctx.db.delete(ad._id);
+
+      const adJobs = await getAdJobsByEpisodeId(ctx.db, episodeId);
+      for (const adJob of adJobs) await ctx.db.delete(adJob._id);
+
+      const stats = await getEpisodeWithPlayCount(ctx.db, episodeId, 0);
+      if (stats?._id) await ctx.db.delete(stats._id);
+    }
+  },
+});
+
+export const pruneUnsubscribedPodcastEpisodes = internalAction({
+  handler: async (ctx) => {
+    const unsubPodIds: string[] = await ctx.runQuery(
+      internal.episodes.getPodcastsWithNoSubscriptions
+    );
+
+    if (!unsubPodIds.length) {
+      console.log('No unsubscribed podcasts to prune');
+      return;
+    }
+
+    let totalDeleted = 0;
+    for (const podcastId of unsubPodIds) {
+      let hasMore = true;
+      while (hasMore) {
+        const { episodeIds, hasMore: more } = await ctx.runMutation(
+          internal.episodes.deleteEpisodesForPodcast,
+          { podcastId }
+        );
+
+        if (episodeIds.length) {
+          await ctx.runMutation(internal.episodes.cleanUpEpisodesRelated, {
+            episodeGuids: episodeIds,
+          });
+          for (const episodeId of episodeIds) {
+            await ctx.scheduler.runAfter(0, internal.rag.deleteByKey, {
+              key: episodeId,
+              noThrow: true,
+            });
+          }
+        }
+
+        totalDeleted += episodeIds.length;
+        hasMore = more;
+      }
+    }
+
+    console.log(
+      `Pruned episodes from ${unsubPodIds.length} unsubscribed podcasts (${totalDeleted} total)`
+    );
   },
 });
 
