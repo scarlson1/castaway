@@ -19,7 +19,7 @@ const NAV_ITEMS = [
 const SIGNED_IN_ITEMS = [
   { label: 'New', to: '/podcasts/feed', icon: <ListRounded /> },
   {
-    label: 'In Progress',
+    label: 'Up Next',
     to: '/podcasts/progress',
     icon: <PlaylistPlayRounded />,
   },
