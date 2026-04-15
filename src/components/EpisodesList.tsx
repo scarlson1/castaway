@@ -16,8 +16,9 @@ import {
 } from '@mui/material';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { EpisodeRow } from '~/components/EpisodeRow';
+import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 
 // TODO: separate results from episodes title ??
@@ -41,6 +42,21 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
     { podId },
     { initialNumItems: pageSize }
   );
+
+  // If the DB cache was pruned, fetch fresh episodes from the Podcast Index API
+  const { mutate: refresh, isPending: isRefreshing } = useMutation({
+    mutationFn: useConvexAction(api.episodes.refreshByPodId),
+  });
+
+  useEffect(() => {
+    if (status === 'Exhausted' && results.length === 0) {
+      refresh({ podId });
+    }
+  }, [status, results.length, podId]);
+
+  if (isRefreshing || (status === 'Exhausted' && results.length === 0)) {
+    return <SuspenseEpisodeList numItems={8} />;
+  }
 
   return (
     <>

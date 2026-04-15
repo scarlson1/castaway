@@ -18,7 +18,21 @@ crons.monthly(
   {},
 );
 
-// TODO: delete episode embeddings after X date ?? Hitting free tier limits
+// Delete episodeEmbeddings older than 4 weeks (and their RAG entries)
+crons.weekly(
+  'prune old episode embeddings',
+  { dayOfWeek: 'sunday', hourUTC: 3, minuteUTC: 0 },
+  internal.episodeEmbeddings.pruneOldEpisodeEmbeddings,
+  {},
+);
+
+// Delete episodes (and related records) for podcasts nobody subscribes to
+crons.weekly(
+  'prune unsubscribed podcast episodes',
+  { dayOfWeek: 'saturday', hourUTC: 3, minuteUTC: 0 },
+  internal.episodes.pruneUnsubscribedPodcastEpisodes,
+  {},
+);
 
 // compute user topic embedding for recommendations
 // crons.daily('user episode preference', {}, internal.)

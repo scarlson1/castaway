@@ -323,6 +323,82 @@ export const embedNewEpisodes = internalAction({
 //   },
 // });
 
+export const getOldEmbeddings = internalQuery({
+  args: { cutoff: v.number(), limit: v.optional(v.number()) },
+  handler: async (ctx, { cutoff, limit = 200 }) => {
+    return await ctx.db
+      .query('episodeEmbeddings')
+      .withIndex('by_creation_time', (q) => q.lt('_creationTime', cutoff))
+      .take(limit);
+  },
+});
+
+export const deleteEmbeddingsBatch = internalMutation({
+  args: {
+    items: v.array(
+      v.object({
+        embeddingId: v.id('episodeEmbeddings'),
+        episodeConvexId: v.id('episodes'),
+      })
+    ),
+  },
+  handler: async (ctx, { items }) => {
+    for (const { embeddingId, episodeConvexId } of items) {
+      const embedding = await ctx.db.get(embeddingId);
+      if (embedding) await ctx.db.delete(embeddingId);
+
+      const episode = await ctx.db.get(episodeConvexId);
+      if (episode?.embeddingId) await ctx.db.patch(episodeConvexId, { embeddingId: undefined });
+    }
+  },
+});
+
+const FOUR_WEEKS_MS = 28 * 24 * 60 * 60 * 1000;
+
+export const pruneOldEpisodeEmbeddings = internalAction({
+  args: { batchSize: v.optional(v.number()) },
+  handler: async (ctx, { batchSize = 200 }) => {
+    const cutoff = Date.now() - FOUR_WEEKS_MS;
+
+    const old = await ctx.runQuery(
+      internal.episodeEmbeddings.getOldEmbeddings,
+      { cutoff, limit: batchSize }
+    );
+
+    if (!old.length) {
+      console.log('No old episode embeddings to prune');
+      return { deleted: 0 };
+    }
+
+    await ctx.runMutation(internal.episodeEmbeddings.deleteEmbeddingsBatch, {
+      items: old.map((e) => ({
+        embeddingId: e._id,
+        episodeConvexId: e.episodeConvexId,
+      })),
+    });
+
+    for (const embedding of old) {
+      await ctx.scheduler.runAfter(0, internal.rag.deleteByKey, {
+        key: embedding.episodeGuid,
+        noThrow: true,
+      });
+    }
+
+    console.log(`Pruned ${old.length} episode embeddings older than 4 weeks`);
+
+    // Schedule another run if there may be more
+    if (old.length === batchSize) {
+      await ctx.scheduler.runAfter(
+        0,
+        internal.episodeEmbeddings.pruneOldEpisodeEmbeddings,
+        { batchSize }
+      );
+    }
+
+    return { deleted: old.length };
+  },
+});
+
 // run periodically (cron job) to ensure all episodes are embedded
 // TODO: change to internal & run as cron job
 export const bulkEmbedEpisodes = action({
