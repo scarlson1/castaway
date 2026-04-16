@@ -178,8 +178,8 @@ async function saveNewPod(
 }
 
 const BASE_API_URL = 'https://api.podcastindex.org/api/1.0'; // replace with your base URL
-const key = process.env.PODCAST_INDEX_KEY;
-const secret = process.env.PODCAST_INDEX_SECRET;
+const key = process.env.PODCAST_INDEX_KEY!;
+const secret = process.env.PODCAST_INDEX_SECRET!;
 const userAgent = 'CastawayPod/0.1';
 
 async function sha1Hex(input: string): Promise<string> {

@@ -3,7 +3,9 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "convex/*": ["./*"]
+      "convex/*": ["./*"],
+      "~/*": ["../src/*"]
     }
-  }
+  },
+  "exclude": ["__tests__"]
 }
