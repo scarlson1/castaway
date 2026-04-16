@@ -54,7 +54,7 @@ export const fetchRecentEpisodes = createServerFn()
     return results.items;
   });
 
-const fetchRandomEpisodesOptions = z.object({
+export const fetchRandomEpisodesOptions = z.object({
   max: z.number().optional(),
   lang: z.string().optional(),
   cat: z.string().optional(),

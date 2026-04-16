@@ -86,26 +86,35 @@ type PodIndexPath = z.infer<typeof PodIndexPath>;
 
 const qs = (o: ParsedUrlQueryInput = {}) => '?' + querystring.stringify(o);
 
-const withResponse = <T>(response) => {
-  // Check for success or failure and create a predictable error response
-  let body = response.body;
-  // if response.statusCode == 200?
+export function processApiResponse<T>(response: {
+  statusCode: number;
+  body: unknown;
+}): T {
+  const body = response.body;
   if (
     response.statusCode === 500 ||
-    (body.hasOwnProperty('status') && body.status === 'false')
+    (typeof body === 'object' &&
+      body !== null &&
+      'status' in body &&
+      (body as Record<string, unknown>).status === 'false')
   ) {
-    // Failed
-    if (body.hasOwnProperty('description')) {
-      // Error message from server API
-      throw { message: body.description, code: response.statusCode };
+    if (
+      typeof body === 'object' &&
+      body !== null &&
+      'description' in body
+    ) {
+      throw {
+        message: (body as Record<string, unknown>).description,
+        code: response.statusCode,
+      };
     } else {
       throw { message: 'Request failed.', code: response.statusCode };
     }
-  } else {
-    // Success // 200
-    return body as T;
   }
-};
+  return body as T;
+}
+
+const withResponse = <T>(response): T => processApiResponse<T>(response);
 
 export default (
   key: string,
