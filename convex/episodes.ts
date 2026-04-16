@@ -56,7 +56,7 @@ export const feed = query({
       if (podcastIds.length === 0) return [];
 
       const episodesPromises = podcastIds.map((podcastId) =>
-        getRecentEpisodes(db, podcastId, 5)
+        getRecentEpisodes(db, podcastId, 5),
       );
 
       const episodesArrays = await Promise.all(episodesPromises);
@@ -87,8 +87,8 @@ export const getRecentFeed = query({
           publishedAt: v.optional(v.number()),
           episodeId: v.optional(v.id('episodes')),
         }),
-        v.null()
-      )
+        v.null(),
+      ),
     ),
   },
   handler: async ({ db, auth }, { pageSize = 10, cursor }) => {
@@ -110,7 +110,7 @@ export const getRecentFeed = query({
         // If cursor exists, apply "start after" filter
         if (cursor?.publishedAt) {
           q = q.filter((x) =>
-            x.lt(x.field('publishedAt'), cursor.publishedAt as number)
+            x.lt(x.field('publishedAt'), cursor.publishedAt as number),
           );
           // q = q.filter(ep =>
           //   ep.publishedAt < cursor.publishedAt ||
@@ -120,7 +120,7 @@ export const getRecentFeed = query({
         }
 
         return q.take(Math.ceil(pageSize / subscriptions.length) * 2); // small per-podcast request
-      })
+      }),
     );
 
     // Merge + sort from all podcasts
@@ -166,7 +166,7 @@ export const recentlyUpdatedUserSubscribed = query({
     if (podcastIds.length === 0) return [];
 
     const episodesPromises = podcastIds.map((podcastId) =>
-      getRecentEpisodes(db, podcastId, 5)
+      getRecentEpisodes(db, podcastId, 5),
     );
 
     const episodesArrays = await Promise.all(episodesPromises);
@@ -232,12 +232,12 @@ export const saveEpisodes = internalMutation({
     }: {
       episodes: (EpisodeItem & { podcastTitle?: string })[];
       podcastTitle?: string;
-    }
+    },
   ) => {
     // Insert in a loop. This is efficient because Convex queues all the changes
     // to be executed in a single transaction when the mutation ends.
     console.log(
-      `adding ${episodes.length} episodes to the database [${podcastTitle}]`
+      `adding ${episodes.length} episodes to the database [${podcastTitle}]`,
     );
     const episodeIds: Id<'episodes'>[] = [];
     for (const episode of episodes) {
@@ -247,7 +247,7 @@ export const saveEpisodes = internalMutation({
       episodeIds.push(id);
     }
     console.log(
-      `finished adding ${episodes.length} episodes of ${podcastTitle}`
+      `finished adding ${episodes.length} episodes of ${podcastTitle}`,
     );
 
     if (episodeIds.length) {
@@ -281,7 +281,7 @@ export const fetchEmbResults = internalQuery({
         ctx.db
           .query('episodes')
           .withIndex('by_embedding', (q) => q.eq('embeddingId', id))
-          .first()
+          .first(),
       );
     }
     const results = await Promise.all(promises);
@@ -296,7 +296,7 @@ export const refreshByPodId = action({
     // TODO: REFACTOR INTO HELPER FUNCTION - SAME AS fetchNewEpisodes
     let mostRecentEpisode = await ctx.runQuery(
       internal.episodes.getMostRecentEpisode,
-      { podcastId: podId }
+      { podcastId: podId },
     );
     // TODO: handle no recent episode (for title)
     if (!mostRecentEpisode) return { newEpisodes: 0 };
@@ -307,7 +307,7 @@ export const refreshByPodId = action({
     let newEpisodes = await fetchPodEpisodesFromIndex(podId, queryOptions);
 
     console.log(
-      `${newEpisodes.length} new episodes found (${mostRecentEpisode?.podcastTitle})`
+      `${newEpisodes.length} new episodes found (${mostRecentEpisode?.podcastTitle})`,
     );
 
     let eps = newEpisodes.map((e) => ({
@@ -330,7 +330,7 @@ export const updatePods = internalMutation({
         podId: v.id('podcasts'),
         lastFetchedAt: v.number(),
         mostRecentEpisode: v.optional(v.number()),
-      })
+      }),
     ),
   },
   handler: async ({ db }, { updates }) => {
@@ -372,7 +372,7 @@ export const fetchNewEpisodes = internalAction({
   handler: async (ctx) => {
     // fetch podcasts with a last updated date of less than X
     const pods: Doc<'podcasts'>[] = await ctx.runQuery(
-      internal.episodes.fetchPodcastForRefresh
+      internal.episodes.fetchPodcastForRefresh,
     );
 
     let newEpisodesQueue: (EpisodeItem & { podcastTitle: string })[] = [];
@@ -388,16 +388,19 @@ export const fetchNewEpisodes = internalAction({
     for (let pod of pods) {
       let mostRecentEpisode = await ctx.runQuery(
         internal.episodes.getMostRecentEpisode,
-        { podcastId: pod.podcastId }
+        { podcastId: pod.podcastId },
       );
 
       let queryOptions = {};
-      let since = (mostRecentEpisode?.publishedAt || 0) / 1000 + 1;
+      let since = (mostRecentEpisode?.publishedAt || 0) / 1000; //  + 1;
       if (since) queryOptions = { since: String(since) };
-      let newEpisodes = await fetchPodEpisodesFromIndex(
-        pod.podcastId,
-        queryOptions
-      );
+      let newEpisodes: EpisodeItem[];
+      try {
+        newEpisodes = await fetchPodEpisodesFromIndex(pod.podcastId, queryOptions);
+      } catch (err) {
+        console.error(`Failed to fetch episodes for ${pod.title} (${pod.podcastId}): ${err}`);
+        continue;
+      }
 
       console.log(`${newEpisodes.length} new episodes found (${pod.title})`);
 
@@ -510,7 +513,7 @@ export const deleteOldEpisodes = mutation({
       console.log(`deleted ${episodes.length} episodes`);
     } else {
       console.log(
-        `no episodes found older than ${new Date(since).toDateString()}`
+        `no episodes found older than ${new Date(since).toDateString()}`,
       );
     }
   },
@@ -542,7 +545,7 @@ export const cleanUpEpisodeDelete = mutation({
       // }))
     }
     console.log(
-      `cleaning up ${promises.length} related records for ${episodeGuids.length} deleted episodes`
+      `cleaning up ${promises.length} related records for ${episodeGuids.length} deleted episodes`,
     );
 
     await Promise.all(promises);
@@ -601,7 +604,7 @@ export const cleanUpEpisodesRelated = internalMutation({
 export const pruneUnsubscribedPodcastEpisodes = internalAction({
   handler: async (ctx) => {
     const unsubPodIds: string[] = await ctx.runQuery(
-      internal.episodes.getPodcastsWithNoSubscriptions
+      internal.episodes.getPodcastsWithNoSubscriptions,
     );
 
     if (!unsubPodIds.length) {
@@ -615,7 +618,7 @@ export const pruneUnsubscribedPodcastEpisodes = internalAction({
       while (hasMore) {
         const { episodeIds, hasMore: more } = await ctx.runMutation(
           internal.episodes.deleteEpisodesForPodcast,
-          { podcastId }
+          { podcastId },
         );
 
         if (episodeIds.length) {
@@ -636,7 +639,7 @@ export const pruneUnsubscribedPodcastEpisodes = internalAction({
     }
 
     console.log(
-      `Pruned episodes from ${unsubPodIds.length} unsubscribed podcasts (${totalDeleted} total)`
+      `Pruned episodes from ${unsubPodIds.length} unsubscribed podcasts (${totalDeleted} total)`,
     );
   },
 });
@@ -644,7 +647,7 @@ export const pruneUnsubscribedPodcastEpisodes = internalAction({
 async function getRecentEpisodes(
   db: QueryCtx['db'],
   podId: string,
-  limit = 10
+  limit = 10,
 ) {
   return await db
     .query('episodes')
@@ -655,7 +658,7 @@ async function getRecentEpisodes(
 
 export async function fetchPodEpisodesFromIndex(
   podcastId: string,
-  options: { max?: string; since?: string; fulltext?: string } = {}
+  options: { max?: string; since?: string; fulltext?: string } = {},
 ) {
   const params = new URLSearchParams({
     guid: podcastId,
@@ -664,7 +667,7 @@ export async function fetchPodEpisodesFromIndex(
     ...options,
   });
   const res = await api<EpisodesByPodGuidResult>(
-    `episodes/bypodcastguid?${params}`
+    `episodes/bypodcastguid?${params}`,
   );
 
   if (typeof res.body === 'string' || !res.body.items)
@@ -674,7 +677,7 @@ export async function fetchPodEpisodesFromIndex(
 
 function podIndexEpToConvexEp(
   ep: EpisodeItem,
-  podcastTitle?: string
+  podcastTitle?: string,
 ): WithoutSystemFields<Doc<'episodes'>> {
   return {
     episodeId: ep.guid,
