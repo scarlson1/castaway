@@ -44,6 +44,7 @@ See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for details
   - truncate vector ?? openAI puts most important weights at the front
   -
 - fix cache - invalidate after subscribing / unsubscribing
+- tests
 
 - feedback score for ad segments
 - search ad segments with embedding before sending to classifier (only send if unsure whether segment is ad)
