@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "convex/*": ["./*"],
+      "~/*": ["../src/*"]
+    }
+  },
+  "exclude": ["__tests__"]
+}
