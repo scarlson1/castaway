@@ -15,6 +15,7 @@ import { VolumeControl } from '~/components/AudioPlayer/VolumeControl';
 import { MuiLink } from '~/components/MuiLink';
 import { useAudioPlayer } from '~/hooks/useAudioPlayer';
 import { useAudioStore } from '~/hooks/useAudioStore';
+import { useMediaSession } from '~/hooks/useMediaSession';
 
 const Widget = styled('div')(({ theme }) => ({
   padding: 16,
@@ -91,6 +92,19 @@ export default function AudioPlayer({
     isPlaying,
     episodeId,
   } = useAudioPlayer();
+  // sync so it appears in MacOS "now playing" top bar menu
+  useMediaSession({
+    title,
+    artist: podName,
+    album: podName,
+    artwork: coverArt,
+    play,
+    pause,
+    seek,
+    position,
+    duration,
+    rate,
+  });
 
   // trigger on id/src change, but not dbPlayback
   const loadNewAudio = useEffectEvent((id, src) => {
