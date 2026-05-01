@@ -1,9 +1,13 @@
 name: Test
 
 on:
-  push:
-    branches: [main, dev]
   pull_request:
+    branches:
+      - main
+    paths:
+      - 'convex/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
 
 jobs:
   test:

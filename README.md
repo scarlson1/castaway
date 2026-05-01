@@ -4,10 +4,10 @@
 
 - subscribe to podcasts
 - transcribe episodes
-- identify ads
+- AI ad identification
 - personalized recommendations (vector search)
-- trending / discovery
 - AI chat with RAG tooling
+- trending / discovery
 
 ---
 

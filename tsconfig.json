@@ -6,7 +6,7 @@
     "target": "ES2022",
     "skipLibCheck": true,
     "strictNullChecks": true,
-
+    "noEmit": true,
     "baseUrl": ".",
     "paths": {
       "~/*": ["./src/*"]
