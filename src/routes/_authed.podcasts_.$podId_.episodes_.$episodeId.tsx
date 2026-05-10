@@ -481,12 +481,12 @@ function AdJobs({ episodeId }: { episodeId: string }) {
     convexQuery(api.adJobs.getByEpisodeId, { episodeId }),
   );
 
-  if (!data?.length) return <Typography>No classification jobs</Typography>;
-
   const sorted = useMemo(
-    () => data.sort((a, b) => b._creationTime - a._creationTime),
+    () => data?.sort((a, b) => b._creationTime - a._creationTime),
     [data],
   );
+
+  if (!data?.length) return <Typography>No classification jobs</Typography>;
 
   return (
     <Stack spacing={1} divider={<Divider flexItem />}>
