@@ -110,6 +110,7 @@ function RouteComponent() {
 
   if (!data) throw new Error('podcast not found');
 
+  // TODO: show album to the left on small screens with pod, title, play button to right
   return (
     <>
       <Stack
@@ -157,7 +158,10 @@ function RouteComponent() {
           direction='column'
           spacing={1}
           sx={{
-            alignItems: 'flex-start',
+            alignItems: {
+              xs: 'center',
+              sm: 'flex-start',
+            },
             maxHeight: {
               xs: 220,
               sm: 200,

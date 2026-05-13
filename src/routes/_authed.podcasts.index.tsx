@@ -51,7 +51,7 @@ function RouteComponent() {
         <Typography variant='h4' gutterBottom>
           My Podcasts
         </Typography>
-        <FormControl variant='standard' fullWidth sx={{ maxWidth: 200 }}>
+        <FormControl variant='standard' fullWidth sx={{ maxWidth: 180 }}>
           <InputLabel id='sort-pod-label'>Sort by</InputLabel>
           <Select
             labelId='sort-pod-label'
