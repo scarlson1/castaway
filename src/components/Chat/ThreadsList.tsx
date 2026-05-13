@@ -14,7 +14,6 @@ import {
   ListItem,
   ListItemButton,
   ListItemIcon,
-  ListItemText,
   Menu,
   MenuItem,
   TextField,
@@ -66,12 +65,13 @@ export const ThreadsList = ({ onSelect }: { onSelect?: () => void }) => {
     );
 
   return (
-    <List dense>
+    <List dense disablePadding sx={{ px: 1 }}>
       {results.map((t) => (
         <ChatListItem
           key={t._id}
           threadId={t._id}
           title={t.title || 'New chat'}
+          createdAt={t._creationTime}
           selected={currentChatId === t._id}
           onRename={(threadId, title) => overrideTitle({ threadId, title })}
           onDelete={(threadId) => deleteThread({ threadId })}
@@ -80,10 +80,12 @@ export const ThreadsList = ({ onSelect }: { onSelect?: () => void }) => {
       {status !== 'Exhausted' ? (
         <ListItemButton
           onClick={() => loadMore(5)}
-          // loading={status === 'LoadingMore'}
           disabled={status !== 'CanLoadMore'}
+          sx={{ borderRadius: 0.75, px: 1.25, py: 0.75 }}
         >
-          <ListItemText primary='Load more' />
+          <Typography sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'text.disabled' }}>
+            Load more
+          </Typography>
         </ListItemButton>
       ) : null}
     </List>
@@ -93,15 +95,28 @@ export const ThreadsList = ({ onSelect }: { onSelect?: () => void }) => {
 interface ChatListItemProps {
   threadId: string;
   title: string;
+  createdAt?: number;
   selected?: boolean;
   onRename: (threadId: string, newTitle: string) => void;
   onDelete: (threadId: string) => void;
   onSelect?: () => void;
 }
 
+function formatThreadAge(ms?: number) {
+  if (!ms) return '';
+  const diff = Date.now() - ms;
+  const mins = Math.floor(diff / 60000);
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  return `${days}d`;
+}
+
 export function ChatListItem({
   threadId,
   title,
+  createdAt,
   selected,
   onRename,
   onDelete,
@@ -170,11 +185,19 @@ export function ChatListItem({
             params: { threadId },
           });
         }}
-        sx={{
-          borderRadius: 1,
-          px: 1.5,
-          '&.MuiListItemButton-root': { pr: '30px' },
-        }}
+        sx={[
+          {
+            borderRadius: 0.75,
+            px: 1.25,
+            py: 0.75,
+            '&.MuiListItemButton-root': { pr: '28px' },
+            '&.Mui-selected': {
+              bgcolor: 'text.primary',
+              color: 'background.default',
+              '&:hover': { bgcolor: 'text.primary' },
+            },
+          },
+        ]}
       >
         {isRenaming ? (
           <TextField
@@ -189,17 +212,28 @@ export function ChatListItem({
               if (e.key === 'Enter') commitRename();
               if (e.key === 'Escape') cancelRename();
             }}
-            slotProps={{
-              input: { disableUnderline: false },
-            }}
+            slotProps={{ input: { disableUnderline: false } }}
           />
         ) : (
-          <ListItemText
-            primary={title}
-            slotProps={{
-              primary: { noWrap: true, fontSize: 14 },
-            }}
-          />
+          <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+            <Typography
+              noWrap
+              sx={{ fontSize: 12, flex: '1 1 auto', minWidth: 0 }}
+            >
+              {title}
+            </Typography>
+            <Typography
+              sx={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 9,
+                color: selected ? 'inherit' : 'text.disabled',
+                flexShrink: 0,
+                opacity: 0.7,
+              }}
+            >
+              {formatThreadAge(createdAt)}
+            </Typography>
+          </Box>
         )}
       </ListItemButton>
 

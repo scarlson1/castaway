@@ -109,13 +109,11 @@ export function PlaybackButton({
     <Box
       sx={{
         position: 'relative',
-        ml: 2,
-        height: circleSize, // iconButtonSize,
-        width: circleSize, // iconButtonSize,
+        height: circleSize,
+        width: circleSize,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        // color,
       }}
     >
       <CircularProgress

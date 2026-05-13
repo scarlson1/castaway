@@ -29,6 +29,10 @@ export function AppSidebar() {
 
   const visibleLinks = NAV_LINKS.filter((l) => !l.auth || isAuthenticated);
 
+  const activeTo = [...visibleLinks]
+    .sort((a, b) => b.to.length - a.to.length)
+    .find(({ to }) => matchRoute({ to, fuzzy: true }))?.to;
+
   return (
     <Box
       component='aside'
@@ -98,7 +102,7 @@ export function AppSidebar() {
           Workspace
         </Typography>
         {visibleLinks.map(({ label, to, key }) => {
-          const isActive = Boolean(matchRoute({ to, fuzzy: true }));
+          const isActive = to === activeTo;
           return (
             <MuiLink
               key={to}

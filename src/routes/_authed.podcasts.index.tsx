@@ -39,19 +39,24 @@ function RouteComponent() {
   }, [data, sort]);
 
   return (
-    <Box>
+    <Box sx={{ pt: { xs: 2, md: 3 } }}>
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          pb: 2,
+          alignItems: 'flex-end',
+          mb: 3,
         }}
       >
-        <Typography variant='h4' gutterBottom>
-          My Podcasts
-        </Typography>
-        <FormControl variant='standard' fullWidth sx={{ maxWidth: 180 }}>
+        <Box>
+          <Typography variant='h4' sx={{ mb: 0.5, letterSpacing: '-0.03em' }}>
+            Podcasts.
+          </Typography>
+          <Typography variant='body2' color='textSecondary'>
+            Your subscriptions
+          </Typography>
+        </Box>
+        <FormControl variant='standard' sx={{ minWidth: 120 }}>
           <InputLabel id='sort-pod-label'>Sort by</InputLabel>
           <Select
             labelId='sort-pod-label'
@@ -59,6 +64,7 @@ function RouteComponent() {
             value={sort}
             label='Sort by'
             onChange={(e) => setSort(e.target.value)}
+            sx={{ fontSize: 13 }}
           >
             <MenuItem value={''}>Default</MenuItem>
             <MenuItem value={'recent'}>Recent</MenuItem>
@@ -68,8 +74,8 @@ function RouteComponent() {
       </Box>
 
       {sorted.length === 0 ? (
-        <Stack direction='column' spacing={2} sx={{ alignItems: 'center' }}>
-          <Typography variant='subtitle1'>
+        <Stack direction='column' spacing={2} sx={{ alignItems: 'center', py: 8 }}>
+          <Typography variant='subtitle1' color='textSecondary'>
             Your followed podcasts will show up here
           </Typography>
           <MuiButtonLink to='/discover' variant='contained'>

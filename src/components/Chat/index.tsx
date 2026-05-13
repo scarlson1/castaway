@@ -1,10 +1,12 @@
-import { useUIMessages } from '@convex-dev/agent/react';
+import { optimisticallySendMessage, useUIMessages } from '@convex-dev/agent/react';
+import { ArrowForwardRounded } from '@mui/icons-material';
 import {
   Box,
+  Button,
   CircularProgress,
-  Container,
-  FormControlLabel,
-  Switch,
+  IconButton,
+  TextField,
+  Tooltip,
   Typography,
 } from '@mui/material';
 import { api } from 'convex/_generated/api';
@@ -13,28 +15,18 @@ import 'highlight.js/styles/github.css';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MessageList } from '~/components/Chat/MessageList';
-import { SendMessage } from '~/components/Chat/SendMessage';
-import { StreamingSendMessage } from '~/components/Chat/StreamingSendMessage';
-import { useQueueStore } from '~/hooks/useQueueStore';
 
 export const Chat = ({ threadId }: { threadId: string }) => {
-  const [stream, setStream] = useState(true);
+  const [message, setMessage] = useState('');
+
   const {
     results: messages,
     status,
     loadMore,
-    isLoading,
   } = useUIMessages(
     api.agent.streaming.listThreadMessages,
-    // stream
-    //   ? api.agent.streaming.listThreadMessages
-    //   : api.agent.chat.listThreadMessages,
     { threadId },
-    { initialNumItems: 10, stream },
-  );
-
-  const abortStreamByOrder = useMutation(
-    api.agent.streaming.abortStreamByOrder,
+    { initialNumItems: 20, stream: true },
   );
 
   const isStreaming = useMemo(
@@ -42,57 +34,117 @@ export const Chat = ({ threadId }: { threadId: string }) => {
     [messages],
   );
 
-  const handleAbortStream = useCallback(() => {
-    const order = messages.find((m) => m.status === 'streaming')?.order ?? 0;
-    void abortStreamByOrder({ threadId, order });
-  }, [messages]);
+  const abortStreamByOrder = useMutation(api.agent.streaming.abortStreamByOrder);
 
-  const handleChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      setStream(event.target.checked);
-    },
-    [],
+  const sendMessage = useMutation(
+    api.agent.streaming.initiateAsyncStreaming,
+  ).withOptimisticUpdate(
+    optimisticallySendMessage(api.agent.streaming.listThreadMessages),
   );
 
-  const isPlaying = useQueueStore((state) => Boolean(state.nowPlaying));
+  const handleAbort = useCallback(() => {
+    const order = messages.find((m) => m.status === 'streaming')?.order ?? 0;
+    void abortStreamByOrder({ threadId, order });
+  }, [messages, abortStreamByOrder, threadId]);
 
-  const AUDIO_PLAYER_HEIGHT = 73;
-  const BOTTOM_NAV_HEIGHT = 56;
-
-  const inputBottom = isPlaying
-    ? AUDIO_PLAYER_HEIGHT + BOTTOM_NAV_HEIGHT
-    : BOTTOM_NAV_HEIGHT;
+  const handleSubmit = useCallback(async () => {
+    const trimmed = message.trim();
+    if (!trimmed || isStreaming) return;
+    setMessage('');
+    await sendMessage({ threadId, prompt: trimmed });
+  }, [message, isStreaming, sendMessage, threadId]);
 
   return (
-    <Container
-      maxWidth='md'
+    <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
-        flex: 1,
+        height: '100%',
+        overflow: 'hidden',
       }}
     >
+      {/* Header */}
+      <Box
+        sx={[
+          {
+            flexShrink: 0,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            px: 2.5,
+            py: 1.25,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            bgcolor: 'background.paper',
+          },
+        ]}
+      >
+        <Typography
+          sx={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 11,
+            letterSpacing: '0.04em',
+            color: 'text.secondary',
+            flex: '1 1 auto',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          thread
+        </Typography>
+        <Box
+          sx={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 0.75,
+            px: 1,
+            py: 0.375,
+            bgcolor: 'action.selected',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 0.5,
+            flexShrink: 0,
+          }}
+        >
+          <Box
+            sx={{
+              width: 6,
+              height: 6,
+              borderRadius: '50%',
+              bgcolor: 'primary.main',
+              flexShrink: 0,
+            }}
+          />
+          <Typography
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            }}
+          >
+            My Library
+          </Typography>
+        </Box>
+      </Box>
+
+      {/* Messages */}
       <Box
         sx={{
           flex: 1,
-          overflowY: 'auto',
-          py: 2,
-          pb: {
-            xs: `${inputBottom + 80}px`,
-            md: 2,
-          },
+          overflow: 'hidden',
+          display: 'flex',
+          flexDirection: 'column',
+          px: { xs: 2, sm: 3 },
+          pt: 2,
         }}
       >
-        <FormControlLabel
-          control={<Switch checked={stream} onChange={handleChange} />}
-          label='Streaming'
-        />
         <ErrorBoundary
-          fallback={
-            <Typography color='error'>Error displaying thread</Typography>
-          }
+          fallback={<Typography color='error'>Error displaying thread</Typography>}
         >
-          <Suspense fallback={<CircularProgress />}>
+          <Suspense fallback={<Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress size={24} /></Box>}>
             <MessageList
               threadId={threadId}
               messages={messages}
@@ -102,50 +154,93 @@ export const Chat = ({ threadId }: { threadId: string }) => {
           </Suspense>
         </ErrorBoundary>
       </Box>
+
+      {/* Input row */}
       <Box
-        sx={{
-          pt: 2,
-          pb: 2,
-          px: { xs: 2, md: 0 },
-          borderTop: '1px solid',
-          borderColor: 'divider',
-          position: { xs: 'fixed', md: 'sticky' },
-          // bottom: 0, // 20,
-          bottom: {
-            // xs: 'calc(var(--Castaway-bottom-nav-height) + var(--Castaway-audio-player-height, 0px))',
-            xs: inputBottom,
-            md: 0,
-          },
-          display: 'flex',
-          gap: 1,
-          bgcolor: 'background.default',
-          zIndex: 1200,
-          left: { xs: 0, md: 'auto' },
-          right: { xs: 0, md: 'auto' },
+        component='form'
+        onSubmit={(e) => {
+          e.preventDefault();
+          handleSubmit();
         }}
+        sx={[
+          {
+            flexShrink: 0,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            p: 1.5,
+            display: 'flex',
+            gap: 1,
+            alignItems: 'flex-end',
+            bgcolor: 'background.paper',
+          },
+        ]}
       >
-        {stream ? (
-          <ErrorBoundary
-            fallback={<Typography color='error'>Error loading form</Typography>}
-          >
-            <Suspense>
-              <StreamingSendMessage
-                threadId={threadId}
-                abortStream={handleAbortStream}
-                isStreaming={isStreaming}
-              />
-            </Suspense>
-          </ErrorBoundary>
+        <TextField
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder='Ask your library...'
+          multiline
+          maxRows={4}
+          fullWidth
+          size='small'
+          autoFocus
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit();
+            }
+          }}
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              fontSize: 13,
+              bgcolor: 'background.default',
+              borderRadius: 0.75,
+            },
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: 'divider',
+            },
+          }}
+        />
+        {isStreaming ? (
+          <Tooltip title='Stop'>
+            <IconButton
+              onClick={handleAbort}
+              size='small'
+              sx={{
+                flexShrink: 0,
+                border: '1px solid',
+                borderColor: 'divider',
+                borderRadius: 0.75,
+                p: 0.875,
+                mb: 0.125,
+              }}
+            >
+              ⏹
+            </IconButton>
+          </Tooltip>
         ) : (
-          <ErrorBoundary
-            fallback={<Typography color='error'>Error loading form</Typography>}
+          <Button
+            type='submit'
+            variant='contained'
+            disabled={!message.trim()}
+            endIcon={<ArrowForwardRounded fontSize='small' />}
+            sx={{
+              flexShrink: 0,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 11,
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+              px: 1.75,
+              py: 0.875,
+              borderRadius: 0.75,
+              boxShadow: 'none',
+              '&:hover': { boxShadow: 'none' },
+            }}
           >
-            <Suspense>
-              <SendMessage threadId={threadId} />
-            </Suspense>
-          </ErrorBoundary>
+            Ask
+          </Button>
         )}
       </Box>
-    </Container>
+    </Box>
   );
 };
