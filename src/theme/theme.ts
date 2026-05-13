@@ -6,10 +6,16 @@ export const modeStorageKey = 'castaway-theme-mode';
 export const colorSchemeSelector = 'data';
 
 export const theme = createTheme({
-  colorSchemes: colorSchemes,
+  colorSchemes,
   cssVariables: { colorSchemeSelector, cssVarPrefix: '' },
-  shape: shape,
+  shape,
   typography: {
-    fontFamily: "'Roboto Variable', sans-serif",
+    fontFamily: "'Inter Tight', system-ui, sans-serif",
+    h1: { letterSpacing: '-0.03em' },
+    h2: { letterSpacing: '-0.025em' },
+    h3: { letterSpacing: '-0.02em' },
+    h4: { letterSpacing: '-0.02em', fontWeight: 600 },
+    h5: { letterSpacing: '-0.01em', fontWeight: 600 },
+    h6: { letterSpacing: '-0.01em', fontWeight: 600 },
   },
 });

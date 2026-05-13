@@ -40,10 +40,15 @@ export const Route = createFileRoute('/discover')({
 
 function RouteComponent() {
   return (
-    <Stack direction='column' spacing={3}>
-      <Typography variant='h4' component='h2' gutterBottom>
-        Discover
-      </Typography>
+    <Stack direction='column' spacing={3} sx={{ pt: { xs: 2, md: 3 } }}>
+      <Box>
+        <Typography variant='h4' component='h2' sx={{ mb: 0.5 }}>
+          Discover.
+        </Typography>
+        <Typography variant='body2' color='textSecondary'>
+          Hand-picked shows, episodes, and segments — not an endless feed.
+        </Typography>
+      </Box>
       <ErrorBoundary
         fallback={
           <Typography color='error'>
@@ -61,15 +66,34 @@ function RouteComponent() {
       <Stack
         direction='row'
         spacing={2}
-        sx={{ justifyContent: 'space-between', alignItems: 'center', my: 3 }}
+        sx={{ justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Typography variant='h6' gutterBottom>
+        <Typography variant='h6' sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
           Trending
+          <Box
+            component='span'
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.2em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+              px: 1,
+              py: 0.375,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 99,
+              fontWeight: 400,
+            }}
+          >
+            this week
+          </Box>
         </Typography>
         <MuiButtonLink
           to='/trending'
           size='small'
           endIcon={<ArrowForwardIos fontSize='small' />}
+          sx={{ fontSize: 12, color: 'text.secondary' }}
         >
           See all
         </MuiButtonLink>

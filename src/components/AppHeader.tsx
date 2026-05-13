@@ -21,16 +21,17 @@ import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 const Header = styled('header')(({ theme }) => [
   {
-    // position: 'sticky',
     position: 'fixed',
     width: '100%',
     top: 0,
     transition: theme.transitions.create('top'),
-    // zIndex: theme.zIndex.appBar,
     zIndex: theme.zIndex.drawer + 1,
     backgroundColor: 'rgba(255,255,255,0.6)',
     backdropFilter: 'blur(16px)',
     borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`,
+    [theme.breakpoints.up('md')]: {
+      display: 'none',
+    },
   } as const,
   theme.applyStyles('dark', {
     backdropFilter: 'blur(16px)',
@@ -119,12 +120,17 @@ export function AppHeader() {
   return (
     <Header>
       <GlobalStyles
-        styles={{
+        styles={(theme) => ({
           ':root': {
             '--Castaway-header-height': `${HEIGHT}px`,
-            '--Castaway-bottom-nav-height': '56px', // MUI default
+            '--Castaway-bottom-nav-height': '56px',
           },
-        }}
+          [theme.breakpoints.up('md')]: {
+            ':root': {
+              '--Castaway-header-height': '0px',
+            },
+          },
+        })}
       />
       <Container
         sx={{ display: 'flex', alignItems: 'center', minHeight: HEIGHT }}

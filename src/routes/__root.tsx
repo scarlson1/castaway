@@ -10,7 +10,6 @@ import { CacheProvider } from '@emotion/react';
 import fontsourceVariableRobotoCss from '@fontsource-variable/roboto?url';
 import {
   Box,
-  Container,
   CssBaseline,
   GlobalStyles,
   InitColorSchemeScript,
@@ -36,6 +35,7 @@ import { ErrorBoundary } from 'react-error-boundary';
 import castawayLogo from '~/assets/castaway-light.png';
 import { AppBottomNav } from '~/components/AppBottomNav';
 import { AppHeader } from '~/components/AppHeader';
+import { AppSidebar, SIDEBAR_WIDTH } from '~/components/AppSidebar';
 import AudioPlayer from '~/components/AudioPlayer/index';
 import { Toaster } from '~/components/Toaster';
 import { useQueueStore } from '~/hooks/useQueueStore';
@@ -123,6 +123,8 @@ export const Route = createRootRouteWithContext<RouterContext>()({
     ],
     links: [
       { rel: 'stylesheet', href: fontsourceVariableRobotoCss },
+      { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
+      { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap' },
       {
         rel: 'apple-touch-icon',
         sizes: '180x180',
@@ -220,8 +222,6 @@ function Providers({ children }: { children: ReactNode }) {
   );
 }
 
-const Offset = styled(Box)(({ theme }) => theme.mixins.toolbar);
-
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   useRehydrateStore();
 
@@ -237,19 +237,20 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       </head>
       <body>
         <Providers>
+          <AppSidebar />
           <AppHeader />
-          <Offset />
 
-          <Container
+          <Box
             component='main'
-            // sx={{ paddingBlock: 4 }}
             sx={{
+              ml: { xs: 0, md: `${SIDEBAR_WIDTH}px` },
+              px: { xs: 2, sm: 3, md: 4.5 },
               pt: 'var(--Castaway-header-height)',
               pb: { xs: 'var(--Castaway-bottom-nav-height)', md: 0 },
             }}
           >
             {children}
-          </Container>
+          </Box>
 
           <ErrorBoundary fallback={<div />} onError={console.log}>
             <Suspense>
@@ -258,11 +259,9 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                   sx={{
                     position: 'fixed',
                     bottom: { xs: 'var(--Castaway-bottom-nav-height)', md: 0 },
-                    left: 0,
+                    left: { xs: 0, md: `${SIDEBAR_WIDTH}px` },
                     right: 0,
                     zIndex: (theme) => theme.zIndex.drawer,
-                    borderTopLeftRadius: 1,
-                    borderTopRightRadius: 1,
                   }}
                 >
                   <WrappedPlayer />
@@ -342,24 +341,22 @@ function WrappedPlayer() {
 
 function AudioPlayerBottomSpacer() {
   const episode = useQueueStore((state) => state.nowPlaying);
-  const show = Boolean(episode);
 
   return (
     <>
       <GlobalStyles
         styles={{
           ':root': {
-            '--Castaway-audio-player-height': episode ? '140px' : '0px',
+            '--Castaway-audio-player-height': episode ? '68px' : '0px',
           },
         }}
       />
       <Box
-        // sx={{ height: show ? 140 : 0, transition: 'height 0.3s ease-in-out' }}
         sx={{
-          height: show
+          height: episode
             ? {
-                xs: 'calc(140px + var(--Castaway-bottom-nav-height))',
-                md: '140px',
+                xs: 'calc(68px + var(--Castaway-bottom-nav-height))',
+                md: '68px',
               }
             : {
                 xs: 'var(--Castaway-bottom-nav-height)',
