@@ -1,4 +1,5 @@
 import {
+  Box,
   Chip,
   Divider,
   FormControl,
@@ -20,6 +21,7 @@ import { startOfDay, sub } from 'date-fns';
 import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Card } from '~/components/Card';
+import { PageHeader } from '~/components/PageHeader';
 import { StatsMostPlayedPodcasts } from '~/components/MostStreamedPodcasts';
 import { StatsMostPlayedEpisodes } from '~/components/StatsMostPlayedEpisodes';
 import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
@@ -83,6 +85,9 @@ function RouteComponent() {
 
   return (
     <>
+      <Box sx={{ pt: { xs: 2, md: 3 } }}>
+        <PageHeader label='trending' />
+      </Box>
       <Stack
         direction='row'
         sx={{ justifyContent: 'space-between', alignItems: 'center' }}

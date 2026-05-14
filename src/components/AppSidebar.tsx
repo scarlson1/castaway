@@ -3,9 +3,10 @@ import { convexQuery } from '@convex-dev/react-query';
 import { PersonRounded } from '@mui/icons-material';
 import { Box, Button, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
-import { useMatchRoute } from '@tanstack/react-router';
+import { useMatchRoute, useNavigate } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useConvexAuth } from 'convex/react';
+import CastawayLogo from '~/components/icons/CastawayLogo';
 import { ModeToggle } from '~/components/ModeToggle';
 import { MuiLink } from '~/components/MuiLink';
 
@@ -15,11 +16,17 @@ const NAV_LINKS = [
   { label: '⌂ Today', to: '/podcasts/feed' as const, key: '⌘1', auth: true },
   { label: '◎ Discover', to: '/discover' as const, key: '⌘2', auth: false },
   { label: '≡ Podcasts', to: '/podcasts' as const, key: '⌘3', auth: true },
-  { label: '⊙ In Progress', to: '/podcasts/progress' as const, key: '⌘4', auth: true },
+  {
+    label: '⊙ In Progress',
+    to: '/podcasts/progress' as const,
+    key: '⌘4',
+    auth: true,
+  },
   { label: '✦ Ask', to: '/chat' as const, key: '⌘K', auth: true },
 ] as const;
 
 export function AppSidebar() {
+  const navigate = useNavigate();
   const matchRoute = useMatchRoute();
   const { isAuthenticated } = useConvexAuth();
   const { data: subscriptions } = useQuery({
@@ -60,7 +67,7 @@ export function AppSidebar() {
     >
       {/* Logo */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.25, px: 1.25 }}>
-        <Box
+        {/* <Box
           sx={[
             {
               width: 22,
@@ -80,8 +87,21 @@ export function AppSidebar() {
               },
             },
           ]}
+        /> */}
+        <CastawayLogo
+          sx={{ fontSize: 28, '&:hover': { cursor: 'pointer' } }}
+          onClick={() => navigate({ to: '/' })}
         />
-        <Typography sx={{ fontWeight: 700, letterSpacing: '-0.03em', fontSize: 20, lineHeight: 1 }}>
+        <Typography
+          sx={{
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            fontSize: 20,
+            lineHeight: 1,
+            '&:hover': { cursor: 'pointer' },
+          }}
+          onClick={() => navigate({ to: '/' })}
+        >
           Castaway
         </Typography>
       </Box>
@@ -121,7 +141,10 @@ export function AppSidebar() {
                 },
                 isActive
                   ? { bgcolor: 'text.primary', color: 'background.default' }
-                  : { color: 'text.primary', '&:hover': { bgcolor: 'action.hover' } },
+                  : {
+                      color: 'text.primary',
+                      '&:hover': { bgcolor: 'action.hover' },
+                    },
               ]}
             >
               <Box component='span' sx={{ flex: 1 }}>
@@ -129,7 +152,11 @@ export function AppSidebar() {
               </Box>
               <Box
                 component='span'
-                sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, opacity: 0.45 }}
+                sx={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 10,
+                  opacity: 0.45,
+                }}
               >
                 {key}
               </Box>
@@ -141,7 +168,14 @@ export function AppSidebar() {
             <Button
               size='small'
               startIcon={<PersonRounded fontSize='small' />}
-              sx={{ mt: 0.5, px: 1.25, justifyContent: 'flex-start', fontSize: 14, textTransform: 'none', color: 'text.secondary' }}
+              sx={{
+                mt: 0.5,
+                px: 1.25,
+                justifyContent: 'flex-start',
+                fontSize: 14,
+                textTransform: 'none',
+                color: 'text.secondary',
+              }}
             >
               Sign in
             </Button>
@@ -188,11 +222,22 @@ export function AppSidebar() {
                   component='img'
                   src={pod.imageUrl || ''}
                   alt={pod.title}
-                  sx={{ width: 22, height: 22, borderRadius: '4px', flexShrink: 0, objectFit: 'cover' }}
+                  sx={{
+                    width: 22,
+                    height: 22,
+                    borderRadius: '4px',
+                    flexShrink: 0,
+                    objectFit: 'cover',
+                  }}
                 />
                 <Box
                   component='span'
-                  sx={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                  sx={{
+                    flex: 1,
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    whiteSpace: 'nowrap',
+                  }}
                 >
                   {pod.title}
                 </Box>
@@ -203,7 +248,15 @@ export function AppSidebar() {
       </SignedIn>
 
       {/* Bottom: mode toggle */}
-      <Box sx={{ mt: 'auto', px: 1.25, display: 'flex', alignItems: 'center', gap: 1 }}>
+      <Box
+        sx={{
+          mt: 'auto',
+          px: 1.25,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
         <ModeToggle />
       </Box>
     </Box>

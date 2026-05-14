@@ -208,6 +208,11 @@ export function useAudioPlayer() {
     setPosition(seconds);
   }, []);
 
+  useEffect(() => {
+    useAudioStore.getState().registerSeek(seek);
+    return () => useAudioStore.getState().registerSeek(null);
+  }, [seek]);
+
   return {
     play: () => setPlaying(true),
     pause: () => setPlaying(false),

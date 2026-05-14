@@ -5,6 +5,7 @@ import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { Suspense, useEffect, useEffectEvent, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { RateButtons } from '~/components/AudioPlayer/RateButton';
 import { SkipAdButton } from '~/components/AudioPlayer/SkipAdButton';
 import { MuiLink } from '~/components/MuiLink';
 import { PlayPauseButton } from '~/components/PlayPauseButton';
@@ -241,28 +242,7 @@ export default function AudioPlayer({
           </Suspense>
         </ErrorBoundary>
 
-        <Box
-          role='button'
-          onClick={() => {
-            const next = rate < 1 || rate > 1.5 ? 1 : rate <= 1 ? 1.5 : 2;
-            setRate(next);
-          }}
-          sx={{
-            px: 1,
-            py: 0.25,
-            border: '1px solid',
-            borderColor: 'divider',
-            borderRadius: 0.5,
-            fontSize: 10,
-            fontFamily: "'JetBrains Mono', monospace",
-            cursor: 'pointer',
-            color: 'text.secondary',
-            flexShrink: 0,
-            '&:hover': { borderColor: 'text.secondary' },
-          }}
-        >
-          {rate}×
-        </Box>
+        <RateButtons rate={rate} setRate={setRate} />
       </Box>
     </Box>
   );

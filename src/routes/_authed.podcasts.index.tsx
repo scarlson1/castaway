@@ -16,6 +16,7 @@ import { orderBy } from 'lodash-es';
 import { useMemo, useState } from 'react';
 import { Card } from '~/components/Card';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
+import { PageHeader } from '~/components/PageHeader';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
 export const Route = createFileRoute('/_authed/podcasts/')({
@@ -40,6 +41,7 @@ function RouteComponent() {
 
   return (
     <Box sx={{ pt: { xs: 2, md: 3 } }}>
+      <PageHeader label='podcasts' />
       <Box
         sx={{
           display: 'flex',

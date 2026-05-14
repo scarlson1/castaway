@@ -5,6 +5,7 @@ export interface TranscriptSegment {
   start: number;
   end: number;
   text: string;
+  speaker?: string;
 }
 
 export interface TranscriptionResponse {
@@ -15,10 +16,11 @@ export interface TranscriptionResponse {
 interface WhisperResponse {
   text: string;
   segments?: Array<{
-    id: number;
+    id: number | string;
     start: number;
     end: number;
     text: string;
+    speaker?: string;
   }>;
 }
 
@@ -41,10 +43,12 @@ const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function transcribeUrl(
   url: string,
-  options: TranscribeOptions
+  options: TranscribeOptions,
 ): Promise<TranscriptionResponse> {
-  // break audio into chunks of < 25MB
-  const chunks = await fetchAndChunkAudio(url);
+  // break audio into chunks of < 25MB (override for diarization (second based - 1400))
+  const isDiarize = options?.model === 'gpt-4o-transcribe-diarize';
+  let chunkSize = isDiarize ? 10 * 1024 * 1024 : 24 * 1024 * 1024;
+  const chunks = await fetchAndChunkAudio(url, chunkSize);
   console.log(`audio broken into ${chunks.length} chunks`);
 
   // transcribe each chunk
@@ -69,6 +73,7 @@ export async function transcribeUrl(
           start: seg.start + offset,
           end: seg.end + offset,
           text: seg.text,
+          speaker: seg.speaker,
         });
       }
       const last = t.segments.at(-1);
@@ -82,15 +87,32 @@ export async function transcribeUrl(
   };
 }
 
+/*
+TODO: implement second based chunking for diarization transcription (1400 second limit)? and stick with byte for regular (25MB limit)
+
+It depends on the bitrate. Common podcast bitrates:
+
+Bitrate	Bytes/sec	1400s =
+64 kbps	8,000 B/s	~11.2 MB
+96 kbps	12,000 B/s	~16.8 MB
+128 kbps	16,000 B/s	~22.4 MB
+The erroring episode was ~1573 seconds and fit in one <24 MB chunk, so its bitrate was roughly 122 kbps — right at the boundary where 24 MB ≈ 1572s.
+
+To guarantee ≤ 1400 seconds per chunk at 128 kbps you'd need ~22 MB. But that still breaks at lower bitrates for very long episodes. The only robust fix is to chunk by duration, not bytes — which requires parsing the audio header to get the bitrate before chunking.
+
+The pragmatic safe choice is ~10 MB (handles up to ~156 kbps for 1400s, and most speech podcasts are 64–128 kbps, so worst case you get 2–3 chunks instead of 1). Want me to change maxChunkBytes to 10 MB, or implement duration-based chunking instead?
+*/
+
 // break into segments less than 25MB transcribe limit
+// 1400 second limit for the transcribe with diarization model
 async function fetchAndChunkAudio(
   url: string,
-  maxChunkBytes = 24 * 1024 * 1024 // 24MB for safety
+  maxChunkBytes = 24 * 1024 * 1024, // 24MB for safety
 ): Promise<Uint8Array[]> {
   const res = await fetch(url);
   if (!res.ok || !res.body)
     throw new Error(
-      `Failed to download audio: ${res.status} - ${await res.text()}`
+      `Failed to download audio: ${res.status} - ${await res.text()}`,
     );
 
   const reader = res.body.getReader();
@@ -112,7 +134,7 @@ async function fetchAndChunkAudio(
 
       current.set(
         input.subarray(inputOffset, inputOffset + bytesToCopy),
-        offset
+        offset,
       );
       offset += bytesToCopy;
       inputOffset += bytesToCopy;
@@ -137,21 +159,26 @@ async function transcribeChunk(
   {
     model = 'whisper-1',
     language = 'en',
-    responseFormat = 'verbose_json',
-  }: TranscribeOptions
+    responseFormat, // = 'verbose_json'
+  }: TranscribeOptions,
 ): Promise<WhisperResponse> {
+  const isDiarize = model === 'gpt-4o-transcribe-diarize';
+  const format =
+    responseFormat ?? (isDiarize ? 'diarized_json' : 'verbose_json');
+
   return await client.audio.transcriptions.create({
     model,
     file: await toReadableFile(chunk, 'audio.mp3'),
-    response_format: responseFormat,
+    response_format: format,
     language,
+    ...(isDiarize && { chunking_strategy: 'auto' }),
   });
 }
 
 // Convert bytes → File object for Whisper
 async function toReadableFile(
   bytes: Uint8Array,
-  filename: string
+  filename: string,
 ): Promise<File> {
   // Create a new Uint8Array to ensure proper type compatibility
   const buffer = new Uint8Array(bytes);

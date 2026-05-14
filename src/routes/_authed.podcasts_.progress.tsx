@@ -10,6 +10,7 @@ import { api } from 'convex/_generated/api';
 import { Suspense } from 'react';
 import { useInView } from 'react-intersection-observer';
 import { PlaybackButton } from '~/components/PlaybackButton';
+import { PageHeader } from '~/components/PageHeader';
 import { MuiLink } from '~/components/MuiLink';
 import { formatRelativeTime, getDuration } from '~/utils/format';
 import type { Doc } from 'convex/_generated/dataModel';
@@ -21,6 +22,7 @@ export const Route = createFileRoute('/_authed/podcasts_/progress')({
 function RouteComponent() {
   return (
     <Box sx={{ pt: { xs: 2, md: 3 } }}>
+      <PageHeader label='in-progress' />
       <Typography variant='h4' sx={{ mb: 0.5, letterSpacing: '-0.03em' }}>
         In Progress.
       </Typography>

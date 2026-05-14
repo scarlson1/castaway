@@ -13,7 +13,11 @@ export function EpisodeRow({ playback, episode }: EpisodeRowProps) {
   return (
     <Stack
       direction='row'
-      sx={{ alignItems: 'center', my: { xs: 0.5, sm: 1 } }}
+      sx={{
+        alignItems: 'center',
+        my: { xs: 0.5, sm: 1 },
+        px: { xs: 1, sm: 2 },
+      }}
       spacing={2}
     >
       <Typography
@@ -23,8 +27,8 @@ export function EpisodeRow({ playback, episode }: EpisodeRowProps) {
         {episode.episode
           ? `E${episode.episode}`
           : episode.episodeType === 'bonus'
-          ? 'bonus'
-          : ''}
+            ? 'bonus'
+            : ''}
       </Typography>
       <MuiLink
         to='/podcasts/$podId/episodes/$episodeId'

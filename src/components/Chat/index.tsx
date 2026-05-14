@@ -1,4 +1,5 @@
 import { optimisticallySendMessage, useUIMessages } from '@convex-dev/agent/react';
+import { convexQuery } from '@convex-dev/react-query';
 import { ArrowForwardRounded } from '@mui/icons-material';
 import {
   Box,
@@ -9,6 +10,7 @@ import {
   Tooltip,
   Typography,
 } from '@mui/material';
+import { useQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useMutation } from 'convex/react';
 import 'highlight.js/styles/github.css';
@@ -16,8 +18,21 @@ import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { MessageList } from '~/components/Chat/MessageList';
 
+type Scope = 'library' | 'all' | 'this';
+
+const SCOPES: { value: Scope; label: string }[] = [
+  { value: 'library', label: 'Library' },
+  { value: 'all', label: 'All shows' },
+  { value: 'this', label: 'This show' },
+];
+
 export const Chat = ({ threadId }: { threadId: string }) => {
   const [message, setMessage] = useState('');
+  const [scope, setScope] = useState<Scope>('library');
+
+  const { data: threadDetails } = useQuery(
+    convexQuery(api.agent.threads.details, { threadId }),
+  );
 
   const {
     results: messages,
@@ -81,17 +96,16 @@ export const Chat = ({ threadId }: { threadId: string }) => {
       >
         <Typography
           sx={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 11,
-            letterSpacing: '0.04em',
-            color: 'text.secondary',
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: '-0.01em',
             flex: '1 1 auto',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
           }}
         >
-          thread
+          {threadDetails?.title || 'thread'}
         </Typography>
         <Box
           sx={{
@@ -100,17 +114,16 @@ export const Chat = ({ threadId }: { threadId: string }) => {
             gap: 0.75,
             px: 1,
             py: 0.375,
-            bgcolor: 'action.selected',
             border: '1px solid',
             borderColor: 'divider',
-            borderRadius: 0.5,
+            borderRadius: 99,
             flexShrink: 0,
           }}
         >
           <Box
             sx={{
-              width: 6,
-              height: 6,
+              width: 5,
+              height: 5,
               borderRadius: '50%',
               bgcolor: 'primary.main',
               flexShrink: 0,
@@ -120,12 +133,12 @@ export const Chat = ({ threadId }: { threadId: string }) => {
             sx={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 9,
-              letterSpacing: '0.16em',
+              letterSpacing: '0.14em',
               textTransform: 'uppercase',
               color: 'text.secondary',
             }}
           >
-            My Library
+            Scope: My Library
           </Typography>
         </Box>
       </Box>
@@ -175,32 +188,71 @@ export const Chat = ({ threadId }: { threadId: string }) => {
           },
         ]}
       >
-        <TextField
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder='Ask your library...'
-          multiline
-          maxRows={4}
-          fullWidth
-          size='small'
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit();
-            }
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              fontSize: 13,
-              bgcolor: 'background.default',
-              borderRadius: 0.75,
-            },
-            '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: 'divider',
-            },
-          }}
-        />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {SCOPES.map(({ value, label }) => (
+              <Box
+                key={value}
+                role='button'
+                onClick={() => setScope(value)}
+                sx={[
+                  {
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 99,
+                    fontSize: 10,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.04em',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    border: '1px solid',
+                    transition: 'all 0.1s',
+                  },
+                  scope === value
+                    ? {
+                        bgcolor: 'text.primary',
+                        color: 'background.default',
+                        borderColor: 'text.primary',
+                      }
+                    : {
+                        bgcolor: 'transparent',
+                        color: 'text.secondary',
+                        borderColor: 'divider',
+                        '&:hover': { borderColor: 'text.secondary', color: 'text.primary' },
+                      },
+                ]}
+              >
+                {label}
+              </Box>
+            ))}
+          </Box>
+          <TextField
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder='Ask anything across your transcripts...'
+            multiline
+            maxRows={4}
+            fullWidth
+            size='small'
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit();
+              }
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fontSize: 13,
+                bgcolor: 'background.default',
+                borderRadius: 0.75,
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'divider',
+              },
+            }}
+          />
+        </Box>
         {isStreaming ? (
           <Tooltip title='Stop'>
             <IconButton
@@ -234,6 +286,7 @@ export const Chat = ({ threadId }: { threadId: string }) => {
               py: 0.875,
               borderRadius: 0.75,
               boxShadow: 'none',
+              alignSelf: 'flex-end',
               '&:hover': { boxShadow: 'none' },
             }}
           >

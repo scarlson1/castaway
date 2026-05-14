@@ -33,10 +33,10 @@ export default defineSchema({
               status: v.any(), // v.string(),
               strategy: v.any(), // v.string(),
             }),
-            v.null()
+            v.null(),
           ),
-        })
-      )
+        }),
+      ),
     ),
     enterprise_accounts: v.optional(v.array(v.any())),
     external_accounts: v.array(v.any()),
@@ -95,7 +95,7 @@ export default defineSchema({
     categoryArray: v.optional(v.array(v.string())),
     explicit: v.optional(v.union(v.boolean(), v.null())),
     funding: v.optional(
-      v.object({ url: v.union(v.string(), v.null()), message: v.string() })
+      v.object({ url: v.union(v.string(), v.null()), message: v.string() }),
     ),
     embedding: v.optional(v.array(v.number())),
     // embeddingId: v.optional(v.id('episodeEmbeddings')),
@@ -150,7 +150,7 @@ export default defineSchema({
     embeddingId: v.optional(v.id('episodeEmbeddings')),
     chaptersUrl: v.optional(v.union(v.string(), v.null())),
     transcripts: v.optional(
-      v.array(v.object({ url: v.string(), type: v.string() }))
+      v.array(v.object({ url: v.string(), type: v.string() })),
     ),
     persons: v.optional(
       v.array(
@@ -161,8 +161,8 @@ export default defineSchema({
           group: v.optional(v.string()),
           href: v.optional(v.string()),
           img: v.optional(v.string()),
-        })
-      )
+        }),
+      ),
     ),
     socialInteract: v.optional(
       v.array(
@@ -173,8 +173,8 @@ export default defineSchema({
           accountId: v.optional(v.string()),
           accountUrl: v.optional(v.string()),
           priority: v.optional(v.number()),
-        })
-      )
+        }),
+      ),
     ),
     // LLM computed data
     summaryTitle: v.optional(v.string()),
@@ -255,7 +255,8 @@ export default defineSchema({
         start: v.number(),
         end: v.number(),
         text: v.string(),
-      })
+        speaker: v.optional(v.string()),
+      }),
     ),
     summaryTitle: v.optional(v.string()),
     oneSentenceSummary: v.optional(v.string()),
@@ -319,8 +320,8 @@ export default defineSchema({
           duration: v.number(),
           transcript: v.string(),
           confidence: v.number(),
-        })
-      )
+        }),
+      ),
     ),
   }).index('by_episodeId', ['episodeId']),
 
@@ -363,7 +364,7 @@ export default defineSchema({
     status: v.union(
       v.literal('pending'),
       v.literal('paid'),
-      v.literal('failed')
+      v.literal('failed'),
     ),
   }).index('billingPeriod_userId', ['billingPeriod', 'userId']),
 });

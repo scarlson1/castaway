@@ -3,8 +3,6 @@ import { ArrowForwardRounded } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Chip,
-  Stack,
   TextField,
   Typography,
 } from '@mui/material';
@@ -17,16 +15,18 @@ export const Route = createFileRoute('/_authed/chat/')({
   component: RouteComponent,
 });
 
-const SUGGESTED = [
-  'What was the last episode I listened to?',
-  'Find me episodes about AI',
-  'What podcasts cover climate change?',
-  'Summarize recent episodes from my subscriptions',
+type Scope = 'library' | 'all' | 'this';
+
+const SCOPES: { value: Scope; label: string }[] = [
+  { value: 'library', label: 'Library' },
+  { value: 'all', label: 'All shows' },
+  { value: 'this', label: 'This show' },
 ];
 
 function RouteComponent() {
   const navigate = Route.useNavigate();
   const [message, setMessage] = useState('');
+  const [scope, setScope] = useState<Scope>('library');
 
   const { mutate: createThread, isPending } = useMutation({
     mutationFn: useConvexMutation(api.agent.threads.create),
@@ -69,34 +69,9 @@ function RouteComponent() {
         >
           Ask.
         </Typography>
-        <Typography variant='body2' color='textSecondary' sx={{ mb: 3 }}>
-          Search and explore your podcast library
+        <Typography variant='body2' color='textSecondary' sx={{ mb: 0 }}>
+          Search across every transcript in your library
         </Typography>
-
-        <Stack
-          direction='row'
-          sx={{ flexWrap: 'wrap', justifyContent: 'center', gap: 0.75, maxWidth: 480 }}
-        >
-          {SUGGESTED.map((s) => (
-            <Chip
-              key={s}
-              label={s}
-              size='small'
-              onClick={() => handleSubmit(s)}
-              sx={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 10,
-                height: 'auto',
-                py: 0.5,
-                borderRadius: 0.5,
-                bgcolor: 'action.selected',
-                border: '1px solid',
-                borderColor: 'divider',
-                '&:hover': { bgcolor: 'action.hover' },
-              }}
-            />
-          ))}
-        </Stack>
       </Box>
 
       {/* Input row */}
@@ -119,32 +94,71 @@ function RouteComponent() {
           },
         ]}
       >
-        <TextField
-          value={message}
-          onChange={(e) => setMessage(e.target.value)}
-          placeholder='Ask your library...'
-          multiline
-          maxRows={4}
-          fullWidth
-          size='small'
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSubmit(message);
-            }
-          }}
-          sx={{
-            '& .MuiOutlinedInput-root': {
-              fontSize: 13,
-              bgcolor: 'background.default',
-              borderRadius: 0.75,
-            },
-            '& .MuiOutlinedInput-notchedOutline': {
-              borderColor: 'divider',
-            },
-          }}
-        />
+        <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 0.75 }}>
+          <Box sx={{ display: 'flex', gap: 0.5 }}>
+            {SCOPES.map(({ value, label }) => (
+              <Box
+                key={value}
+                role='button'
+                onClick={() => setScope(value)}
+                sx={[
+                  {
+                    px: 1,
+                    py: 0.25,
+                    borderRadius: 99,
+                    fontSize: 10,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    letterSpacing: '0.04em',
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    border: '1px solid',
+                    transition: 'all 0.1s',
+                  },
+                  scope === value
+                    ? {
+                        bgcolor: 'text.primary',
+                        color: 'background.default',
+                        borderColor: 'text.primary',
+                      }
+                    : {
+                        bgcolor: 'transparent',
+                        color: 'text.secondary',
+                        borderColor: 'divider',
+                        '&:hover': { borderColor: 'text.secondary', color: 'text.primary' },
+                      },
+                ]}
+              >
+                {label}
+              </Box>
+            ))}
+          </Box>
+          <TextField
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            placeholder='Ask anything across your transcripts...'
+            multiline
+            maxRows={4}
+            fullWidth
+            size='small'
+            autoFocus
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                handleSubmit(message);
+              }
+            }}
+            sx={{
+              '& .MuiOutlinedInput-root': {
+                fontSize: 13,
+                bgcolor: 'background.default',
+                borderRadius: 0.75,
+              },
+              '& .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'divider',
+              },
+            }}
+          />
+        </Box>
         <Button
           type='submit'
           variant='contained'
@@ -161,6 +175,7 @@ function RouteComponent() {
             py: 0.875,
             borderRadius: 0.75,
             boxShadow: 'none',
+            alignSelf: 'flex-end',
             '&:hover': { boxShadow: 'none' },
           }}
         >

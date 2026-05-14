@@ -1,19 +1,23 @@
+import { convexQuery } from '@convex-dev/react-query';
 import {
   Box,
   Button,
-  CircularProgress,
   Skeleton,
   Stack,
   Typography,
 } from '@mui/material';
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { Suspense, useEffect } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useInView } from 'react-intersection-observer';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
+import { PageHeader } from '~/components/PageHeader';
 import { MuiLink } from '~/components/MuiLink';
 import { PlaybackButton } from '~/components/PlaybackButton';
+import { RecommendedPods } from '~/components/RecommendedPods';
+import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
 import type { Doc, Id } from 'convex/_generated/dataModel';
 import { formatRelativeTime, getDuration } from '~/utils/format';
 
@@ -24,16 +28,44 @@ export const Route = createFileRoute('/_authed/podcasts_/feed')({
 function RouteComponent() {
   return (
     <Box sx={{ pt: { xs: 2, md: 3 } }}>
-      <Typography
-        variant='h4'
-        sx={{ mb: 0.5, letterSpacing: '-0.03em' }}
-      >
+      <PageHeader label='today' />
+      <Typography variant='h4' sx={{ mb: 0.5, letterSpacing: '-0.03em' }}>
         Today's queue.
       </Typography>
-      <Typography variant='body2' color='textSecondary' sx={{ mb: 3 }}>
-        New episodes from your subscriptions
-      </Typography>
       <RecentlyUpdated />
+
+      <Box sx={{ mt: 5 }}>
+        <Typography
+          sx={{
+            fontFamily: "'JetBrains Mono', monospace",
+            fontSize: 10,
+            letterSpacing: '0.08em',
+            color: 'text.disabled',
+            mb: 0.5,
+            textTransform: 'lowercase',
+          }}
+        >
+          based on your listening
+        </Typography>
+        <Typography variant='h6' sx={{ mb: 2, letterSpacing: '-0.02em' }}>
+          Recommended
+        </Typography>
+        <ErrorBoundary fallback={null}>
+          <Suspense
+            fallback={
+              <SuspenseGridCards
+                numItems={8}
+                columnSpacing={2}
+                rowSpacing={1}
+                columns={16}
+                childGridProps={{ size: { xs: 8, sm: 4, md: 4, lg: 2 } }}
+              />
+            }
+          >
+            <RecommendedPods limit={8} />
+          </Suspense>
+        </ErrorBoundary>
+      </Box>
     </Box>
   );
 }
@@ -43,6 +75,8 @@ const PAGE_SIZE = 20;
 function RecentlyUpdated() {
   const { convexClient } = Route.useRouteContext();
   const [ref, inView] = useInView();
+
+  const { data: subscriptions } = useQuery(convexQuery(api.subscribe.allDetails, {}));
 
   type Cursor = { publishedAt: number; episodeId: Id<'episodes'> } | null;
 
@@ -85,79 +119,91 @@ function RecentlyUpdated() {
   }
 
   const allEpisodes = data.pages.flatMap((p) => p.items);
+  const totalSeconds = allEpisodes.reduce((sum, ep) => sum + (ep.durationSeconds || 0), 0);
+
+  const statsLine = [
+    `${allEpisodes.length} episodes`,
+    subscriptions?.length ? `from your ${subscriptions.length} subscriptions` : null,
+    totalSeconds ? getDuration(totalSeconds) + ' total' : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
 
   return (
-    <Box
-      sx={[
-        {
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1.25,
-          overflow: 'hidden',
-          bgcolor: 'background.paper',
-        },
-      ]}
-    >
-      {/* Table header */}
-      <Box
-        sx={[
-          {
-            display: { xs: 'none', sm: 'grid' },
-            gridTemplateColumns: '32px 48px 1fr 160px 90px 60px 40px',
-            gap: 1.75,
-            alignItems: 'center',
-            px: 2,
-            py: 1,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            bgcolor: '#f4f3ee',
-          },
-          (t) => t.applyStyles('dark', { bgcolor: '#1a1813' }),
-        ]}
-      >
-        {['#', '', 'Episode', 'Show', 'When', 'Length', ''].map((h, i) => (
-          <Typography
-            key={i}
-            sx={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 10,
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              color: 'text.secondary',
-            }}
-          >
-            {h}
-          </Typography>
-        ))}
-      </Box>
+    <>
+      <Typography variant='body2' color='textSecondary' sx={{ mb: 2 }}>
+        {statsLine}
+      </Typography>
 
-      {/* Rows */}
-      {allEpisodes.map((ep, i) => (
-        <FeedRow key={ep._id} episode={ep} index={i} />
-      ))}
-
-      {/* Load more sentinel */}
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'center',
-          py: 1.5,
-          borderTop: '1px solid',
-          borderColor: 'divider',
+          maxHeight: 'clamp(320px, calc(100vh - 320px), 520px)',
+          overflowY: 'auto',
         }}
       >
-        <Button
-          ref={ref}
-          size='small'
-          onClick={() => fetchNextPage()}
-          loading={isFetchingNextPage}
-          disabled={!hasNextPage}
-          sx={{ fontSize: 12, color: 'text.secondary' }}
+        {/* Table header */}
+        <Box
+          sx={[
+            {
+              display: { xs: 'none', sm: 'grid' },
+              gridTemplateColumns: '32px 48px 1fr 160px 90px 60px 40px',
+              gap: 1.75,
+              alignItems: 'center',
+              px: 2,
+              py: 1,
+              borderBottom: '1px solid',
+              borderColor: 'divider',
+              position: 'sticky',
+              top: 0,
+              bgcolor: 'background.default',
+              zIndex: 1,
+            },
+          ]}
         >
-          {hasNextPage ? 'Load more' : 'All caught up'}
-        </Button>
+          {['#', '', 'Episode', 'Show', 'When', 'Length', ''].map((h, i) => (
+            <Typography
+              key={i}
+              sx={{
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 10,
+                letterSpacing: '0.16em',
+                textTransform: 'uppercase',
+                color: 'text.disabled',
+              }}
+            >
+              {h}
+            </Typography>
+          ))}
+        </Box>
+
+        {/* Rows */}
+        {allEpisodes.map((ep, i) => (
+          <FeedRow key={ep._id} episode={ep} index={i} />
+        ))}
+
+        {/* Load more sentinel */}
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            py: 1.5,
+            borderTop: '1px solid',
+            borderColor: 'divider',
+          }}
+        >
+          <Button
+            ref={ref}
+            size='small'
+            onClick={() => fetchNextPage()}
+            loading={isFetchingNextPage}
+            disabled={!hasNextPage}
+            sx={{ fontSize: 12, color: 'text.secondary' }}
+          >
+            {hasNextPage ? 'Load more' : 'All caught up'}
+          </Button>
+        </Box>
       </Box>
-    </Box>
+    </>
   );
 }
 
@@ -178,7 +224,7 @@ function FeedRow({
           alignItems: 'center',
           px: 2,
           py: 1.25,
-          borderTop: index === 0 ? 'none' : '1px solid',
+          borderTop: '1px solid',
           borderColor: 'divider',
           '&:hover': { bgcolor: 'action.hover' },
           transition: 'background 0.1s',
@@ -190,7 +236,7 @@ function FeedRow({
         sx={{
           fontFamily: "'JetBrains Mono', monospace",
           fontSize: 11,
-          color: 'text.secondary',
+          color: 'text.disabled',
           display: { xs: 'none', sm: 'block' },
         }}
       >
@@ -220,12 +266,12 @@ function FeedRow({
           color='textSecondary'
           sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
         >
-          {episode.podcastTitle}
+          {episode.summary || episode.podcastTitle}
         </Typography>
       </Box>
 
       {/* Show badge */}
-      <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', gap: 0.75, minWidth: 0 }}>
+      <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', minWidth: 0 }}>
         <Box
           sx={{
             display: 'inline-flex',
@@ -300,41 +346,36 @@ function FeedRow({
 
 function FeedTableSkeleton() {
   return (
-    <Box
-      sx={{
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1.25,
-        overflow: 'hidden',
-        bgcolor: 'background.paper',
-      }}
-    >
-      {Array.from({ length: 8 }).map((_, i) => (
-        <Box
-          key={i}
-          sx={{
-            display: 'grid',
-            gridTemplateColumns: '32px 48px 1fr 160px 90px 60px 40px',
-            gap: 1.75,
-            px: 2,
-            py: 1.25,
-            borderTop: i === 0 ? 'none' : '1px solid',
-            borderColor: 'divider',
-            alignItems: 'center',
-          }}
-        >
-          <Skeleton width={20} height={14} />
-          <Skeleton variant='rounded' width={40} height={40} />
-          <Box>
-            <Skeleton width='80%' height={16} />
-            <Skeleton width='50%' height={12} sx={{ mt: 0.5 }} />
+    <>
+      <Skeleton width={220} height={16} sx={{ mb: 2 }} />
+      <Box sx={{ maxHeight: 'clamp(320px, calc(100vh - 320px), 520px)', overflowY: 'auto' }}>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Box
+            key={i}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: '32px 48px 1fr 160px 90px 60px 40px',
+              gap: 1.75,
+              px: 2,
+              py: 1.25,
+              borderTop: '1px solid',
+              borderColor: 'divider',
+              alignItems: 'center',
+            }}
+          >
+            <Skeleton width={20} height={14} />
+            <Skeleton variant='rounded' width={40} height={40} />
+            <Box>
+              <Skeleton width='80%' height={16} />
+              <Skeleton width='50%' height={12} sx={{ mt: 0.5 }} />
+            </Box>
+            <Skeleton width={100} height={22} />
+            <Skeleton width={50} height={14} />
+            <Skeleton width={30} height={14} />
+            <Skeleton variant='circular' width={28} height={28} />
           </Box>
-          <Skeleton width={100} height={22} />
-          <Skeleton width={50} height={14} />
-          <Skeleton width={30} height={14} />
-          <Skeleton variant='circular' width={28} height={28} />
-        </Box>
-      ))}
-    </Box>
+        ))}
+      </Box>
+    </>
   );
 }

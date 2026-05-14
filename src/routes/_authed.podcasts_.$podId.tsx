@@ -1,13 +1,8 @@
 import { convexQuery, useConvexAction } from '@convex-dev/react-query';
-import {
-  ExplicitRounded,
-  LinkRounded,
-  MicRounded,
-} from '@mui/icons-material';
+import { ExplicitRounded, LinkRounded, MicRounded } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Divider,
   IconButton,
   InputAdornment,
   Link,
@@ -35,12 +30,13 @@ import {
   type PodcastIdentifierType,
 } from '~/serverFn/podchaser';
 import { getRootDomain } from '~/utils/getDomain';
+import { PageHeader } from '~/components/PageHeader';
 
 export const Route = createFileRoute('/_authed/podcasts_/$podId')({
   component: RouteComponent,
   loader: ({ context: { queryClient }, params }) => {
     queryClient.prefetchQuery(
-      convexQuery(api.podcasts.getPodByGuid, { id: params.podId })
+      convexQuery(api.podcasts.getPodByGuid, { id: params.podId }),
     );
   },
 });
@@ -53,6 +49,7 @@ function RouteComponent() {
 
   return (
     <Box sx={{ pt: { xs: 2, md: 3 } }}>
+      <PageHeader label='podcasts' />
       <ErrorBoundary fallback={<div>Error loading podcast details</div>}>
         <Suspense fallback={<SuspensePodDetails />}>
           <PodDetails podId={podId} />
@@ -149,6 +146,7 @@ function EpisodesTable({ podId }: { podId: string }) {
         },
       ]}
     >
+      {/* <Box sx={{ px: { xs: 1, sm: 2 } }}> */}
       {/* Table header */}
       <Box
         sx={[
@@ -182,13 +180,14 @@ function EpisodesTable({ podId }: { podId: string }) {
         ))}
       </Box>
       <EpisodesList podId={podId} />
+      {/* </Box> */}
     </Box>
   );
 }
 
 function PodDetails({ podId }: { podId: string }) {
   const { data } = useSuspenseQuery(
-    convexQuery(api.podcasts.getPodByGuid, { id: podId })
+    convexQuery(api.podcasts.getPodByGuid, { id: podId }),
   );
 
   const { mutate: embedPod, isPending } = useMutation({
@@ -238,7 +237,10 @@ function PodDetails({ podId }: { podId: string }) {
         </Typography>
 
         {/* Title row */}
-        <Stack direction='row' sx={{ alignItems: 'flex-start', gap: 1, mb: 0.5, flexWrap: 'wrap' }}>
+        <Stack
+          direction='row'
+          sx={{ alignItems: 'flex-start', gap: 1, mb: 0.5, flexWrap: 'wrap' }}
+        >
           <Typography
             variant='h4'
             sx={{ flex: '1 1 auto', letterSpacing: '-0.03em' }}
@@ -257,7 +259,13 @@ function PodDetails({ podId }: { podId: string }) {
           ) : null}
           {data?.podcastId ? (
             <ErrorBoundary fallback={<div />}>
-              <Suspense fallback={<Skeleton variant='rounded'><Button size='small'>Follow</Button></Skeleton>}>
+              <Suspense
+                fallback={
+                  <Skeleton variant='rounded'>
+                    <Button size='small'>Follow</Button>
+                  </Skeleton>
+                }
+              >
                 <FollowingButtons podId={data?.podcastId} />
               </Suspense>
             </ErrorBoundary>
@@ -266,15 +274,26 @@ function PodDetails({ podId }: { podId: string }) {
 
         {/* Rating */}
         {data?.itunesId ? (
-          <ErrorBoundary fallback={<Rating value={5} disabled readOnly size='small' />}>
-            <Suspense fallback={<Rating value={0} disabled readOnly size='small' />}>
-              <PodcastRating podId={`${data?.itunesId}`} type='APPLE_PODCASTS' />
+          <ErrorBoundary
+            fallback={<Rating value={5} disabled readOnly size='small' />}
+          >
+            <Suspense
+              fallback={<Rating value={0} disabled readOnly size='small' />}
+            >
+              <PodcastRating
+                podId={`${data?.itunesId}`}
+                type='APPLE_PODCASTS'
+              />
             </Suspense>
           </ErrorBoundary>
         ) : null}
 
         {/* Meta */}
-        <Stack direction='row' spacing={2} sx={{ mt: 1, flexWrap: 'wrap', alignItems: 'center' }}>
+        <Stack
+          direction='row'
+          spacing={2}
+          sx={{ mt: 1, flexWrap: 'wrap', alignItems: 'center' }}
+        >
           <Stack direction='row' spacing={0.75} sx={{ alignItems: 'center' }}>
             <MicRounded fontSize='small' color='secondary' />
             <Typography variant='body2' color='textSecondary'>
@@ -284,7 +303,13 @@ function PodDetails({ podId }: { podId: string }) {
           {data?.link ? (
             <Stack direction='row' spacing={0.75} sx={{ alignItems: 'center' }}>
               <LinkRounded fontSize='small' color='secondary' />
-              <Link target='_blank' rel='noopener noreferrer' href={data.link} underline='hover' variant='body2'>
+              <Link
+                target='_blank'
+                rel='noopener noreferrer'
+                href={data.link}
+                underline='hover'
+                variant='body2'
+              >
                 {getRootDomain(data.link)}
               </Link>
             </Stack>
@@ -296,7 +321,11 @@ function PodDetails({ podId }: { podId: string }) {
           ) : null}
         </Stack>
 
-        <Typography variant='body2' color='textSecondary' sx={{ mt: 1.5, lineHeight: 1.6 }}>
+        <Typography
+          variant='body2'
+          color='textSecondary'
+          sx={{ mt: 1.5, lineHeight: 1.6 }}
+        >
           {data?.description}
         </Typography>
       </Box>
@@ -304,7 +333,13 @@ function PodDetails({ podId }: { podId: string }) {
   );
 }
 
-function PodcastRating({ podId, type }: { podId: string; type: PodcastIdentifierType }) {
+function PodcastRating({
+  podId,
+  type,
+}: {
+  podId: string;
+  type: PodcastIdentifierType;
+}) {
   const { data } = useSuspenseQuery({
     queryKey: ['rating', podId],
     queryFn: () => podchaserPodcast({ data: { id: podId, type } }),
@@ -341,10 +376,16 @@ function SuspensePodDetails() {
         mb: 3,
       }}
     >
-      <Skeleton variant='rounded' sx={{ width: { xs: 96, sm: 200 }, height: { xs: 96, sm: 200 } }} />
+      <Skeleton
+        variant='rounded'
+        sx={{ width: { xs: 96, sm: 200 }, height: { xs: 96, sm: 200 } }}
+      />
       <Box>
         <Skeleton width={60} height={12} sx={{ mb: 1 }} />
-        <Skeleton variant='text' sx={{ fontSize: '2rem', width: '60%', mb: 1 }} />
+        <Skeleton
+          variant='text'
+          sx={{ fontSize: '2rem', width: '60%', mb: 1 }}
+        />
         <Skeleton width={120} height={16} sx={{ mb: 1 }} />
         <Stack direction='row' spacing={2} sx={{ mt: 1 }}>
           <Skeleton width={100} height={14} />

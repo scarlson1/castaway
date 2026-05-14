@@ -16,6 +16,7 @@ import { api } from 'convex/_generated/api';
 import { Suspense, useId, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Authed } from '~/components/Authed';
+import { PageHeader } from '~/components/PageHeader';
 import { Card } from '~/components/Card';
 import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
@@ -42,6 +43,7 @@ function RouteComponent() {
   return (
     <Stack direction='column' spacing={3} sx={{ pt: { xs: 2, md: 3 } }}>
       <Box>
+        <PageHeader label='discover' searchPlaceholder='Search shows...' />
         <Typography variant='h4' component='h2' sx={{ mb: 0.5 }}>
           Discover.
         </Typography>

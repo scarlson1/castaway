@@ -43,7 +43,7 @@ export const saveAdSegment = internalAction({
         transcript: args.transcript,
         confidence: args.confidence,
         embedding,
-      }
+      },
     );
 
     return result;
@@ -93,13 +93,13 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
   },
   handler: async (
     ctx,
-    { audioUrl, episodeId, episodeTitle, forceTranscribe = false }
+    { audioUrl, episodeId, episodeTitle, forceTranscribe = false },
   ) => {
     let transcript;
     if (!forceTranscribe) {
       let existingTranscript: Doc<'transcripts'> | null = await ctx.runQuery(
         api.transcripts.getByEpisodeId,
-        { episodeId }
+        { episodeId },
       );
       if (existingTranscript) {
         console.log('using existing transcript');
@@ -149,7 +149,7 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     console.log('saving transcript... ', summary.summaryTitle);
     const transcriptId: Id<'transcripts'> = await ctx.runMutation(
       internal.transcripts.save,
-      summary
+      summary,
     );
 
     console.log('ADDING TRANSCRIPT TO RAG: ', summary);
@@ -175,12 +175,12 @@ export const transcribe = internalAction({
   },
   handler: async (
     ctx,
-    { audioUrl, episodeId, forceTranscribe = false }
+    { audioUrl, episodeId, forceTranscribe = false },
   ): Promise<{ transcriptId: Id<'transcripts'>; exists: boolean }> => {
     if (!forceTranscribe) {
       let existingTranscript: Doc<'transcripts'> | null = await ctx.runQuery(
         api.transcripts.getByEpisodeId,
-        { episodeId }
+        { episodeId },
       );
       if (existingTranscript) {
         console.log('using existing transcript');
@@ -188,7 +188,11 @@ export const transcribe = internalAction({
       }
     }
 
-    const transcript = await transcribeUrl(audioUrl, {});
+    // const transcript = await transcribeUrl(audioUrl, {});
+    const transcript = await transcribeUrl(audioUrl, {
+      model: 'gpt-4o-transcribe-diarize',
+      responseFormat: 'diarized_json',
+    });
 
     const transcriptId: Id<'transcripts'> = await ctx.runMutation(
       internal.transcripts.save,
@@ -197,7 +201,7 @@ export const transcribe = internalAction({
         audioUrl,
         fullText: transcript.text,
         segments: transcript.segments || [],
-      }
+      },
     );
 
     return { transcriptId, exists: false };
@@ -212,11 +216,11 @@ export const summarize = internalAction({
   },
   handler: async (
     ctx,
-    { transcriptId, forceSummarize }
+    { transcriptId, forceSummarize },
   ): Promise<EpisodeSummary & { exists: boolean }> => {
     const transcript: Doc<'transcripts'> | null = await ctx.runQuery(
       api.transcripts.getByConvexId,
-      { id: transcriptId }
+      { id: transcriptId },
     );
     if (!transcript) throw new Error('transcript not found');
 

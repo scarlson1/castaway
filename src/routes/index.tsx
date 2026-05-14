@@ -11,6 +11,7 @@ import { EpisodeCard } from '~/components/EpisodeCard';
 import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
+import { PageHeader } from '~/components/PageHeader';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import { RecommendedPods } from '~/components/RecommendedPods';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
@@ -145,7 +146,9 @@ function Home() {
       direction='column'
       spacing={{ xs: 4, sm: 5, md: 6 }}
       divider={<Divider flexItem />}
+      sx={{ pt: { xs: 2, md: 3 }, pb: { xs: 4, md: 6 } }}
     >
+      <PageHeader label='today' searchPlaceholder='Search episodes, transcripts...' />
       {stackItems}
     </Stack>
   );

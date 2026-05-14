@@ -18,17 +18,19 @@ import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 export const AutoCompleteSearch = ({
   onSelect,
   fullWidth = false,
+  compact = false,
+  placeholder,
 }: {
   onSelect?: (val: PodcastFeed) => void;
   fullWidth?: boolean;
+  compact?: boolean;
+  placeholder?: string;
 }) => {
   const search = useServerFn(searchPodIndex);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query.trim(), 300);
   const [value, setValue] = useState<PodcastFeed | null>(null);
   const [inputValue, setInputValue] = useState('');
-  // const [options, setOptions] = useState<readonly PlaceType[]>(emptyOptions);
-  // only need one of the following??
   const [isExpanded, setIsExpanded] = useState(false);
   const [open, setOpen] = useState(false);
 
@@ -51,7 +53,25 @@ export const AutoCompleteSearch = ({
 
   return (
     <Autocomplete
-      sx={{
+      sx={compact ? {
+        width,
+        transition: 'width 0.3s ease-in-out',
+        '& .MuiOutlinedInput-root': {
+          borderRadius: 0.75,
+          fontSize: 12,
+          py: '6px !important',
+          bgcolor: 'background.default',
+          '& fieldset': { borderColor: 'divider' },
+          '&:hover fieldset': { borderColor: 'text.disabled' },
+          '&.Mui-focused fieldset': { borderColor: 'text.secondary', borderWidth: 1 },
+        },
+        '& .MuiInputLabel-root': { display: 'none' },
+        '& .MuiInputBase-input': {
+          py: '0 !important',
+          fontSize: 12,
+          '&::placeholder': { color: 'text.disabled', opacity: 1 },
+        },
+      } : {
         width,
         transition: 'width 0.3s ease-in-out',
       }}
@@ -67,13 +87,10 @@ export const AutoCompleteSearch = ({
       filterSelectedOptions
       value={value}
       onChange={(event: any, newValue: PodcastFeed | null) => {
-        console.log('ON CHANGE: ', newValue);
-        // setOptions(newValue ? [newValue, ...options] : options);
         setValue(newValue);
         if (newValue && onSelect) onSelect(newValue);
       }}
       onInputChange={(event, newInputValue) => {
-        console.log('SET INPUT VALUE:', newInputValue);
         setQuery(newInputValue);
         setInputValue(newInputValue);
       }}
@@ -85,32 +102,22 @@ export const AutoCompleteSearch = ({
           {...params}
           onFocus={() => setIsExpanded(true)}
           onBlur={() => setIsExpanded(false)}
-          label='Search'
-          placeholder='Search by title'
+          label={compact ? undefined : 'Search'}
+          placeholder={placeholder ?? (compact ? 'Search shows...' : 'Search by title')}
           fullWidth
           InputProps={{
             ...InputProps,
             startAdornment: (
               <InputAdornment position='start' sx={{ mx: 0.5 }}>
-                <SearchRounded color='secondary' fontSize='small' />
+                <SearchRounded
+                  fontSize='small'
+                  sx={{ fontSize: compact ? 14 : undefined, color: 'text.disabled' }}
+                />
               </InputAdornment>
             ),
           }}
-          // slotProps={{
-          //   ...InputProps,
-          //   input: {
-          //     startAdornment: (
-          //       <InputAdornment position='start' sx={{ ml: '4px', mr: '4px' }}>
-          //         <SearchRounded color='secondary' fontSize='small' />
-          //       </InputAdornment>
-          //     ),
-          //   },
-          // }}
         />
       )}
-      // slots={{
-      //   popper: RepositionPopper,
-      // }}
       slotProps={{
         listbox: {
           sx: { maxHeight: '80vh' },
@@ -133,7 +140,6 @@ export const AutoCompleteSearch = ({
             onClick={(e) => {
               if ((e.target as HTMLElement).closest('button')) return;
               props.onClick?.(e);
-              // if (onSelect) onSelect(option);
             }}
           >
             <AutoCompleteOption option={option} />
