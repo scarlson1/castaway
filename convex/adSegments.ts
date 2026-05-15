@@ -41,7 +41,7 @@ export const saveAdDoc = internalMutation({
     duration: v.number(),
     transcript: v.string(),
     confidence: v.number(),
-    embedding: v.array(v.number()),
+    embedding: v.optional(v.array(v.number())),
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert('ads', {

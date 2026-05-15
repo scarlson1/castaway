@@ -1,7 +1,7 @@
 'use node';
 
 import { vEventId } from '@convex-dev/workflow';
-import { internal } from 'convex/_generated/api';
+import { api, internal } from 'convex/_generated/api';
 import { internalAction } from 'convex/_generated/server';
 import { workflow } from 'convex/adPipeline/workflow';
 import { classifyWindowsBatch } from 'convex/utils/llmBatchClassifier';
@@ -30,19 +30,23 @@ export const fn = internalAction({
     });
 
     if (windows.length === 0) {
-      // await ctx.scheduler.runAfter(0, internal.adPipeline.mergeSegments.fn, {
-      //   jobId,
-      // });
       await workflow.sendEvent(ctx, { id: eventId });
       return;
     }
 
-    // TODO: check ad table for similar windows labelled as an ad ??
-    // requires creating embeddings for windows ?? (expensive/huge storage cost)
-    // if high confidence --> label as ad or not ad ??
+    // Fetch podcast-specific few-shot examples from user feedback history
+    const job = await ctx.runQuery(api.adJobs.getById, { id: jobId });
+    const episode = job
+      ? await ctx.runQuery(api.episodes.getByGuid, { id: job.episodeId })
+      : null;
+    const fewShotExamples = episode
+      ? await ctx.runQuery(internal.adFeedback.getFewShotExamples, {
+          podcastId: episode.podcastId,
+        })
+      : [];
 
     // LLM call for the batch
-    const classifiedWindows = await classifyWindowsBatch(windows);
+    const classifiedWindows = await classifyWindowsBatch(windows, fewShotExamples);
 
     // write results
     await ctx.runMutation(internal.adJobs.patchWindows, {

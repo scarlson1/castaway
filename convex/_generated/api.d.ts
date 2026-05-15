@@ -9,6 +9,7 @@
  */
 
 import type * as actions from "../actions.js";
+import type * as adFeedback from "../adFeedback.js";
 import type * as adJobs from "../adJobs.js";
 import type * as adPipeline_chunkTranscript from "../adPipeline/chunkTranscript.js";
 import type * as adPipeline_classifyWindows from "../adPipeline/classifyWindows.js";
@@ -61,6 +62,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   actions: typeof actions;
+  adFeedback: typeof adFeedback;
   adJobs: typeof adJobs;
   "adPipeline/chunkTranscript": typeof adPipeline_chunkTranscript;
   "adPipeline/classifyWindows": typeof adPipeline_classifyWindows;

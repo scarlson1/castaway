@@ -18,19 +18,21 @@ import { api } from 'convex/_generated/api';
 import { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesList, EpisodesOptionsButton } from '~/components/EpisodesList';
+import { EpisodesTableWrapper } from '~/components/EpisodeTableWrapper';
 import { ExpandableSearchBar } from '~/components/ExpandableSearchBar';
 import { FollowingButtons } from '~/components/FollowingButtons';
+import { PageHeader } from '~/components/PageHeader';
 import { RagEpisodeResults } from '~/components/RagSearch';
 import { SimilarPodcasts } from '~/components/SimilarPods';
 import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
+import { SuspensePodDetails } from '~/components/suspense/SuspensePodDetails';
 import { useDebounce } from '~/hooks/useDebounce';
 import {
   podchaserPodcast,
   type PodcastIdentifierType,
 } from '~/serverFn/podchaser';
 import { getRootDomain } from '~/utils/getDomain';
-import { PageHeader } from '~/components/PageHeader';
 
 export const Route = createFileRoute('/_authed/podcasts_/$podId')({
   component: RouteComponent,
@@ -98,7 +100,11 @@ function RouteComponent() {
       ) : (
         <ErrorBoundary fallback={<div>Error loading episodes</div>}>
           <Suspense fallback={<SuspenseEpisodeList numItems={10} />}>
-            <EpisodesTable podId={podId} />
+            {/* <EpisodesTable podId={podId} />
+             */}
+            <EpisodesTableWrapper>
+              <EpisodesList podId={podId} />
+            </EpisodesTableWrapper>
           </Suspense>
         </ErrorBoundary>
       )}
@@ -129,58 +135,6 @@ function RouteComponent() {
         </Suspense>
       </ErrorBoundary>
       <Outlet />
-    </Box>
-  );
-}
-
-function EpisodesTable({ podId }: { podId: string }) {
-  return (
-    <Box
-      sx={[
-        {
-          border: '1px solid',
-          borderColor: 'divider',
-          borderRadius: 1.25,
-          overflow: 'hidden',
-          bgcolor: 'background.paper',
-        },
-      ]}
-    >
-      {/* <Box sx={{ px: { xs: 1, sm: 2 } }}> */}
-      {/* Table header */}
-      <Box
-        sx={[
-          {
-            display: { xs: 'none', sm: 'grid' },
-            gridTemplateColumns: '64px 1fr 100px 80px 36px',
-            gap: 1.75,
-            alignItems: 'center',
-            px: 2,
-            py: 1,
-            borderBottom: '1px solid',
-            borderColor: 'divider',
-            bgcolor: '#f4f3ee',
-          },
-          (t) => t.applyStyles('dark', { bgcolor: '#1a1813' }),
-        ]}
-      >
-        {['#', 'Episode', 'Released', 'Length', ''].map((h, i) => (
-          <Typography
-            key={i}
-            sx={{
-              fontFamily: "'JetBrains Mono', monospace",
-              fontSize: 10,
-              letterSpacing: '0.16em',
-              textTransform: 'uppercase',
-              color: 'text.secondary',
-            }}
-          >
-            {h}
-          </Typography>
-        ))}
-      </Box>
-      <EpisodesList podId={podId} />
-      {/* </Box> */}
     </Box>
   );
 }
@@ -358,45 +312,5 @@ function PodcastRating({
         ({data?.podcast?.reviewCount || 0} reviews)
       </Typography>
     </Stack>
-  );
-}
-
-function SuspensePodDetails() {
-  return (
-    <Box
-      sx={{
-        display: 'grid',
-        gridTemplateColumns: { xs: '96px 1fr', sm: '200px 1fr' },
-        gap: { xs: 2, sm: 3.5 },
-        p: { xs: 2, sm: 3 },
-        bgcolor: 'background.paper',
-        border: '1px solid',
-        borderColor: 'divider',
-        borderRadius: 1.75,
-        mb: 3,
-      }}
-    >
-      <Skeleton
-        variant='rounded'
-        sx={{ width: { xs: 96, sm: 200 }, height: { xs: 96, sm: 200 } }}
-      />
-      <Box>
-        <Skeleton width={60} height={12} sx={{ mb: 1 }} />
-        <Skeleton
-          variant='text'
-          sx={{ fontSize: '2rem', width: '60%', mb: 1 }}
-        />
-        <Skeleton width={120} height={16} sx={{ mb: 1 }} />
-        <Stack direction='row' spacing={2} sx={{ mt: 1 }}>
-          <Skeleton width={100} height={14} />
-          <Skeleton width={80} height={14} />
-        </Stack>
-        <Box sx={{ mt: 1.5 }}>
-          <Skeleton />
-          <Skeleton />
-          <Skeleton width='60%' />
-        </Box>
-      </Box>
-    </Box>
   );
 }

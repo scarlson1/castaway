@@ -276,16 +276,53 @@ export default defineSchema({
     duration: v.number(),
     transcript: v.string(),
     confidence: v.number(),
-    embedding: v.array(v.number()),
+    embedding: v.optional(v.array(v.number())), // optional — manual adds fill this in async
     createdAt: v.number(),
-    // TODO: add feedback score
+    source: v.optional(v.union(v.literal('llm'), v.literal('user'))),
+    verifyCount: v.optional(v.number()),
+    rejectCount: v.optional(v.number()),
+    verdict: v.optional(v.union(v.literal('verified'), v.literal('rejected'))),
+    correctedStart: v.optional(v.number()),
+    correctedEnd: v.optional(v.number()),
   })
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
       dimensions: embeddingDimension, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
       filterFields: ['podcastId'],
     })
-    .index('by_episodeId', ['episodeId']),
+    .index('by_episodeId', ['episodeId'])
+    .index('by_podcastId_verdict', ['podcastId', 'verdict']),
+
+  adFeedback: defineTable({
+    adId: v.id('ads'),
+    clerkId: v.string(),
+    episodeId: v.string(),
+    podcastId: v.string(),
+    action: v.union(
+      v.literal('confirmed'),
+      v.literal('rejected'),
+      v.literal('manually_added'),
+      v.literal('boundary_adjusted'),
+    ),
+    originalStart: v.number(),
+    originalEnd: v.number(),
+    correctedStart: v.optional(v.number()),
+    correctedEnd: v.optional(v.number()),
+    transcriptText: v.string(),
+    llmConfidence: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_episodeId', ['episodeId'])
+    .index('by_podcastId_action', ['podcastId', 'action'])
+    .index('by_adId_clerkId', ['adId', 'clerkId']),
+
+  podcastAdConfig: defineTable({
+    podcastId: v.string(),
+    confidenceThreshold: v.number(),
+    lastCalibratedAt: v.number(),
+    feedbackSampleSize: v.number(),
+  }).index('by_podcastId', ['podcastId']),
 
   adJobs: defineTable({
     workflowId: vWorkflowId,

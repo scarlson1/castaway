@@ -14,6 +14,14 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI();
 
+export const fillAdEmbedding = internalAction({
+  args: { adId: v.id('ads'), transcript: v.string() },
+  handler: async (ctx, { adId, transcript }) => {
+    const embedding = await embed(transcript);
+    await ctx.runMutation(internal.adFeedback.patchAdEmbedding, { adId, embedding });
+  },
+});
+
 export const saveAdSegment = internalAction({
   args: {
     // sourceId: v.string(),

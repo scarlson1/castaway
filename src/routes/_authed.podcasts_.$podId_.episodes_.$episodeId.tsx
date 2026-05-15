@@ -1,8 +1,17 @@
 import { convexQuery, useConvexMutation } from '@convex-dev/react-query';
-import { Box, Dialog, DialogContent, DialogTitle, InputBase, Typography } from '@mui/material';
+import {
+  Box,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  InputBase,
+  Stack,
+  Typography,
+} from '@mui/material';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
+import type { Id } from 'convex/_generated/dataModel';
 import { format } from 'date-fns';
 import { Suspense, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -195,52 +204,67 @@ function RouteComponent() {
             }}
           >
             {/* Metadata row */}
-            <Box
+            {/* <Box
               sx={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: 0.75,
+                gap: 2,
                 mb: 1.5,
                 flexWrap: 'wrap',
               }}
+            > */}
+            <Stack
+              direction='row'
+              spacing={1}
+              sx={{
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                mb: { xs: 1, sm: 1.5 },
+              }}
+              divider={<Typography variant='body2'>{'·'}</Typography>}
             >
-              {(data.feedImage || data.image) && (
-                <Box
-                  component='img'
-                  src={data.feedImage || data.image || ''}
-                  alt={data.podcastTitle}
-                  sx={{
-                    width: 18,
-                    height: 18,
-                    borderRadius: 0.375,
-                    flexShrink: 0,
-                    objectFit: 'cover',
-                  }}
-                />
-              )}
-              <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
-                {data.podcastTitle}
-              </Typography>
+              <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+                {data.feedImage || data.image ? (
+                  <Box
+                    component='img'
+                    src={data.feedImage || data.image || ''}
+                    alt={data.podcastTitle}
+                    sx={{
+                      width: 18,
+                      height: 18,
+                      borderRadius: 0.375,
+                      flexShrink: 0,
+                      objectFit: 'cover',
+                    }}
+                  />
+                ) : null}
+                <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
+                  {data.podcastTitle}
+                </Typography>
+              </Stack>
               {episodeLabel && (
                 <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  · {episodeLabel}
+                  {episodeLabel}
                 </Typography>
               )}
               <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                · Released {format(new Date(data.publishedAt), 'MMM d')}
+                Released {format(new Date(data.publishedAt), 'MMM d')}
               </Typography>
               {data.durationSeconds ? (
                 <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  · {getDuration(data.durationSeconds)}
+                  {getDuration(data.durationSeconds)}
                 </Typography>
               ) : null}
-              {adCount > 0 && (
+              {adCount > 0 ? (
                 <Box
                   sx={{
                     px: 0.75,
                     py: 0.125,
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
+                    // bgcolor: 'primary.main',
+                    // color: 'primary.contrastText',
+                    color: 'primary.main',
+                    border: (theme) =>
+                      `1px solid ${theme.vars.palette.primary.main}`,
                     borderRadius: 0.5,
                     fontSize: 10,
                     fontFamily: "'JetBrains Mono', monospace",
@@ -250,8 +274,9 @@ function RouteComponent() {
                 >
                   {adCount} ad {adCount === 1 ? 'segment' : 'segments'}
                 </Box>
-              )}
-            </Box>
+              ) : null}
+            </Stack>
+            {/* </Box> */}
 
             {/* Title */}
             <Typography
@@ -461,6 +486,8 @@ function RouteComponent() {
               episodeConvexId={data._id}
               adSegments={adSegments || []}
               chapters={chapters || []}
+              podId={podId}
+              audioUrl={data.audioUrl}
             />
           </Suspense>
         </ErrorBoundary>
@@ -532,9 +559,14 @@ function ChaptersSidebar({ chapters }: { chapters?: Chapter[] }) {
 type TranscriptMode = 'full' | 'chapters';
 
 interface AdSeg {
+  _id: Id<'ads'>;
   start: number;
   end: number;
   duration: number;
+  verifyCount?: number;
+  rejectCount?: number;
+  verdict?: 'verified' | 'rejected';
+  source?: 'llm' | 'user';
 }
 
 interface TranscriptSeg {
@@ -567,11 +599,15 @@ function TranscriptSection({
   episodeConvexId,
   adSegments,
   chapters,
+  podId,
+  audioUrl,
 }: {
   episodeId: string;
-  episodeConvexId: import('convex/_generated/dataModel').Id<'episodes'>;
+  episodeConvexId: Id<'episodes'>;
   adSegments: AdSeg[];
   chapters: Chapter[];
+  podId: string;
+  audioUrl: string;
 }) {
   const [mode, setMode] = useState<TranscriptMode>('full');
   const [search, setSearch] = useState('');
@@ -706,30 +742,41 @@ function TranscriptSection({
               />
             </Box>
           )}
-          {transcript ? (
-            <Box
-              role='button'
-              component='a'
-              href={`data:text/plain;charset=utf-8,${encodeURIComponent(transcript.fullText || '')}`}
-              download='transcript.txt'
-              sx={monoLinkSx}
-            >
-              ↓ Export
-            </Box>
-          ) : (
-            <Box
-              role='button'
-              onClick={() => !isPending && transcribeEpisode({ episodeId })}
-              sx={{ ...monoLinkSx, opacity: isPending ? 0.5 : 1 }}
-            >
-              {isPending ? 'Transcribing…' : '+ Transcribe'}
-            </Box>
-          )}
+          {/* {transcript ? // <Box
+          //   role='button'
+          //   component='a'
+          //   href={`data:text/plain;charset=utf-8,${encodeURIComponent(transcript.fullText || '')}`}
+          //   download='transcript.txt'
+          //   sx={monoLinkSx}
+          // >
+          //   ↓ Export
+          // </Box>
+          null : ( */}
+          <Box
+            role='button'
+            onClick={() => {
+              if (isPending) return; // TODO: use mui button with disable once theme updated ??
+              const forceTranscribe = transcript
+                ? confirm(
+                    'Transcription exist. Would you like to retranscribe?',
+                  )
+                : false;
+              transcribeEpisode({ episodeId, forceTranscribe });
+            }}
+            sx={{
+              ...monoLinkSx,
+              color: transcript ? 'text.secondary' : 'disabled',
+              opacity: isPending ? 0.5 : 1,
+            }}
+          >
+            {isPending ? 'Transcribing…' : '+ Transcribe'}
+          </Box>
+          {/* )} */}
         </Box>
       </Box>
 
       {/* Scrollable: transcript rows + similar episodes */}
-      <Box sx={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', pb: 6 }}>
+      <Box sx={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', pb: 6, pr: 1 }}>
         {!transcript && (
           <Typography variant='body2' color='textSecondary'>
             No transcript available for this episode.
@@ -739,10 +786,13 @@ function TranscriptSection({
         {transcript && mode === 'full' && (
           <FullTranscript
             episodeId={episodeId}
+            episodeConvexId={episodeConvexId}
             segments={(transcript.segments as TranscriptSeg[]) || []}
             adSegments={adSegments}
             chapters={chapters}
             search={search}
+            podId={podId}
+            audioUrl={audioUrl}
           />
         )}
 
@@ -815,28 +865,99 @@ function groupSegments(segments: TranscriptSeg[]): UtteranceBlock[] {
   return blocks;
 }
 
+function adColor(ad: AdSeg | null) {
+  if (ad?.verdict === 'verified') return 'success.main';
+  if (ad?.verdict === 'rejected') return 'error.main';
+  return 'primary.main';
+}
+
+const skipBtnSx = {
+  flexShrink: 0 as const,
+  alignSelf: 'flex-start' as const,
+  mt: 0.25,
+  px: 1,
+  py: 0.25,
+  border: '1px solid',
+  borderColor: 'primary.main',
+  borderRadius: 0.5,
+  fontSize: 10,
+  fontFamily: "'JetBrains Mono', monospace",
+  color: 'primary.main',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap' as const,
+  '&:hover': { bgcolor: 'primary.main', color: 'primary.contrastText' },
+};
+
+const voteBtnSx = {
+  px: 0.75,
+  py: 0.25,
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 0.5,
+  fontSize: 10,
+  fontFamily: "'JetBrains Mono', monospace",
+  color: 'text.disabled',
+  cursor: 'pointer',
+  whiteSpace: 'nowrap' as const,
+  userSelect: 'none' as const,
+  '&:hover': { borderColor: 'text.secondary', color: 'text.secondary' },
+};
+
 function FullTranscript({
   episodeId,
+  episodeConvexId,
   segments,
   adSegments,
   chapters,
   search,
+  podId,
+  audioUrl,
 }: {
   episodeId: string;
+  episodeConvexId: Id<'episodes'>;
   segments: TranscriptSeg[];
   adSegments: AdSeg[];
   chapters: Chapter[];
   search: string;
+  podId: string;
+  audioUrl: string;
 }) {
   const curEpId = useAudioStore((s) => s.episodeId);
   const position = useAudioStore((s) => s.position);
   const isActive = curEpId === episodeId;
 
+  const toast = useAsyncToast();
+  const { data: myVotes } = useQuery(
+    convexQuery(api.adFeedback.getMyVotesForEpisode, { episodeId }),
+  );
+  const { mutate: confirmAd } = useMutation({
+    mutationFn: useConvexMutation(api.adFeedback.confirmAd),
+    onError: () => toast.error('Failed to confirm ad'),
+  });
+  const { mutate: rejectAd } = useMutation({
+    mutationFn: useConvexMutation(api.adFeedback.rejectAd),
+    onError: () => toast.error('Failed to reject ad'),
+  });
+  const { mutate: addManualAd } = useMutation({
+    mutationFn: useConvexMutation(api.adFeedback.addManualAdSegment),
+    onError: () => toast.error('Failed to add ad segment'),
+  });
+  const myVoteMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const vote of myVotes ?? []) {
+      map.set(vote.adId, vote.action);
+    }
+    return map;
+  }, [myVotes]);
+
   const groupedSegments = useMemo(() => groupSegments(segments), [segments]);
 
   const activeSegId = useMemo(() => {
     if (!isActive) return null;
-    return groupedSegments.find((b) => position >= b.start && position < b.end)?.id ?? null;
+    return (
+      groupedSegments.find((b) => position >= b.start && position < b.end)
+        ?.id ?? null
+    );
   }, [isActive, position, groupedSegments]);
 
   const rows = useMemo<RowItem[]>(() => {
@@ -975,7 +1096,9 @@ function FullTranscript({
 
         const { segment, ad, isFirstAdSegment } = row;
         const isAd = Boolean(ad);
-        const isCurrent = activeSegId !== null && String(segment.id) === String(activeSegId);
+        const isCurrent =
+          activeSegId !== null && String(segment.id) === String(activeSegId);
+        const myVote = ad ? myVoteMap.get(ad._id) : undefined;
 
         return (
           <Box
@@ -989,23 +1112,30 @@ function FullTranscript({
                 pl: 0,
                 borderRadius: '0 4px 4px 0',
                 transition: 'background 0.2s',
+                '&:hover .ad-actions': { opacity: 1 },
               },
               isAd && {
-                borderLeftColor: 'primary.main',
+                borderLeftColor: adColor(ad),
                 pl: 1.5,
+                opacity: ad?.verdict === 'rejected' ? 0.45 : 1,
               },
-              isCurrent && !isAd && {
-                borderLeftColor: 'text.primary',
-                pl: 1.5,
-                bgcolor: 'action.hover',
-              },
+              isCurrent &&
+                !isAd && {
+                  borderLeftColor: 'text.primary',
+                  pl: 1.5,
+                  bgcolor: 'action.hover',
+                },
             ]}
           >
             <Typography
               sx={{
                 fontFamily: "'JetBrains Mono', monospace",
                 fontSize: 10,
-                color: isAd ? 'primary.main' : isCurrent ? 'text.primary' : 'text.disabled',
+                color: isAd
+                  ? adColor(ad)
+                  : isCurrent
+                    ? 'text.primary'
+                    : 'text.disabled',
                 minWidth: 36,
                 flexShrink: 0,
                 pt: 0.125,
@@ -1020,7 +1150,7 @@ function FullTranscript({
                     fontFamily: "'JetBrains Mono', monospace",
                     fontSize: 9,
                     letterSpacing: '0.1em',
-                    color: 'primary.main',
+                    color: adColor(ad),
                     mb: 0.25,
                   }}
                 >
@@ -1038,31 +1168,90 @@ function FullTranscript({
                 {segment.text}
               </Typography>
             </Box>
+            {/* Skip button — always visible for ad rows */}
             {isAd && isFirstAdSegment && ad && (
               <Box
                 role='button'
                 onClick={() => useAudioStore.getState().seek?.(ad.end)}
+                sx={skipBtnSx}
+              >
+                ↪ Skip · {getDuration(ad.end - ad.start)}
+              </Box>
+            )}
+            {/* Vote buttons — appear on hover for ad rows */}
+            {isAd && isFirstAdSegment && ad && (
+              <Box
+                className='ad-actions'
                 sx={{
                   flexShrink: 0,
                   alignSelf: 'flex-start',
                   mt: 0.25,
-                  px: 1,
-                  py: 0.25,
-                  border: '1px solid',
-                  borderColor: 'primary.main',
-                  borderRadius: 0.5,
-                  fontSize: 10,
-                  fontFamily: "'JetBrains Mono', monospace",
-                  color: 'primary.main',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  '&:hover': {
-                    bgcolor: 'primary.main',
-                    color: 'primary.contrastText',
-                  },
+                  display: 'flex',
+                  gap: 0.5,
+                  opacity: 0,
+                  transition: 'opacity 0.15s',
                 }}
               >
-                ↪ Skip · {getDuration(ad.end - ad.start)}
+                <Box
+                  role='button'
+                  onClick={() => confirmAd({ adId: ad._id })}
+                  title='This is an ad'
+                  sx={[
+                    voteBtnSx,
+                    (myVote === 'confirmed' || myVote === 'manually_added') && {
+                      color: 'success.main',
+                      borderColor: 'success.main',
+                    },
+                  ]}
+                >
+                  ✓ {ad.verifyCount ?? 0}
+                </Box>
+                <Box
+                  role='button'
+                  onClick={() => rejectAd({ adId: ad._id })}
+                  title='Not an ad'
+                  sx={[
+                    voteBtnSx,
+                    myVote === 'rejected' && {
+                      color: 'error.main',
+                      borderColor: 'error.main',
+                    },
+                  ]}
+                >
+                  ✕ {ad.rejectCount ?? 0}
+                </Box>
+              </Box>
+            )}
+            {/* Mark as ad — appears on hover for non-ad rows */}
+            {!isAd && (
+              <Box
+                className='ad-actions'
+                sx={{
+                  flexShrink: 0,
+                  alignSelf: 'flex-start',
+                  mt: 0.25,
+                  opacity: 0,
+                  transition: 'opacity 0.15s',
+                }}
+              >
+                <Box
+                  role='button'
+                  onClick={() =>
+                    addManualAd({
+                      episodeId,
+                      podcastId: podId,
+                      convexEpId: episodeConvexId,
+                      audioUrl,
+                      start: segment.start,
+                      end: segment.end,
+                      transcriptText: segment.text,
+                    })
+                  }
+                  title='Mark as ad'
+                  sx={voteBtnSx}
+                >
+                  + ad
+                </Box>
               </Box>
             )}
           </Box>
@@ -1125,14 +1314,34 @@ function ChaptersTranscript({ chapters }: { chapters: Chapter[] }) {
 }
 
 // DEBUG — remove when done investigating ad/transcript grouping
-function DebugJsonDialog({ label, data, open, onClose }: { label: string; data: unknown; open: boolean; onClose: () => void }) {
+function DebugJsonDialog({
+  label,
+  data,
+  open,
+  onClose,
+}: {
+  label: string;
+  data: unknown;
+  open: boolean;
+  onClose: () => void;
+}) {
   return (
     <Dialog open={open} onClose={onClose} maxWidth='md' fullWidth>
-      <DialogTitle sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}>{label}</DialogTitle>
+      <DialogTitle
+        sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 13 }}
+      >
+        {label}
+      </DialogTitle>
       <DialogContent>
         <Box
           component='pre'
-          sx={{ fontSize: 11, fontFamily: "'JetBrains Mono', monospace", whiteSpace: 'pre-wrap', wordBreak: 'break-all', m: 0 }}
+          sx={{
+            fontSize: 11,
+            fontFamily: "'JetBrains Mono', monospace",
+            whiteSpace: 'pre-wrap',
+            wordBreak: 'break-all',
+            m: 0,
+          }}
         >
           {JSON.stringify(data, null, 2)}
         </Box>
@@ -1145,10 +1354,30 @@ function DebugTranscriptButton({ transcript }: { transcript: unknown }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Box role='button' onClick={() => setOpen(true)} sx={{ px: 1, py: 0.25, border: '1px dashed', borderColor: 'warning.main', borderRadius: 0.5, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: 'warning.main', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+      <Box
+        role='button'
+        onClick={() => setOpen(true)}
+        sx={{
+          px: 1,
+          py: 0.25,
+          border: '1px dashed',
+          borderColor: 'warning.main',
+          borderRadius: 0.5,
+          fontSize: 10,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: 'warning.main',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
         transcript
       </Box>
-      <DebugJsonDialog label='Raw transcript segments' data={transcript} open={open} onClose={() => setOpen(false)} />
+      <DebugJsonDialog
+        label='Raw transcript segments'
+        data={transcript}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }
@@ -1157,10 +1386,30 @@ function DebugAdsButton({ adSegments }: { adSegments: unknown }) {
   const [open, setOpen] = useState(false);
   return (
     <>
-      <Box role='button' onClick={() => setOpen(true)} sx={{ px: 1, py: 0.25, border: '1px dashed', borderColor: 'warning.main', borderRadius: 0.5, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: 'warning.main', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+      <Box
+        role='button'
+        onClick={() => setOpen(true)}
+        sx={{
+          px: 1,
+          py: 0.25,
+          border: '1px dashed',
+          borderColor: 'warning.main',
+          borderRadius: 0.5,
+          fontSize: 10,
+          fontFamily: "'JetBrains Mono', monospace",
+          color: 'warning.main',
+          cursor: 'pointer',
+          whiteSpace: 'nowrap',
+        }}
+      >
         ads
       </Box>
-      <DebugJsonDialog label='Ad segments' data={adSegments} open={open} onClose={() => setOpen(false)} />
+      <DebugJsonDialog
+        label='Ad segments'
+        data={adSegments}
+        open={open}
+        onClose={() => setOpen(false)}
+      />
     </>
   );
 }

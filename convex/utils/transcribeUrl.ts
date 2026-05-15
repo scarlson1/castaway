@@ -64,7 +64,15 @@ export async function transcribeUrl(
   const merged: TranscriptSegment[] = [];
   let fullText = '';
 
-  for (const t of transcripts) {
+  // Assume 128 kbps MP3 for duration estimation (16000 bytes/sec).
+  // This is used to advance the offset between chunks. Using last.end from
+  // whisper is wrong — whisper stops producing segments early (e.g. during ads
+  // or silence), so last.end undershoots the actual chunk duration and shifts
+  // all subsequent chunks' timestamps left, creating gaps in the display.
+  const BYTES_PER_SECOND = 16000;
+
+  for (let i = 0; i < transcripts.length; i++) {
+    const t = transcripts[i];
     fullText += t.text + ' ';
     if (t.segments) {
       for (const seg of t.segments) {
@@ -76,10 +84,26 @@ export async function transcribeUrl(
           speaker: seg.speaker,
         });
       }
-      const last = t.segments.at(-1);
-      if (last) offset += last.end;
     }
+    // Advance offset by actual chunk byte length, not last segment timestamp.
+    offset += chunks[i].byteLength / BYTES_PER_SECOND;
   }
+
+  // for (const t of transcripts) {
+  //   fullText += t.text + ' ';
+  //   if (t.segments) {
+  //     for (const seg of t.segments) {
+  //       merged.push({
+  //         id: seg.id,
+  //         start: seg.start + offset,
+  //         end: seg.end + offset,
+  //         text: seg.text,
+  //         speaker: seg.speaker,
+  //       });
+  //     }
+  //   const last = t.segments.at(-1);
+  //   if (last) offset += last.end;
+  // }
 
   return {
     text: fullText.trim(),

@@ -7,11 +7,12 @@ import OpenAI from 'openai';
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function classifyWindowsBatch<T extends Record<string, any>>(
-  windows: (Window & T)[]
+  windows: (Window & T)[],
+  fewShotExamples: { text: string; is_ad: boolean }[] = [],
 ): Promise<(ClassifiedWindow & T)[]> {
   const windowCount = windows.length;
 
-  const system =
+  let system =
     `You are a classifier. You must output **pure JSON only** with no explanations.
 
 CRITICAL REQUIREMENTS:
@@ -32,6 +33,22 @@ Definitions:
 - Keep reason values concise (1-2 sentences max).
 - Do not output anything outside the JSON array.
 - The output array length MUST equal ${windowCount}`.trim();
+
+  if (fewShotExamples.length > 0) {
+    const adExamples = fewShotExamples.filter((e) => e.is_ad);
+    const notAdExamples = fewShotExamples.filter((e) => !e.is_ad);
+    system += '\n\nExamples from this specific podcast to guide your classification:';
+    if (adExamples.length) {
+      system +=
+        '\n\nKnown ads from this podcast:\n' +
+        adExamples.map((e) => `- "${e.text.slice(0, 200)}"`).join('\n');
+    }
+    if (notAdExamples.length) {
+      system +=
+        '\n\nNot ads from this podcast:\n' +
+        notAdExamples.map((e) => `- "${e.text.slice(0, 200)}"`).join('\n');
+    }
+  }
 
   const user = `Classify each of the ${windowCount} windows below. Return exactly ${windowCount} classification results in a JSON array.
 

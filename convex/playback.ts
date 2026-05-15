@@ -39,13 +39,18 @@ export const update = mutation({
     // create new playback doc if it doesn't exists & add to aggregate table (aggregateByListen)
     if (!doc) {
       console.log(
-        `CREATING PLAYBACK DOC ${episodeId} [${identity.subject}]...`
+        `CREATING PLAYBACK DOC ${episodeId} [${identity.subject}]...`,
       );
 
       let ep = await db
         .query('episodes')
         .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
         .unique();
+
+      positionSeconds = Math.min(
+        positionSeconds,
+        ep?.durationSeconds || Infinity,
+      );
 
       let values = {
         clerkId,
@@ -62,7 +67,7 @@ export const update = mutation({
         values['duration'] = ep.durationSeconds;
         values['playedPercentage'] = getPlayedPct(
           positionSeconds,
-          ep.durationSeconds
+          ep.durationSeconds,
         );
       }
 
@@ -79,6 +84,13 @@ export const update = mutation({
     } else {
       console.log(`UPDATING PLAYBACK ${episodeId}`);
 
+      positionSeconds = Math.min(positionSeconds, doc.duration || Infinity);
+
+      completed =
+        completed ||
+        (Boolean(doc.duration) &&
+          Math.abs(doc.duration || 0 - positionSeconds) < 10);
+
       let values = {
         positionSeconds,
         completed,
@@ -88,7 +100,7 @@ export const update = mutation({
       if (doc.duration)
         values['playedPercentage'] = getPlayedPct(
           positionSeconds,
-          doc.duration
+          doc.duration,
         );
 
       await db.patch(doc._id, values);
@@ -191,7 +203,7 @@ export const lastListened = query({
 async function getUserPlaybackByEpisodeId(
   db: QueryCtx['db'],
   clerkId: string,
-  episodeId: string
+  episodeId: string,
 ) {
   return await db
     .query('user_playback')
@@ -203,7 +215,7 @@ async function getUserPlaybackByEpisodeId(
 async function getAllPlaybackByUser(
   db: QueryCtx['db'],
   clerkId: string,
-  order: 'asc' | 'desc' = 'desc'
+  order: 'asc' | 'desc' = 'desc',
 ) {
   return await db
     .query('user_playback')
@@ -215,7 +227,7 @@ async function getAllPlaybackByUser(
 // bulk episode delete --> clean up playback for all users
 export async function getPlaybackByEpisodeId(
   db: QueryCtx['db'],
-  episodeId: string
+  episodeId: string,
 ) {
   return await db
     .query('user_playback')
