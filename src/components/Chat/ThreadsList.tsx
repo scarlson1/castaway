@@ -20,7 +20,7 @@ import {
   Typography,
 } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate, useParams } from '@tanstack/react-router';
+import { useHydrated, useNavigate, useParams } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useState } from 'react';
 
@@ -83,7 +83,13 @@ export const ThreadsList = ({ onSelect }: { onSelect?: () => void }) => {
           disabled={status !== 'CanLoadMore'}
           sx={{ borderRadius: 0.75, px: 1.25, py: 0.75 }}
         >
-          <Typography sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: 'text.disabled' }}>
+          <Typography
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              color: 'text.disabled',
+            }}
+          >
             Load more
           </Typography>
         </ListItemButton>
@@ -101,6 +107,8 @@ interface ChatListItemProps {
   onDelete: (threadId: string) => void;
   onSelect?: () => void;
 }
+
+// need to use server function ??
 
 function formatThreadAge(ms?: number) {
   if (!ms) return '';
@@ -123,6 +131,7 @@ export function ChatListItem({
   onSelect,
 }: ChatListItemProps) {
   const navigate = useNavigate();
+  const hydrated = useHydrated();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   const [isRenaming, setIsRenaming] = useState(false);
@@ -215,7 +224,15 @@ export function ChatListItem({
             slotProps={{ input: { disableUnderline: false } }}
           />
         ) : (
-          <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'baseline', gap: 0.75 }}>
+          <Box
+            sx={{
+              flex: 1,
+              minWidth: 0,
+              display: 'flex',
+              alignItems: 'baseline',
+              gap: 0.75,
+            }}
+          >
             <Typography
               noWrap
               sx={{ fontSize: 12, flex: '1 1 auto', minWidth: 0 }}
@@ -231,7 +248,7 @@ export function ChatListItem({
                 opacity: 0.7,
               }}
             >
-              {formatThreadAge(createdAt)}
+              {hydrated ? formatThreadAge(createdAt) : ''}
             </Typography>
           </Box>
         )}

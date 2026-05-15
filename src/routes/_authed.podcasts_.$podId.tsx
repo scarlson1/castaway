@@ -65,7 +65,7 @@ function RouteComponent() {
           alignItems: 'center',
           justifyContent: 'space-between',
           mb: 1.5,
-          mt: 3,
+          mt: { xs: 1.5, sm: 2 },
           gap: 1.5,
         }}
       >
@@ -177,18 +177,43 @@ function PodDetails({ podId }: { podId: string }) {
       />
       <Box>
         {/* Kicker */}
-        <Typography
-          sx={{
-            fontFamily: "'JetBrains Mono', monospace",
-            fontSize: 10,
-            letterSpacing: '0.16em',
-            textTransform: 'uppercase',
-            color: 'text.secondary',
-            mb: 1,
-          }}
-        >
-          Podcast
-        </Typography>
+        {data?.categoryArray?.length ? (
+          <Stack
+            direction='row'
+            spacing={1}
+            divider={<span>·</span>}
+            sx={{ alignItems: 'center' }}
+          >
+            {data.categoryArray.map((c) => (
+              <Typography
+                key={c}
+                sx={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 10,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                  mb: 1,
+                }}
+              >
+                {c}
+              </Typography>
+            ))}
+          </Stack>
+        ) : (
+          <Typography
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+              mb: 1,
+            }}
+          >
+            Podcast
+          </Typography>
+        )}
 
         {/* Title row */}
         <Stack

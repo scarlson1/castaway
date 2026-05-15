@@ -2,6 +2,8 @@ import { Grid, type GridProps } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useAction } from 'convex/react';
+import { Suspense } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Card } from '~/components/Card';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
@@ -45,7 +47,11 @@ export function SimilarPodcasts({
               params: { podId: pod.podcastId },
             }}
           >
-            <SubscribeIconButton podcastId={pod.podcastId} />
+            <ErrorBoundary fallback={null}>
+              <Suspense fallback={null}>
+                <SubscribeIconButton podcastId={pod.podcastId} />
+              </Suspense>
+            </ErrorBoundary>
           </Card>
         </Grid>
       ))}

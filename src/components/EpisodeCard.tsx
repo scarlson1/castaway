@@ -1,17 +1,8 @@
 import { SignedIn } from '@clerk/tanstack-react-start';
+import { alpha } from '@mui/material';
 import { Card } from '~/components/Card';
 import { MuiLink } from '~/components/MuiLink';
 import { PlaybackButton } from '~/components/PlaybackButton';
-
-// const ClampedTypography = styled(Typography)({
-//   overflow: 'hidden',
-//   display: '-webkit-box',
-//   // lineClamp: 2,
-//   '-webkit-line-clamp': '2',
-//   '-webkit-box-orient': 'vertical',
-//   // boxOrient: 'vertical',
-//   textOverflow: 'ellipsis',
-// });
 
 // TODO: generalize card in trending.tsx / components/TrendingCard
 export function EpisodeCard({
@@ -78,6 +69,21 @@ export function EpisodeCard({
             publishedAt,
             podcastTitle: podName,
           }}
+          color='default'
+          sx={(theme) => ({
+            backgroundColor: alpha('#363D49', 0.5),
+            color: '#fff',
+            '&:hover': {
+              color: 'primary.main',
+            },
+            ...theme.applyStyles('dark', {
+              backgroundColor: alpha('#363D49', 0.5),
+              color: '#fff',
+              '&:hover': {
+                color: 'primary.main',
+              },
+            }),
+          })}
         />
         {/* <IconButton size='small' onClick={handlePlay}>
           <PlayArrowRounded fontSize='inherit' />

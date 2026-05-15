@@ -9,7 +9,8 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { searchPodIndex } from '~/components/PodcastIndexSearch';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 import { useDebounce } from '~/hooks/useDebounce';
@@ -53,28 +54,35 @@ export const AutoCompleteSearch = ({
 
   return (
     <Autocomplete
-      sx={compact ? {
-        width,
-        transition: 'width 0.3s ease-in-out',
-        '& .MuiOutlinedInput-root': {
-          borderRadius: 0.75,
-          fontSize: 12,
-          py: '6px !important',
-          bgcolor: 'background.default',
-          '& fieldset': { borderColor: 'divider' },
-          '&:hover fieldset': { borderColor: 'text.disabled' },
-          '&.Mui-focused fieldset': { borderColor: 'text.secondary', borderWidth: 1 },
-        },
-        '& .MuiInputLabel-root': { display: 'none' },
-        '& .MuiInputBase-input': {
-          py: '0 !important',
-          fontSize: 12,
-          '&::placeholder': { color: 'text.disabled', opacity: 1 },
-        },
-      } : {
-        width,
-        transition: 'width 0.3s ease-in-out',
-      }}
+      sx={
+        compact
+          ? {
+              width,
+              transition: 'width 0.3s ease-in-out',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 0.75,
+                fontSize: 12,
+                py: '6px !important',
+                bgcolor: 'background.default',
+                '& fieldset': { borderColor: 'divider' },
+                '&:hover fieldset': { borderColor: 'text.disabled' },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'text.secondary',
+                  borderWidth: 1,
+                },
+              },
+              '& .MuiInputLabel-root': { display: 'none' },
+              '& .MuiInputBase-input': {
+                py: '0 !important',
+                fontSize: 12,
+                '&::placeholder': { color: 'text.disabled', opacity: 1 },
+              },
+            }
+          : {
+              width,
+              transition: 'width 0.3s ease-in-out',
+            }
+      }
       size='small'
       getOptionLabel={(option) =>
         typeof option === 'string' ? option : option.title
@@ -103,7 +111,9 @@ export const AutoCompleteSearch = ({
           onFocus={() => setIsExpanded(true)}
           onBlur={() => setIsExpanded(false)}
           label={compact ? undefined : 'Search'}
-          placeholder={placeholder ?? (compact ? 'Search shows...' : 'Search by title')}
+          placeholder={
+            placeholder ?? (compact ? 'Search shows...' : 'Search by title')
+          }
           fullWidth
           InputProps={{
             ...InputProps,
@@ -111,7 +121,10 @@ export const AutoCompleteSearch = ({
               <InputAdornment position='start' sx={{ mx: 0.5 }}>
                 <SearchRounded
                   fontSize='small'
-                  sx={{ fontSize: compact ? 14 : undefined, color: 'text.disabled' }}
+                  sx={{
+                    fontSize: compact ? 14 : undefined,
+                    color: 'text.disabled',
+                  }}
                 />
               </InputAdornment>
             ),
@@ -199,7 +212,11 @@ function AutoCompleteOption({ option }: { option: PodcastFeed }) {
         </Typography>
       </Grid>
       <Grid size='auto' display='flex' alignItems='center'>
-        <SubscribeIconButton podcastId={option.podcastGuid} />
+        <ErrorBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <SubscribeIconButton podcastId={option.podcastGuid} />
+          </Suspense>
+        </ErrorBoundary>
       </Grid>
     </Grid>
   );

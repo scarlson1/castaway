@@ -16,10 +16,10 @@ import { api } from 'convex/_generated/api';
 import { Suspense, useId, useMemo } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Authed } from '~/components/Authed';
-import { PageHeader } from '~/components/PageHeader';
 import { Card } from '~/components/Card';
 import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
+import { PageHeader } from '~/components/PageHeader';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import { SimilarPodcasts } from '~/components/SimilarPods';
 import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
@@ -70,7 +70,10 @@ function RouteComponent() {
         spacing={2}
         sx={{ justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Typography variant='h6' sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}>
+        <Typography
+          variant='h6'
+          sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}
+        >
           Trending
           <Box
             component='span'
@@ -130,7 +133,22 @@ function RouteComponent() {
         </Box>
 
         <ErrorBoundary fallback={<div>Error loading recommendations</div>}>
-          <RecommendedEpisodes limit={8} />
+          <Suspense
+            fallback={
+              <SuspenseGridCards
+                numItems={8}
+                columnSpacing={{ xs: 1, sm: 2, md: 2 }}
+                rowSpacing={1}
+                columns={16}
+                childGridProps={{
+                  size: { xs: 4, sm: 4, md: 4, lg: 4 },
+                }}
+                orientation='vertical'
+              />
+            }
+          >
+            <RecommendedEpisodes limit={8} />
+          </Suspense>
         </ErrorBoundary>
 
         <Divider />

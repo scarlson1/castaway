@@ -2,6 +2,8 @@ import { convexQuery } from '@convex-dev/react-query';
 import { Grid } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
+import { Suspense } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Card } from '~/components/Card';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
@@ -18,7 +20,7 @@ export const StatsMostPlayedPodcasts = ({
     convexQuery(api.stats.podcasts.mostPlayed, {
       numItems: pageSize,
       offset,
-    })
+    }),
   );
 
   return (
@@ -35,7 +37,11 @@ export const StatsMostPlayedPodcasts = ({
               params: { podId: pod.podcastId },
             }}
           >
-            <SubscribeIconButton podcastId={pod.podcastId} />
+            <ErrorBoundary fallback={null}>
+              <Suspense fallback={null}>
+                <SubscribeIconButton podcastId={pod.podcastId} />
+              </Suspense>
+            </ErrorBoundary>
           </Card>
         </Grid>
       ))}

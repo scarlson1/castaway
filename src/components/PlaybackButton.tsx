@@ -1,6 +1,5 @@
 import { PauseRounded, PlayArrowRounded } from '@mui/icons-material';
 import {
-  alpha,
   Box,
   CircularProgress,
   IconButton,
@@ -27,19 +26,24 @@ const StyledIconButton = styled(IconButton)(({ theme }) => ({
   height: iconButtonSize,
   width: iconButtonSize,
   color: theme.vars.palette.primary.main,
-  backgroundColor: alpha('#E6EBFD', 0.8),
+  // backgroundColor: alpha('#E6EBFD', 0.8),
+  backgroundColor: `rgba(${theme.vars.palette.primary.lightChannel} / 0.2)`,
   '&:hover': {
     // color: '#3A4D73',
+    color: 'primary.dark',
     backgroundColor: '#fff',
   },
   // '&:hover .MuiSvgIcon-root': {
   //   color: '#3A4D73',
   // },
   ...theme.applyStyles('dark', {
-    color: '#fff',
-    backgroundColor: alpha('#363D49', 0.5),
+    color: 'primary.main',
+    // backgroundColor: alpha('#363D49', 0.5),
+    // backgroundColor: `color-mix(in srgb, ${theme.vars.palette.background.default}, white 20%)`,
+    // backgroundColor: `rgba(${theme.vars.palette.background.default} / 0.24)`,
+    backgroundColor: `rgba(${theme.vars.palette.primary.lightChannel} / 0.16)`,
     '&:hover': {
-      // color: '#3A4D73',
+      color: 'primary.main',
       backgroundColor: theme.vars.palette.background.paper,
     },
   }),
@@ -73,7 +77,7 @@ export function PlaybackButton({
 
   const isCurrentAudio = useMemo(
     () => episode.episodeId === nowPlaying?.episodeId,
-    [episode.episodeId, nowPlaying]
+    [episode.episodeId, nowPlaying],
   );
 
   // for progress indicator - 100 if episode has not been played
@@ -82,7 +86,7 @@ export function PlaybackButton({
       ? (1 - playback.playedPercentage) * 100
       : getPlaybackPct(
           playback?.positionSeconds,
-          episode?.durationSeconds ?? undefined
+          episode?.durationSeconds ?? undefined,
         );
   }, [episode, playback]);
 
@@ -102,7 +106,7 @@ export function PlaybackButton({
         podName: ep.podcastTitle,
       });
     },
-    [setPlaying]
+    [setPlaying],
   );
 
   return (

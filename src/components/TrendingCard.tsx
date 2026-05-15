@@ -1,4 +1,5 @@
 import {
+  alpha,
   Box,
   IconButton,
   Skeleton,
@@ -14,10 +15,9 @@ import { formatRelativeTime, getDuration } from '~/utils/format';
 
 const ClampedTypography = styled(Typography)({
   overflow: 'hidden',
-  // display: '-webkit-box',
-  // // lineClamp: 2,
-  // '-webkit-line-clamp': '2',
-  // '-webkit-box-orient': 'vertical',
+  display: '-webkit-box',
+  WebkitLineClamp: '2',
+  WebkitBoxOrient: 'vertical',
   // // boxOrient: 'vertical',
   textOverflow: 'ellipsis',
   whiteSpace: 'nowrap',
@@ -182,7 +182,21 @@ TrendingCardProps) {
                 audioUrl,
               } as Doc<'episodes'>
             }
-            color='primary'
+            color='default'
+            sx={(theme) => ({
+              backgroundColor: alpha('#363D49', 0.5),
+              color: '#fff',
+              '&:hover': {
+                color: 'primary.main',
+              },
+              ...theme.applyStyles('dark', {
+                backgroundColor: alpha('#363D49', 0.5),
+                color: '#fff',
+                '&:hover': {
+                  color: 'primary.main',
+                },
+              }),
+            })}
           />
         </Suspense>
       </Box>

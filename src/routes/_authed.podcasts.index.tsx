@@ -8,12 +8,15 @@ import {
   Select,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { orderBy } from 'lodash-es';
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Card } from '~/components/Card';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { PageHeader } from '~/components/PageHeader';
@@ -28,6 +31,9 @@ type SortOption = '' | 'recent' | 'alpha';
 function RouteComponent() {
   const [sort, setSort] = useState<SortOption>('recent');
   const { data } = useSuspenseQuery(convexQuery(api.subscribe.allDetails, {}));
+
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const sorted = useMemo(() => {
     if (sort === 'recent')
@@ -76,7 +82,11 @@ function RouteComponent() {
       </Box>
 
       {sorted.length === 0 ? (
-        <Stack direction='column' spacing={2} sx={{ alignItems: 'center', py: 8 }}>
+        <Stack
+          direction='column'
+          spacing={2}
+          sx={{ alignItems: 'center', py: 8 }}
+        >
           <Typography variant='subtitle1' color='textSecondary'>
             Your followed podcasts will show up here
           </Typography>
@@ -91,7 +101,7 @@ function RouteComponent() {
         columnSpacing={{ xs: 1.5, sm: 1.5, md: 2 }}
         rowSpacing={{ xs: 2, sm: 3, md: 4 }}
       >
-        {sorted.map((pod, i) => (
+        {sorted.map((pod) => (
           <Grid key={pod._id} size={{ xs: 4, sm: 3, md: 2 }}>
             <Card
               orientation='vertical'
@@ -102,8 +112,13 @@ function RouteComponent() {
                 to: '/podcasts/$podId',
                 params: { podId: pod.podcastId },
               }}
+              coverOnly={isSmallScreen}
             >
-              <SubscribeIconButton podcastId={pod.podcastId} />
+              <ErrorBoundary fallback={null}>
+                <Suspense fallback={null}>
+                  <SubscribeIconButton podcastId={pod.podcastId} />
+                </Suspense>
+              </ErrorBoundary>
             </Card>
           </Grid>
         ))}

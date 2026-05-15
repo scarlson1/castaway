@@ -8,8 +8,8 @@ const ClampedTypography = styled(Typography<'div'>)({
   overflow: 'hidden',
   display: '-webkit-box',
   // lineClamp: 2,
-  '-webkit-line-clamp': '2',
-  '-webkit-box-orient': 'vertical',
+  WebkitLineClamp: '2',
+  WebkitBoxOrient: 'vertical',
   // boxOrient: 'vertical',
   textOverflow: 'ellipsis',
   '& a': { color: 'inherit', textDecoration: 'none' },
@@ -25,6 +25,7 @@ interface CardProps {
   subtitle: string | ReactNode;
   children?: ReactNode;
   linkProps?: LinkProps;
+  coverOnly?: boolean; // temp for only showing pod cover on mobile
 }
 
 export function Card({
@@ -35,10 +36,11 @@ export function Card({
   subtitle,
   children,
   linkProps,
+  coverOnly,
 }: CardProps) {
   const ref = useRef<HTMLDivElement>(null);
   const [isHovering] = useHover<HTMLDivElement>(
-    ref as RefObject<HTMLDivElement>
+    ref as RefObject<HTMLDivElement>,
   );
 
   let isRow = orientation === 'horizontal';
@@ -98,39 +100,45 @@ export function Card({
           ) : null}
         </Box>
 
-        <Stack
-          direction='column'
-          spacing={0.25}
-          sx={{
-            justifyContent: isRow ? 'center' : 'flex-start',
-            flex: '1 1 auto',
-          }}
-        >
-          <ClampedTypography
-            variant='body1'
-            color='textPrimary'
-            fontWeight='medium'
-            sx={{ '-webkit-line-clamp': isRow ? '1' : '2' }}
-            component='div'
+        {coverOnly ? null : (
+          <Stack
+            direction='column'
+            spacing={0.25}
+            sx={{
+              justifyContent: isRow ? 'center' : 'flex-start',
+              flex: '1 1 auto',
+            }}
           >
-            {linkProps ? (
-              <MuiLink {...linkProps} underline='none'>
-                {title}
-              </MuiLink>
-            ) : (
-              title
-            )}
-          </ClampedTypography>
-          <ClampedTypography
-            variant='body2'
-            color='textSecondary'
-            fontWeight={500}
-            sx={{ '-webkit-line-clamp': isRow ? '1' : '2' }}
-            component='div'
-          >
-            {subtitle}
-          </ClampedTypography>
-        </Stack>
+            <ClampedTypography
+              variant='body1'
+              color='textPrimary'
+              fontWeight='medium'
+              sx={{
+                WebkitLineClamp: isRow ? '1' : '2',
+              }}
+              component='div'
+            >
+              {linkProps ? (
+                <MuiLink {...linkProps} underline='none'>
+                  {title}
+                </MuiLink>
+              ) : (
+                title
+              )}
+            </ClampedTypography>
+            <ClampedTypography
+              variant='body2'
+              color='textSecondary'
+              fontWeight={500}
+              sx={{
+                WebkitLineClamp: isRow ? '1' : '2',
+              }}
+              component='div'
+            >
+              {subtitle}
+            </ClampedTypography>
+          </Stack>
+        )}
 
         {isRow && Boolean(children) ? (
           <Box

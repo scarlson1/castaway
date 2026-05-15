@@ -66,7 +66,7 @@ function RouteComponent() {
         </Suspense>
       </ErrorBoundary>
 
-      <Box sx={{ py: 4 }}>
+      <Box sx={{ py: 2 }}>
         <Stack
           direction='row'
           spacing={2}
@@ -83,22 +83,10 @@ function RouteComponent() {
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
           <Suspense fallback={<SuspenseEpisodeList numItems={8} />}>
             <EpisodesTableWrapper>
-              <Stack
-                direction='column'
-                spacing={1}
-                divider={<Divider flexItem />}
-                sx={{
-                  // display: 'flex',
-                  // flexDirection: 'column',
-                  overflow: 'auto',
-                  maxHeight: 'clamp(300px, calc(100vh - 320px), 600px)',
-                }}
-              >
-                <EpisodesList
-                  podId={data.feed.podcastGuid}
-                  podTitle={data.feed.title}
-                />
-              </Stack>
+              <EpisodesList
+                podId={data.feed.podcastGuid}
+                podTitle={data.feed.title}
+              />
             </EpisodesTableWrapper>
           </Suspense>
         </ErrorBoundary>
@@ -246,22 +234,57 @@ function EpisodesList({
     [setPlaying],
   );
 
+  if (!data?.count)
+    return (
+      <Typography sx={{ alignSelf: 'center', px: 'auto', py: 2 }}>
+        No episodes found
+      </Typography>
+    );
+
   return (
-    <>
-      {/* <TextField placeholder='search episodes' label='TODO: episode search' /> */}
+    <Stack
+      direction='column'
+      spacing={1}
+      divider={<Divider flexItem />}
+      sx={{
+        // display: 'flex',
+        // flexDirection: 'column',
+        overflow: 'auto',
+        maxHeight: 'clamp(300px, calc(100vh - 320px), 600px)',
+        py: 1,
+        px: 1.5,
+      }}
+    >
       {data?.items?.map((e) => (
-        <Box key={e.id}>
-          <EpisodeRow
-            episode={e}
-            podId={podId}
-            podTitle={podTitle}
-            setPlaying={handleSetPlaying}
-          />
-          {/* // <Divider /> */}
-        </Box>
+        // <Box key={e.id}>
+        <EpisodeRow
+          key={e.id}
+          episode={e}
+          podId={podId}
+          podTitle={podTitle}
+          setPlaying={handleSetPlaying}
+        />
+        // </Box>
       ))}
-    </>
+    </Stack>
   );
+
+  // return (
+  //   <>
+  //     {/* <TextField placeholder='search episodes' label='TODO: episode search' /> */}
+  //     {data?.items?.map((e) => (
+  //       <Box key={e.id}>
+  //         <EpisodeRow
+  //           episode={e}
+  //           podId={podId}
+  //           podTitle={podTitle}
+  //           setPlaying={handleSetPlaying}
+  //         />
+  //         {/* // <Divider /> */}
+  //       </Box>
+  //     ))}
+  //   </>
+  // );
 }
 
 // TODO: use tanstack table or mui X datagrid

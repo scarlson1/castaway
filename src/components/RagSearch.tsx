@@ -26,7 +26,7 @@ export function RagEpisodeResults({
       globalNamespace: true,
       limit: 5,
     }),
-    [podcastId, query]
+    [podcastId, query],
   );
 
   const search = useConvexAction(api.rag.search);
@@ -162,6 +162,7 @@ function TempEpisodeRow({
               audioUrl,
               feedImage: image || '',
             }}
+            color='primary'
             // positionSeconds={playback?.positionSeconds || 0}
             // playedPercentage={playback?.playedPercentage}
           />

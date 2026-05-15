@@ -497,6 +497,102 @@ If you need robust offline-first (edits on many devices), consider a CRDT or a l
   5. stitch together windows identified as ads into ad segments (`convex/adPipeline/mergeSegments`)
   6. create embedding and save ad segments to `ads` table
 
+## Ad Feedback & Classification Improvement
+
+User feedback on detected ads feeds back into future classification runs, improving accuracy on a per-podcast basis over time. The system has three connected parts: quorum voting, threshold calibration, and few-shot LLM injection.
+
+### Tables
+
+- `adFeedback` — one row per user action on an ad. Actions: `confirmed`, `rejected`, `manually_added`.
+
+  ```json
+  {
+    "adId": "Id<'ads'>",
+    "clerkId": "user_2abc...",
+    "episodeId": "episodeGuid",
+    "podcastId": "podcastGuid",
+    "action": "confirmed | rejected | manually_added",
+    "originalStart": 120.5,
+    "originalEnd": 165.0,
+    "transcriptText": "The show is brought to you by...",
+    "llmConfidence": 0.87,
+    "rejectionReason": "this is host commentary, not a paid ad",
+    "createdAt": 1715123456789
+  }
+  ```
+
+- `podcastAdConfig` — one row per podcast storing the calibrated confidence threshold and metadata.
+
+  ```json
+  {
+    "podcastId": "podcastGuid",
+    "confidenceThreshold": 0.55,
+    "feedbackSampleSize": 18,
+    "lastCalibratedAt": 1715123456789
+  }
+  ```
+
+- `ads` table — extended with feedback fields:
+
+  ```json
+  {
+    "source": "pipeline | user",
+    "verifyCount": 2,
+    "rejectCount": 1,
+    "verdict": "verified | rejected | null",
+    "embedding": [0.23, 0.48]  // optional — filled async for user-added ads
+  }
+  ```
+
+### Quorum Voting (`convex/adFeedback.ts`)
+
+Each user can cast one vote per ad (`confirmed` or `rejected`). Switching votes deletes the previous `adFeedback` row and adjusts counts. A verdict is only recorded once **3+ total votes** are cast and one side reaches **70% agreement**. If votes are split, no verdict is set (null).
+
+- `MIN_VOTES = 3` — quorum required before any verdict is recorded
+- `AGREE_THRESHOLD = 0.7` — fraction of votes needed for a verdict
+- The `by_adId_clerkId` index enforces one vote per user per ad
+- `manually_added` action counts as the creator's implicit confirm vote (`verifyCount` starts at 1)
+
+### Confidence Threshold Calibration
+
+When an ad's verdict changes for the first time (not on every subsequent vote), `recalibrateThreshold` runs inline in the same mutation:
+
+1. Queries all `verified` and `rejected` ads for the podcast via `by_podcastId_verdict` index
+2. Scans 12 threshold candidates from 0.30–0.85
+3. Picks the threshold that minimizes false positives + false negatives against the labeled set
+4. Upserts the result to `podcastAdConfig`
+
+The calibrated threshold is used by `mergeSegments.ts` when stitching classified windows into final ad segments. Falls back to `0.4` if no config exists yet.
+
+> **Note:** `ad.confidence` stored on the `ads` doc is the rolling average of merged window scores, not raw per-window LLM output. Calibration is an approximation; accuracy improves with more feedback samples (minimum 5 to run).
+>
+> **Scale note:** `recalibrateThreshold` collects all verified/rejected ads for a podcast. Fine at personal-app scale. At high volume, track running counts in `podcastAdConfig` and update incrementally instead.
+
+### Few-Shot LLM Injection (`convex/adFeedback.ts → getFewShotExamples`)
+
+Before each classification batch, `classifyWindows.ts` fetches up to 8 recent feedback examples for the podcast (60% confirmed ads, 40% rejected) and appends them to the GPT system prompt as labeled examples. This helps the model learn podcast-specific ad patterns without any fine-tuning.
+
+- 60/40 split biases toward positive examples since false negatives (missed ads) are more noticeable to users than false positives
+- Only the most recent examples are used (`.order('desc').take(...)`) so stale data doesn't dilute the signal
+- Fetching examples per batch is a small extra query; acceptable given batch size is 20 windows max
+
+### Manual Ad Segments (`convex/adFeedback.ts → addManualAdSegment`)
+
+Users can mark any transcript region as an ad. The mutation:
+
+1. Inserts to `ads` with `source: 'user'`, `confidence: 1.0`, `verifyCount: 1`
+2. Inserts an `adFeedback` row with `action: 'manually_added'`
+3. Schedules `fillAdEmbedding` internalAction via `ctx.scheduler.runAfter(0, ...)` to generate the embedding asynchronously
+
+Embedding is filled async because Convex mutations cannot make external HTTP calls (OpenAI). The ad is immediately visible in the UI without waiting for the embedding.
+
+### UI (`src/routes/_authed.podcasts_.$podId_.episodes_.$episodeId.tsx`)
+
+- Ad rows show ✓/✕ vote buttons that appear on hover. Vote counts are displayed alongside each button.
+- Ad border and label color reflects verdict: default (unresolved), green (`verified`), red (`rejected`). Rejected ads are dimmed but remain visible.
+- A `+ ad` button appears on hover over non-ad transcript rows, allowing users to mark a region manually.
+- `manually_added` votes are treated the same as `confirmed` for the purpose of button highlight state.
+
 ## AI Chat/Search
 
 LLM/Rag is used for the following features:
