@@ -37,6 +37,52 @@ See [DEVELOPMENT.md](docs/DEVEOPMENT.md) for details
 
 See [DEPLOYMENT.md](docs/DEPLOYMENT.md) for details
 
+## Improvements
+
+Switching to diatiraize transcription increases transcription time significantly. Temporarily using regular whisper api if audio is longer than 30 mins. Long term solution:
+
+### Problem
+
+`node.transcribe` processes all audio chunks serially in a single Convex action,
+hitting the 600s timeout. Diarization uses 10MB chunks (vs 24MB), creating more
+chunks that each take longer.
+
+### Solution
+
+Apply the recursive scheduling pattern from `classifyWindows` to process one
+chunk per action invocation.
+
+### Steps
+
+**1. Add `transcriptChunks` table to schema**
+Fields: `transcriptId`, `chunkIndex`, `storageId`, `text`, `segments`, `processed`
+
+**2. Create `fetchAndStoreChunks` action**
+
+- Downloads audio from URL
+- Chunks it (existing `fetchAndChunkAudio` logic)
+- Uploads each chunk to Convex file storage
+- Saves chunk records to `transcriptChunks` table
+- Returns `transcriptId` + chunk count
+
+**3. Create recursive `transcribeNextChunk` action**
+
+- Queries for the next unprocessed chunk (`transcriptChunks` where `processed: false`, limit 1)
+- Transcribes it (single OpenAI call — well under 600s)
+- Saves `text` + `segments` back to the chunk record, marks `processed: true`
+- If more chunks remain: `ctx.scheduler.runAfter(0, transcribeNextChunk, ...)`
+- If all done: merges all chunk results → writes final `transcripts` row → signals event
+
+**4. Update `transcribeWorkflow` steps**
+Replace single `step.runAction(internal.node.transcribe)` with:
+
+1. `step.runAction(fetchAndStoreChunks)` — chunk + upload
+2. `step.runAction(startTranscribeChunks)` — kick off recursive action + create completion event
+3. `step.awaitEvent(TranscriptionComplete)` — wait for all chunks
+
+**5. Wire up completion event** (same as `WindowClassificationComplete`)
+`transcribeNextChunk` calls `workflow.sendEvent(ctx, { id: eventId })` when done
+
 ## TODO
 
 - reduce embedding storage

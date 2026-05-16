@@ -226,6 +226,7 @@ function Providers({ children }: { children: ReactNode }) {
 
 function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
   useRehydrateStore();
+  const { userId } = Route.useRouteContext();
 
   return (
     <html lang='en' suppressHydrationWarning>
@@ -239,7 +240,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
       </head>
       <body>
         <Providers>
-          <AppSidebar />
+          <AppSidebar userId={userId} />
           <AppHeader />
 
           <Box

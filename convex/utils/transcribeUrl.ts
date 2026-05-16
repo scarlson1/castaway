@@ -24,20 +24,47 @@ interface WhisperResponse {
   }>;
 }
 
-export type OpenAITranscribeModel =
-  | 'gpt-4o-transcribe-diarize'
-  | 'gpt-4o-mini-transcribe'
-  | 'gpt-4o-transcribe'
-  | 'whisper-1';
+// https://developers.openai.com/api/docs/guides/speech-to-text#transcriptions
 
-export interface TranscribeOptions {
-  model?: OpenAITranscribeModel;
-  language?: string;
-  responseFormat?: 'json' | 'text' | 'diarized_json' | 'verbose_json' | 'vtt';
+// export type OpenAITranscribeModel =
+//   | 'gpt-4o-transcribe-diarize'
+//   | 'gpt-4o-mini-transcribe'
+//   | 'gpt-4o-transcribe'
+//   | 'whisper-1';
+
+interface GbtTranscribeDiarizeOptions {
+  model: 'gpt-4o-transcribe-diarize';
+  responseFormat: 'json' | 'text' | 'diarized_json';
+  // extra_body: {
+  //   known_speaker_names: ["agent"],
+  //   known_speaker_references: ["data:audio/wav;base64," + agentRef],
+  // },
 }
-// TODO: transcribeUrl only compatible with which response formats ??
+interface GbtMiniTranscribeOptions {
+  model: 'gpt-4o-mini-transcribe';
+  responseFormat: 'json' | 'text';
+}
+interface GbtTranscribeOptions {
+  model: 'gpt-4o-transcribe';
+  responseFormat: 'json' | 'text';
+}
+interface WhisperOptions {
+  model: 'whisper-1';
+  responseFormat?: 'json' | 'text' | 'diarized_json' | 'verbose_json' | 'vtt';
+  // timestamp_granularities: ["word"]
+}
+type TranscribeOptions = (
+  | GbtTranscribeDiarizeOptions
+  | GbtMiniTranscribeOptions
+  | GbtTranscribeOptions
+  | WhisperOptions
+) & { language?: string };
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// const client = new OpenAI({
+//   apiKey: process.env.GROQ_API_KEY,
+//   baseURL: 'https://api.groq.com/openai/v1',
+// });
 
 // fetches audio from url --> breaks into chunks <25MB --> transcribe --> combine transcribed chunks into array of segments ([{ id, start, end, text }])
 
@@ -47,6 +74,7 @@ export async function transcribeUrl(
 ): Promise<TranscriptionResponse> {
   // break audio into chunks of < 25MB (override for diarization (second based - 1400))
   const isDiarize = options?.model === 'gpt-4o-transcribe-diarize';
+
   let chunkSize = isDiarize ? 10 * 1024 * 1024 : 24 * 1024 * 1024;
   const chunks = await fetchAndChunkAudio(url, chunkSize);
   console.log(`audio broken into ${chunks.length} chunks`);

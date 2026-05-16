@@ -25,10 +25,12 @@ const NAV_LINKS = [
   { label: '✦ Ask', to: '/chat' as const, key: '⌘K', auth: true },
 ] as const;
 
-export function AppSidebar() {
+export function AppSidebar({ userId }: { userId: string | null }) {
   const navigate = useNavigate();
   const matchRoute = useMatchRoute();
-  const { isAuthenticated } = useConvexAuth();
+  const { isAuthenticated: convexIsAuthenticated } = useConvexAuth();
+  const isAuthenticated = convexIsAuthenticated || !!userId;
+
   const { data: subscriptions } = useQuery({
     ...convexQuery(api.subscribe.allDetails, {}),
     enabled: isAuthenticated,

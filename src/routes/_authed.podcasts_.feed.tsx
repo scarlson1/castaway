@@ -1,24 +1,19 @@
 import { convexQuery } from '@convex-dev/react-query';
-import {
-  Box,
-  Button,
-  Skeleton,
-  Stack,
-  Typography,
-} from '@mui/material';
+import { Box, Button, Skeleton, Stack, Typography } from '@mui/material';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
+import type { Doc, Id } from 'convex/_generated/dataModel';
 import { Suspense, useEffect } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useInView } from 'react-intersection-observer';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
-import { PageHeader } from '~/components/PageHeader';
 import { MuiLink } from '~/components/MuiLink';
+import { PageHeader } from '~/components/PageHeader';
 import { PlaybackButton } from '~/components/PlaybackButton';
 import { RecommendedPods } from '~/components/RecommendedPods';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
-import type { Doc, Id } from 'convex/_generated/dataModel';
+import { TypographyLink } from '~/components/TypographyLink';
 import { formatRelativeTime, getDuration } from '~/utils/format';
 
 export const Route = createFileRoute('/_authed/podcasts_/feed')({
@@ -76,7 +71,9 @@ function RecentlyUpdated() {
   const { convexClient } = Route.useRouteContext();
   const [ref, inView] = useInView();
 
-  const { data: subscriptions } = useQuery(convexQuery(api.subscribe.allDetails, {}));
+  const { data: subscriptions } = useQuery(
+    convexQuery(api.subscribe.allDetails, {}),
+  );
 
   type Cursor = { publishedAt: number; episodeId: Id<'episodes'> } | null;
 
@@ -107,7 +104,11 @@ function RecentlyUpdated() {
 
   if (!data?.pages[0]?.items.length) {
     return (
-      <Stack direction='column' spacing={2} sx={{ alignItems: 'center', py: 8 }}>
+      <Stack
+        direction='column'
+        spacing={2}
+        sx={{ alignItems: 'center', py: 8 }}
+      >
         <Typography variant='subtitle1' color='textSecondary'>
           Your followed podcasts will show up here
         </Typography>
@@ -119,11 +120,16 @@ function RecentlyUpdated() {
   }
 
   const allEpisodes = data.pages.flatMap((p) => p.items);
-  const totalSeconds = allEpisodes.reduce((sum, ep) => sum + (ep.durationSeconds || 0), 0);
+  const totalSeconds = allEpisodes.reduce(
+    (sum, ep) => sum + (ep.durationSeconds || 0),
+    0,
+  );
 
   const statsLine = [
     `${allEpisodes.length} episodes`,
-    subscriptions?.length ? `from your ${subscriptions.length} subscriptions` : null,
+    subscriptions?.length
+      ? `from your ${subscriptions.length} subscriptions`
+      : null,
     totalSeconds ? getDuration(totalSeconds) + ' total' : null,
   ]
     .filter(Boolean)
@@ -219,7 +225,10 @@ function FeedRow({
       sx={[
         {
           display: 'grid',
-          gridTemplateColumns: { xs: '48px 1fr 40px', sm: '32px 48px 1fr 160px 90px 60px 40px' },
+          gridTemplateColumns: {
+            xs: '48px 1fr 40px',
+            sm: '32px 48px 1fr 160px 90px 60px 40px',
+          },
           gap: 1.75,
           alignItems: 'center',
           px: 2,
@@ -248,7 +257,13 @@ function FeedRow({
         component='img'
         src={episode.feedImage || episode.image || ''}
         alt={episode.podcastTitle || ''}
-        sx={{ width: 40, height: 40, borderRadius: 0.75, objectFit: 'cover', flexShrink: 0 }}
+        sx={{
+          width: 40,
+          height: 40,
+          borderRadius: 0.75,
+          objectFit: 'cover',
+          flexShrink: 0,
+        }}
       />
 
       {/* Title + description */}
@@ -257,21 +272,64 @@ function FeedRow({
           to='/podcasts/$podId/episodes/$episodeId'
           params={{ podId: episode.podcastId, episodeId: episode.episodeId }}
           underline='hover'
-          sx={{ color: 'text.primary', fontSize: 14, fontWeight: 500, letterSpacing: '-0.01em', display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+          sx={{
+            color: 'text.primary',
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: '-0.01em',
+            display: 'block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
         >
           {episode.title}
         </MuiLink>
-        <Typography
-          variant='body2'
-          color='textSecondary'
-          sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-        >
-          {episode.summary || episode.podcastTitle}
-        </Typography>
+
+        {/* {episode.summary || episode.podcastTitle} */}
+        {episode.summary ? (
+          <Typography
+            variant='body2'
+            color='textSecondary'
+            sx={{
+              fontSize: 12,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+              '& *': { display: 'inline', margin: 0 },
+              '& br': { display: 'none' },
+              display: '-webkit-box',
+              WebkitLineClamp: 1,
+              WebkitBoxOrient: 'vertical',
+            }}
+            component='div'
+            dangerouslySetInnerHTML={{ __html: episode.summary }}
+          />
+        ) : (
+          <Typography
+            variant='body2'
+            color='textSecondary'
+            sx={{
+              fontSize: 12,
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              whiteSpace: 'nowrap',
+            }}
+            component='div'
+          >
+            {episode.podcastTitle}
+          </Typography>
+        )}
       </Box>
 
       {/* Show badge */}
-      <Box sx={{ display: { xs: 'none', sm: 'flex' }, alignItems: 'center', minWidth: 0 }}>
+      <Box
+        sx={{
+          display: { xs: 'none', sm: 'flex' },
+          alignItems: 'center',
+          minWidth: 0,
+        }}
+      >
         <Box
           sx={{
             display: 'inline-flex',
@@ -296,7 +354,9 @@ function FeedRow({
               flexShrink: 0,
             }}
           />
-          <Typography
+          <TypographyLink
+            to='/podcasts/$podId'
+            params={{ podId: episode.podcastId }}
             sx={{
               fontFamily: "'JetBrains Mono', monospace",
               fontSize: 10,
@@ -306,7 +366,7 @@ function FeedRow({
             }}
           >
             {episode.podcastTitle}
-          </Typography>
+          </TypographyLink>
         </Box>
       </Box>
 
@@ -336,7 +396,9 @@ function FeedRow({
 
       {/* Play */}
       <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Suspense fallback={<Skeleton variant='circular' width={28} height={28} />}>
+        <Suspense
+          fallback={<Skeleton variant='circular' width={28} height={28} />}
+        >
           <PlaybackButton episode={episode} size='small' color='primary' />
         </Suspense>
       </Box>
@@ -348,7 +410,12 @@ function FeedTableSkeleton() {
   return (
     <>
       <Skeleton width={220} height={16} sx={{ mb: 2 }} />
-      <Box sx={{ maxHeight: 'clamp(320px, calc(100vh - 320px), 520px)', overflowY: 'auto' }}>
+      <Box
+        sx={{
+          maxHeight: 'clamp(320px, calc(100vh - 320px), 520px)',
+          overflowY: 'auto',
+        }}
+      >
         {Array.from({ length: 8 }).map((_, i) => (
           <Box
             key={i}

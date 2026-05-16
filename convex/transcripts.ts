@@ -22,6 +22,7 @@ export const save = internalMutation({
         start: v.number(),
         end: v.number(),
         text: v.string(),
+        speaker: v.optional(v.string()),
       })
     ),
     summaryTitle: v.optional(v.string()),
@@ -51,6 +52,7 @@ export const update = internalMutation({
           start: v.number(),
           end: v.number(),
           text: v.string(),
+          speaker: v.optional(v.string()),
         })
       )
     ),

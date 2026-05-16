@@ -20,6 +20,7 @@ import { MuiLink } from '~/components/MuiLink';
 import { PageHeader } from '~/components/PageHeader';
 import { SimilarEpisodes } from '~/components/SimilarEpisodes';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
+import { TypographyLink } from '~/components/TypographyLink';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 import { useAudioStore } from '~/hooks/useAudioStore';
 import { useQueueStore } from '~/hooks/useQueueStore';
@@ -73,6 +74,9 @@ function RouteComponent() {
     convexQuery(api.adSegments.getByEpisodeId, { id: episodeId }),
   );
   const { data: chapters } = useChapters(data?.chaptersUrl);
+  const { data: transcript } = useQuery(
+    convexQuery(api.transcripts.getByEpisodeId, { episodeId }),
+  );
 
   const curEpId = useAudioStore((s) => s.episodeId);
   const isPlaying = useAudioStore((s) => s.isPlaying);
@@ -182,37 +186,24 @@ function RouteComponent() {
             data.podcastTitle?.toLowerCase().replace(/\s+/g, '-') ?? 'podcasts'
           }
         />
-        {/* Episode header + chapters sidebar */}
+        {/* Episode header */}
         <Box
           sx={{
             display: 'grid',
-            gridTemplateColumns: {
-              xs: '1fr',
-              md: chapters?.length ? '1fr 260px' : '1fr',
-            },
-            gap: { xs: 2, md: 3 },
+            gridTemplateColumns: chapters?.length
+              ? { xs: '1fr', md: '1fr 260px' }
+              : data?.image
+                ? { xs: '1fr', md: '1fr 25%' }
+                : '1fr',
+            bgcolor: 'background.paper',
+            border: '1px solid',
+            borderColor: 'divider',
+            borderRadius: 1.5,
+            overflow: 'hidden',
           }}
         >
-          {/* Left: episode info */}
-          <Box
-            sx={{
-              bgcolor: 'background.paper',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 1.5,
-              p: { xs: 2.5, md: 3 },
-            }}
-          >
+          <Box sx={{ p: { xs: 2.5, md: 3 } }}>
             {/* Metadata row */}
-            {/* <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                mb: 1.5,
-                flexWrap: 'wrap',
-              }}
-            > */}
             <Stack
               direction='row'
               spacing={1}
@@ -238,9 +229,16 @@ function RouteComponent() {
                     }}
                   />
                 ) : null}
-                <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
+                <TypographyLink
+                  to='/podcasts/$podId'
+                  params={{ podId: data.podcastId }}
+                  sx={{ fontSize: 12, fontWeight: 500 }}
+                >
                   {data.podcastTitle}
-                </Typography>
+                </TypographyLink>
+                {/* <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
+                  {data.podcastTitle}
+                </Typography> */}
               </Stack>
               {episodeLabel && (
                 <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
@@ -335,7 +333,18 @@ function RouteComponent() {
                       ? `· ${getDuration(totalAdSeconds)}`
                       : null,
                 },
-                { label: 'Speakers', value: '—', sub: null },
+                {
+                  label: 'Speakers',
+                  value: (() => {
+                    const speakers = new Set(
+                      (transcript?.segments ?? [])
+                        .map((s) => (s as TranscriptSeg).speaker)
+                        .filter(Boolean),
+                    );
+                    return speakers.size > 0 ? String(speakers.size) : '—';
+                  })(),
+                  sub: null,
+                },
               ].map(({ label, value, sub }) => (
                 <Box key={label}>
                   <Typography
@@ -448,24 +457,45 @@ function RouteComponent() {
             </Box>
           </Box>
 
-          {/* Right: chapters sidebar */}
           {chapters?.length ? (
             <Box
               sx={{
-                display: { xs: 'none', md: 'block' },
-                bgcolor: 'background.paper',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1.5,
+                display: { xs: 'none', md: 'flex' },
+                flexDirection: 'column',
                 p: 2.5,
               }}
             >
               <ChaptersSidebar chapters={chapters} />
             </Box>
+          ) : data?.image ? (
+            <Box
+              sx={{
+                display: { xs: 'none', md: 'flex' },
+                alignItems: 'flex-start',
+                p: 2.5,
+              }}
+            >
+              <Box
+                sx={{
+                  width: '100%',
+                  aspectRatio: '1 / 1',
+                  maxHeight: '100%',
+                  overflow: 'hidden',
+                  borderRadius: 1,
+                  flexShrink: 0,
+                }}
+              >
+                <Box
+                  component='img'
+                  src={data.image}
+                  alt={`${data?.title} cover art`}
+                  sx={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </Box>
+            </Box>
           ) : null}
-        </Box>{' '}
-        {/* closes grid */}
-      </Box>{' '}
+        </Box>
+      </Box>
       {/* closes top flexShrink section */}
       {/* Transcript: fills remaining height, scrolls internally */}
       <Box
@@ -592,6 +622,7 @@ type RowItem =
       segment: TranscriptSeg | UtteranceBlock;
       ad: AdSeg | null;
       isFirstAdSegment: boolean;
+      isNewSpeaker: boolean;
     };
 
 function TranscriptSection({
@@ -776,7 +807,9 @@ function TranscriptSection({
       </Box>
 
       {/* Scrollable: transcript rows + similar episodes */}
-      <Box sx={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', pb: 6, pr: 1 }}>
+      <Box
+        sx={{ flex: '1 1 auto', minHeight: 0, overflowY: 'auto', pb: 6, pr: 1 }}
+      >
         {!transcript && (
           <Typography variant='body2' color='textSecondary'>
             No transcript available for this episode.
@@ -799,39 +832,38 @@ function TranscriptSection({
         {transcript && mode === 'chapters' && (
           <ChaptersTranscript chapters={chapters} />
         )}
-
-        {/* Similar episodes at bottom of scroll area */}
-        <Box
-          sx={{
-            mt: 6,
-            pt: 3,
-            borderTop: '1px solid',
-            borderColor: 'divider',
-          }}
-        >
-          <Typography variant='h6' sx={{ mb: 2.5, letterSpacing: '-0.02em' }}>
-            You might also like
-          </Typography>
-          <ErrorBoundary fallback={null}>
-            <Suspense
-              fallback={
-                <SuspenseGridCards
-                  numItems={4}
-                  columnSpacing={2}
-                  rowSpacing={1}
-                  columns={16}
-                  childGridProps={{ size: { xs: 4, sm: 4, md: 4, lg: 2 } }}
-                />
-              }
-            >
-              <SimilarEpisodes
-                limit={4}
-                episodeConvexId={episodeConvexId}
-                gridItemProps={{ size: { xs: 4, sm: 4 } }}
+      </Box>
+      {/* Similar episodes */}
+      <Box
+        sx={{
+          mt: 3,
+          pt: 3,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
+        <Typography variant='h6' sx={{ mb: 2.5, letterSpacing: '-0.02em' }}>
+          You might also like
+        </Typography>
+        <ErrorBoundary fallback={null}>
+          <Suspense
+            fallback={
+              <SuspenseGridCards
+                numItems={4}
+                columnSpacing={2}
+                rowSpacing={1}
+                columns={16}
+                childGridProps={{ size: { xs: 4, sm: 4, md: 4, lg: 2 } }}
               />
-            </Suspense>
-          </ErrorBoundary>
-        </Box>
+            }
+          >
+            <SimilarEpisodes
+              limit={4}
+              episodeConvexId={episodeConvexId}
+              gridItemProps={{ size: { xs: 4, sm: 4 } }}
+            />
+          </Suspense>
+        </ErrorBoundary>
       </Box>
     </Box>
   );
@@ -968,6 +1000,7 @@ function FullTranscript({
     const result: RowItem[] = [];
     let chapterIdx = 0;
     let lastAdStart = -1;
+    let prevSpeaker: string | null | undefined = undefined;
 
     // add segments to result, with the chapter
     for (const seg of groupedSegments) {
@@ -989,7 +1022,16 @@ function FullTranscript({
       const isFirstAdSegment = Boolean(ad && ad.start !== lastAdStart);
       if (ad) lastAdStart = ad.start;
 
-      result.push({ type: 'segment', segment: seg, ad, isFirstAdSegment });
+      const isNewSpeaker = seg.speaker != null && seg.speaker !== prevSpeaker;
+      prevSpeaker = seg.speaker ?? prevSpeaker;
+
+      result.push({
+        type: 'segment',
+        segment: seg,
+        ad,
+        isFirstAdSegment,
+        isNewSpeaker,
+      });
     }
 
     return result;
@@ -1094,7 +1136,7 @@ function FullTranscript({
           );
         }
 
-        const { segment, ad, isFirstAdSegment } = row;
+        const { segment, ad, isFirstAdSegment, isNewSpeaker } = row;
         const isAd = Boolean(ad);
         const isCurrent =
           activeSegId !== null && String(segment.id) === String(activeSegId);
@@ -1155,6 +1197,20 @@ function FullTranscript({
                   }}
                 >
                   SPONSOR
+                </Typography>
+              )}
+              {!isAd && isNewSpeaker && segment.speaker && (
+                <Typography
+                  sx={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 9,
+                    letterSpacing: '0.1em',
+                    color: 'text.disabled',
+                    mb: 0.25,
+                    textTransform: 'uppercase',
+                  }}
+                >
+                  {segment.speaker}
                 </Typography>
               )}
               <Typography

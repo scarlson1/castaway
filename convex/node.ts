@@ -18,7 +18,10 @@ export const fillAdEmbedding = internalAction({
   args: { adId: v.id('ads'), transcript: v.string() },
   handler: async (ctx, { adId, transcript }) => {
     const embedding = await embed(transcript);
-    await ctx.runMutation(internal.adFeedback.patchAdEmbedding, { adId, embedding });
+    await ctx.runMutation(internal.adFeedback.patchAdEmbedding, {
+      adId,
+      embedding,
+    });
   },
 });
 
@@ -117,7 +120,13 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
         };
       }
     }
-    if (!transcript) transcript = await transcribeUrl(audioUrl, {});
+    if (!transcript)
+      transcript = await transcribeUrl(audioUrl, {
+        model: 'whisper-1',
+        responseFormat: 'verbose_json',
+        // model: 'gpt-4o-transcribe-diarize',
+        // responseFormat: 'diarized_json',
+      });
 
     // const transcript = await transcribeUrl(audioUrl, {});
 
@@ -196,10 +205,14 @@ export const transcribe = internalAction({
       }
     }
 
-    // const transcript = await transcribeUrl(audioUrl, {});
+    // TODO: use diarize
+    // temporarily override to not use diarize if audio is > 30 mins
+
     const transcript = await transcribeUrl(audioUrl, {
-      model: 'gpt-4o-transcribe-diarize',
-      responseFormat: 'diarized_json',
+      model: 'whisper-1',
+      responseFormat: 'verbose_json',
+      // model: 'gpt-4o-transcribe-diarize',
+      // responseFormat: 'diarized_json',
     });
 
     const transcriptId: Id<'transcripts'> = await ctx.runMutation(
