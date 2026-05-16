@@ -22,10 +22,10 @@ export const Route = createFileRoute('/_authed/chat')({
 
 const PANEL_WIDTH = 280;
 
-const SUGGESTED = [
-  'What did Galloway say about Saudi this...',
-  'Summarize my queue in 5 bullets',
-];
+// const SUGGESTED = [
+//   'What did Galloway say about Saudi this...',
+//   'Summarize my queue in 5 bullets',
+// ];
 
 function RouteComponent() {
   const theme = useTheme();
@@ -127,7 +127,12 @@ function ChatThreadPanel({ onClose }: { onClose: () => void }) {
       <Box sx={{ px: 2.25, pt: 2.25, pb: 1.5, flexShrink: 0 }}>
         <Typography
           variant='h5'
-          sx={{ fontWeight: 700, letterSpacing: '-0.03em', lineHeight: 1.1, mb: 0.5 }}
+          sx={{
+            fontWeight: 700,
+            letterSpacing: '-0.03em',
+            lineHeight: 1.1,
+            mb: 0.5,
+          }}
         >
           Ask.
         </Typography>
@@ -160,7 +165,11 @@ function ChatThreadPanel({ onClose }: { onClose: () => void }) {
           + New conversation
           <Box
             component='span'
-            sx={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, opacity: 0.5 }}
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              opacity: 0.5,
+            }}
           >
             ⌘N
           </Box>
@@ -190,7 +199,7 @@ function ChatThreadPanel({ onClose }: { onClose: () => void }) {
       </Box>
 
       {/* SUGGESTED section */}
-      <Box
+      {/* <Box
         sx={[
           {
             borderTop: '1px solid',
@@ -234,7 +243,7 @@ function ChatThreadPanel({ onClose }: { onClose: () => void }) {
             {s}
           </Box>
         ))}
-      </Box>
+      </Box> */}
     </Box>
   );
 }

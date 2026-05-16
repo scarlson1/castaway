@@ -53,18 +53,25 @@ interface WhisperOptions {
   responseFormat?: 'json' | 'text' | 'diarized_json' | 'verbose_json' | 'vtt';
   // timestamp_granularities: ["word"]
 }
+type GroqModel = 'whisper-large-v3-turbo' | 'whisper-large-v3';
+interface GroqOptions {
+  model: GroqModel;
+  responseFormat?: 'json' | 'verbose_json' | 'text';
+}
+
 type TranscribeOptions = (
   | GbtTranscribeDiarizeOptions
   | GbtMiniTranscribeOptions
   | GbtTranscribeOptions
   | WhisperOptions
+  | GroqOptions
 ) & { language?: string };
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-// const client = new OpenAI({
-//   apiKey: process.env.GROQ_API_KEY,
-//   baseURL: 'https://api.groq.com/openai/v1',
-// });
+const groqClient = new OpenAI({
+  apiKey: process.env.GROQ_API_KEY,
+  baseURL: 'https://api.groq.com/openai/v1',
+});
 
 // fetches audio from url --> breaks into chunks <25MB --> transcribe --> combine transcribed chunks into array of segments ([{ id, start, end, text }])
 
@@ -212,18 +219,25 @@ async function transcribeChunk(
     model = 'whisper-1',
     language = 'en',
     responseFormat, // = 'verbose_json'
+    ...rest
   }: TranscribeOptions,
 ): Promise<WhisperResponse> {
   const isDiarize = model === 'gpt-4o-transcribe-diarize';
   const format =
     responseFormat ?? (isDiarize ? 'diarized_json' : 'verbose_json');
 
-  return await client.audio.transcriptions.create({
+  const llmClient =
+    model === 'whisper-large-v3' || model === 'whisper-large-v3-turbo'
+      ? groqClient
+      : client;
+
+  return await llmClient.audio.transcriptions.create({
     model,
     file: await toReadableFile(chunk, 'audio.mp3'),
     response_format: format,
     language,
     ...(isDiarize && { chunking_strategy: 'auto' }),
+    ...rest,
   });
 }
 

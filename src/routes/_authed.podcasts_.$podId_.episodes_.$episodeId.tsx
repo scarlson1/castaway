@@ -877,9 +877,11 @@ function groupSegments(segments: TranscriptSeg[]): UtteranceBlock[] {
     const last = blocks.at(-1);
     const sameSpeaker =
       last && last.speaker != null && last.speaker === seg.speaker;
-    const smallGap = last && seg.start - last.end < 0.8; // 1.5;
+    const smallGap = last && seg.start - last.end < 1.5;
 
-    if (last && (sameSpeaker || (!seg.speaker && smallGap))) {
+    if (
+      last && (sameSpeaker || (!seg.speaker && smallGap))
+    ) {
       // extend current block
       last.text += seg.text;
       last.end = seg.end;

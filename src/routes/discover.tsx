@@ -41,7 +41,7 @@ export const Route = createFileRoute('/discover')({
 
 function RouteComponent() {
   return (
-    <Stack direction='column' spacing={3} sx={{ pt: { xs: 2, md: 3 } }}>
+    <Stack direction='column' spacing={3} sx={{ py: { xs: 2, md: 3 } }}>
       <Box>
         <PageHeader label='discover' searchPlaceholder='Search shows...' />
         <Typography variant='h4' component='h2' sx={{ mb: 0.5 }}>

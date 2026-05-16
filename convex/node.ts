@@ -122,13 +122,11 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     }
     if (!transcript)
       transcript = await transcribeUrl(audioUrl, {
-        model: 'whisper-1',
+        model: 'whisper-large-v3-turbo', // 'whisper-1',
         responseFormat: 'verbose_json',
         // model: 'gpt-4o-transcribe-diarize',
         // responseFormat: 'diarized_json',
       });
-
-    // const transcript = await transcribeUrl(audioUrl, {});
 
     let summary: Pick<
       Doc<'transcripts'>,
@@ -209,7 +207,7 @@ export const transcribe = internalAction({
     // temporarily override to not use diarize if audio is > 30 mins
 
     const transcript = await transcribeUrl(audioUrl, {
-      model: 'whisper-1',
+      model: 'whisper-large-v3-turbo', // 'whisper-1',
       responseFormat: 'verbose_json',
       // model: 'gpt-4o-transcribe-diarize',
       // responseFormat: 'diarized_json',
