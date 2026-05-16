@@ -204,62 +204,66 @@ function RouteComponent() {
         >
           <Box sx={{ p: { xs: 2.5, md: 3 } }}>
             {/* Metadata row */}
-            <Stack
-              direction='row'
-              spacing={1}
+            <Box
               sx={{
+                display: 'flex',
                 flexWrap: 'wrap',
                 alignItems: 'center',
+                gap: 0.75,
                 mb: { xs: 1, sm: 1.5 },
               }}
-              divider={<Typography variant='body2'>{'·'}</Typography>}
             >
-              <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
-                {data.feedImage || data.image ? (
-                  <Box
-                    component='img'
-                    src={data.feedImage || data.image || ''}
-                    alt={data.podcastTitle}
-                    sx={{
-                      width: 18,
-                      height: 18,
-                      borderRadius: 0.375,
-                      flexShrink: 0,
-                      objectFit: 'cover',
-                    }}
-                  />
+              <Stack
+                direction='row'
+                spacing={1}
+                sx={{
+                  flexWrap: 'wrap',
+                  alignItems: 'center',
+                }}
+                divider={<Typography variant='body2'>{'·'}</Typography>}
+              >
+                <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+                  {data.feedImage || data.image ? (
+                    <Box
+                      component='img'
+                      src={data.feedImage || data.image || ''}
+                      alt={data.podcastTitle}
+                      sx={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: 0.375,
+                        flexShrink: 0,
+                        objectFit: 'cover',
+                      }}
+                    />
+                  ) : null}
+                  <TypographyLink
+                    to='/podcasts/$podId'
+                    params={{ podId: data.podcastId }}
+                    sx={{ fontSize: 12, fontWeight: 500 }}
+                  >
+                    {data.podcastTitle}
+                  </TypographyLink>
+                </Stack>
+                {episodeLabel && (
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    {episodeLabel}
+                  </Typography>
+                )}
+                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                  Released {format(new Date(data.publishedAt), 'MMM d')}
+                </Typography>
+                {data.durationSeconds ? (
+                  <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
+                    {getDuration(data.durationSeconds)}
+                  </Typography>
                 ) : null}
-                <TypographyLink
-                  to='/podcasts/$podId'
-                  params={{ podId: data.podcastId }}
-                  sx={{ fontSize: 12, fontWeight: 500 }}
-                >
-                  {data.podcastTitle}
-                </TypographyLink>
-                {/* <Typography sx={{ fontSize: 12, fontWeight: 500 }}>
-                  {data.podcastTitle}
-                </Typography> */}
               </Stack>
-              {episodeLabel && (
-                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  {episodeLabel}
-                </Typography>
-              )}
-              <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                Released {format(new Date(data.publishedAt), 'MMM d')}
-              </Typography>
-              {data.durationSeconds ? (
-                <Typography sx={{ fontSize: 12, color: 'text.secondary' }}>
-                  {getDuration(data.durationSeconds)}
-                </Typography>
-              ) : null}
               {adCount > 0 ? (
                 <Box
                   sx={{
                     px: 0.75,
                     py: 0.125,
-                    // bgcolor: 'primary.main',
-                    // color: 'primary.contrastText',
                     color: 'primary.main',
                     border: (theme) =>
                       `1px solid ${theme.vars.palette.primary.main}`,
@@ -273,7 +277,7 @@ function RouteComponent() {
                   {adCount} ad {adCount === 1 ? 'segment' : 'segments'}
                 </Box>
               ) : null}
-            </Stack>
+            </Box>
             {/* </Box> */}
 
             {/* Title */}
@@ -597,6 +601,8 @@ interface AdSeg {
   rejectCount?: number;
   verdict?: 'verified' | 'rejected';
   source?: 'llm' | 'user';
+  correctedStart?: number;
+  correctedEnd?: number;
 }
 
 interface TranscriptSeg {
@@ -857,11 +863,13 @@ function TranscriptSection({
               />
             }
           >
-            <SimilarEpisodes
-              limit={4}
-              episodeConvexId={episodeConvexId}
-              gridItemProps={{ size: { xs: 4, sm: 4 } }}
-            />
+            <Box sx={{ maxWidth: 600 }}>
+              <SimilarEpisodes
+                limit={4}
+                episodeConvexId={episodeConvexId}
+                gridItemProps={{ size: { xs: 4, sm: 4 } }}
+              />
+            </Box>
           </Suspense>
         </ErrorBoundary>
       </Box>
@@ -877,11 +885,9 @@ function groupSegments(segments: TranscriptSeg[]): UtteranceBlock[] {
     const last = blocks.at(-1);
     const sameSpeaker =
       last && last.speaker != null && last.speaker === seg.speaker;
-    const smallGap = last && seg.start - last.end < 1.5;
+    const smallGap = last && seg.start - last.end < 0.8;
 
-    if (
-      last && (sameSpeaker || (!seg.speaker && smallGap))
-    ) {
+    if (last && (sameSpeaker || (!seg.speaker && smallGap))) {
       // extend current block
       last.text += seg.text;
       last.end = seg.end;
@@ -976,6 +982,16 @@ function FullTranscript({
     mutationFn: useConvexMutation(api.adFeedback.addManualAdSegment),
     onError: () => toast.error('Failed to add ad segment'),
   });
+  const { mutate: adjustBoundaries } = useMutation({
+    mutationFn: useConvexMutation(api.adFeedback.adjustAdBoundaries),
+    onError: () => toast.error('Failed to save boundaries'),
+    onSuccess: () => setEditingAdId(null),
+  });
+
+  const [editingAdId, setEditingAdId] = useState<string | null>(null);
+  const [editStart, setEditStart] = useState(0);
+  const [editEnd, setEditEnd] = useState(0);
+
   const myVoteMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const vote of myVotes ?? []) {
@@ -984,13 +1000,21 @@ function FullTranscript({
     return map;
   }, [myVotes]);
 
-  const groupedSegments = useMemo(() => groupSegments(segments), [segments]);
+  // Skip merging while editing so each original segment gets its own row,
+  // enabling per-segment highlight within the corrected boundary.
+  const groupedSegments = useMemo(
+    () =>
+      editingAdId !== null
+        ? (segments as UtteranceBlock[])
+        : groupSegments(segments),
+    [segments, editingAdId],
+  );
 
   const activeSegId = useMemo(() => {
     if (!isActive) return null;
     return (
       groupedSegments.find((b) => position >= b.start && position < b.end)
-        ?.id ?? null
+        ?.start ?? null
     );
   }, [isActive, position, groupedSegments]);
 
@@ -1001,7 +1025,7 @@ function FullTranscript({
     const sortedAds = [...adSegments].sort((a, b) => a.start - b.start);
     const result: RowItem[] = [];
     let chapterIdx = 0;
-    let lastAdStart = -1;
+    let lastAdStart: string | null = null;
     let prevSpeaker: string | null | undefined = undefined;
 
     // add segments to result, with the chapter
@@ -1019,10 +1043,15 @@ function FullTranscript({
       }
 
       const ad =
-        sortedAds.find((a) => seg.start >= a.start && seg.start < a.end) ||
-        null;
-      const isFirstAdSegment = Boolean(ad && ad.start !== lastAdStart);
-      if (ad) lastAdStart = ad.start;
+        sortedAds.find((a) => {
+          const adStart = a.correctedStart ?? a.start;
+          const adEnd = a.correctedEnd ?? a.end;
+          // Exclude grouped blocks that extend far past the ad boundary — those
+          // contain post-ad text merged in by groupSegments and should not be styled as ads.
+          return seg.start >= adStart && seg.start < adEnd && seg.end <= adEnd + 10;
+        }) || null;
+      const isFirstAdSegment = Boolean(ad && ad._id !== lastAdStart);
+      if (ad) lastAdStart = ad._id;
 
       const isNewSpeaker = seg.speaker != null && seg.speaker !== prevSpeaker;
       prevSpeaker = seg.speaker ?? prevSpeaker;
@@ -1140,13 +1169,16 @@ function FullTranscript({
 
         const { segment, ad, isFirstAdSegment, isNewSpeaker } = row;
         const isAd = Boolean(ad);
-        const isCurrent =
-          activeSegId !== null && String(segment.id) === String(activeSegId);
+        const isCurrent = activeSegId !== null && segment.start === activeSegId;
         const myVote = ad ? myVoteMap.get(ad._id) : undefined;
+        const isInEditRange =
+          editingAdId !== null &&
+          segment.start >= editStart &&
+          segment.start < editEnd;
 
         return (
           <Box
-            key={String(segment.id)}
+            key={segment.start}
             sx={[
               {
                 display: 'flex',
@@ -1169,6 +1201,12 @@ function FullTranscript({
                   pl: 1.5,
                   bgcolor: 'action.hover',
                 },
+              isInEditRange && {
+                borderLeftColor: 'warning.main',
+                pl: 1.5,
+                bgcolor: (theme) =>
+                  `color-mix(in srgb, ${theme.vars.palette.warning.main} 8%, transparent)`,
+              },
             ]}
           >
             <Typography
@@ -1225,18 +1263,135 @@ function FullTranscript({
               >
                 {segment.text}
               </Typography>
+              {/* Inline boundary editor */}
+              {isAd &&
+                isFirstAdSegment &&
+                ad &&
+                editingAdId === String(ad._id) && (
+                  <Box
+                    sx={{
+                      mt: 1,
+                      p: 1.25,
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      borderRadius: 1,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: 0.75,
+                      bgcolor: 'background.default',
+                    }}
+                  >
+                    {[
+                      {
+                        label: 'Start',
+                        value: editStart,
+                        onChange: setEditStart,
+                      },
+                      { label: 'End', value: editEnd, onChange: setEditEnd },
+                    ].map(({ label, value, onChange }) => (
+                      <Box
+                        key={label}
+                        sx={{ display: 'flex', alignItems: 'center', gap: 1 }}
+                      >
+                        <Typography
+                          sx={{
+                            fontFamily: "'JetBrains Mono', monospace",
+                            fontSize: 9,
+                            letterSpacing: '0.1em',
+                            color: 'text.disabled',
+                            textTransform: 'uppercase',
+                            minWidth: 28,
+                          }}
+                        >
+                          {label}
+                        </Typography>
+                        <InputBase
+                          type='number'
+                          value={value}
+                          onChange={(e) => onChange(Number(e.target.value))}
+                          sx={{
+                            fontSize: 11,
+                            fontFamily: "'JetBrains Mono', monospace",
+                            width: 64,
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 0.5,
+                            px: 0.75,
+                            py: 0.25,
+                            '& input': { p: 0 },
+                          }}
+                          inputProps={{ step: 0.5 }}
+                        />
+                        <Typography
+                          sx={{
+                            fontSize: 10,
+                            color: 'text.disabled',
+                            minWidth: 36,
+                          }}
+                        >
+                          {formatDuration(value)}
+                        </Typography>
+                        <Box
+                          role='button'
+                          onClick={() =>
+                            onChange(
+                              Math.round(
+                                useAudioStore.getState().position * 10,
+                              ) / 10,
+                            )
+                          }
+                          sx={{ ...voteBtnSx, fontSize: 9 }}
+                          title='Set to current playback position'
+                        >
+                          ↦ now
+                        </Box>
+                      </Box>
+                    ))}
+                    <Box sx={{ display: 'flex', gap: 0.75, mt: 0.25 }}>
+                      <Box
+                        role='button'
+                        onClick={() =>
+                          adjustBoundaries({
+                            adId: ad._id,
+                            start: editStart,
+                            end: editEnd,
+                          })
+                        }
+                        sx={{
+                          ...voteBtnSx,
+                          color: 'success.main',
+                          borderColor: 'success.main',
+                        }}
+                      >
+                        Save
+                      </Box>
+                      <Box
+                        role='button'
+                        onClick={() => setEditingAdId(null)}
+                        sx={voteBtnSx}
+                      >
+                        Cancel
+                      </Box>
+                    </Box>
+                  </Box>
+                )}
             </Box>
             {/* Skip button — always visible for ad rows */}
             {isAd && isFirstAdSegment && ad && (
               <Box
                 role='button'
-                onClick={() => useAudioStore.getState().seek?.(ad.end)}
+                onClick={() =>
+                  useAudioStore.getState().seek?.(ad.correctedEnd ?? ad.end)
+                }
                 sx={skipBtnSx}
               >
-                ↪ Skip · {getDuration(ad.end - ad.start)}
+                ↪ Skip ·{' '}
+                {getDuration(
+                  (ad.correctedEnd ?? ad.end) - (ad.correctedStart ?? ad.start),
+                )}
               </Box>
             )}
-            {/* Vote buttons — appear on hover for ad rows */}
+            {/* Vote + edit buttons — appear on hover for ad rows */}
             {isAd && isFirstAdSegment && ad && (
               <Box
                 className='ad-actions'
@@ -1277,6 +1432,26 @@ function FullTranscript({
                   ]}
                 >
                   ✕ {ad.rejectCount ?? 0}
+                </Box>
+                <Box
+                  role='button'
+                  onClick={() => {
+                    setEditStart(ad.correctedStart ?? ad.start);
+                    setEditEnd(ad.correctedEnd ?? ad.end);
+                    setEditingAdId(
+                      editingAdId === String(ad._id) ? null : String(ad._id),
+                    );
+                  }}
+                  title='Adjust boundaries'
+                  sx={[
+                    voteBtnSx,
+                    editingAdId === String(ad._id) && {
+                      color: 'text.primary',
+                      borderColor: 'text.secondary',
+                    },
+                  ]}
+                >
+                  ✎
                 </Box>
               </Box>
             )}

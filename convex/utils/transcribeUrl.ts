@@ -1,4 +1,5 @@
 import OpenAI from 'openai';
+import type { AudioResponseFormat } from 'openai/resources/index.mjs';
 
 export interface TranscriptSegment {
   id: number | string;
@@ -213,32 +214,79 @@ async function fetchAndChunkAudio(
   return chunks;
 }
 
+// async function transcribeChunk(
+//   chunk: Uint8Array,
+//   {
+//     model = 'whisper-1',
+//     language = 'en',
+//     responseFormat, // = 'verbose_json'
+//     ...rest
+//   }: TranscribeOptions,
+// ): Promise<WhisperResponse> {
+//   const isDiarize = model === 'gpt-4o-transcribe-diarize';
+//   const format =
+//     responseFormat ?? (isDiarize ? 'diarized_json' : 'verbose_json');
+
+//   const llmClient =
+//     model === 'whisper-large-v3' || model === 'whisper-large-v3-turbo'
+//       ? groqClient
+//       : client;
+
+//   return await llmClient.audio.transcriptions.create({
+//     model,
+//     file: await toReadableFile(chunk, 'audio.mp3'),
+//     response_format: format,
+//     language,
+//     ...(isDiarize && { chunking_strategy: 'auto' }),
+//     ...rest,
+//   });
+// }
+
+// try grok until rate limit kicks in, then callback on open AI
 async function transcribeChunk(
   chunk: Uint8Array,
-  {
+  options: TranscribeOptions,
+): Promise<WhisperResponse> {
+  const {
     model = 'whisper-1',
     language = 'en',
-    responseFormat, // = 'verbose_json'
+    responseFormat,
     ...rest
-  }: TranscribeOptions,
-): Promise<WhisperResponse> {
+  } = options;
   const isDiarize = model === 'gpt-4o-transcribe-diarize';
+  const isGroq =
+    model === 'whisper-large-v3' || model === 'whisper-large-v3-turbo';
+
+  const doTranscribe = async (
+    useClient: OpenAI,
+    useModel: string,
+    format: AudioResponseFormat,
+  ) =>
+    useClient.audio.transcriptions.create({
+      model: useModel,
+      file: await toReadableFile(chunk, 'audio.mp3'),
+      response_format: format,
+      language,
+      ...(isDiarize && { chunking_strategy: 'auto' }),
+      ...rest,
+    });
+
+  if (isGroq) {
+    const format = responseFormat ?? 'verbose_json';
+    try {
+      return await doTranscribe(groqClient, model, format);
+    } catch (err: any) {
+      if (err?.status === 429) {
+        console.warn('Groq 429 — falling back to OpenAI whisper-1');
+        return await doTranscribe(client, 'whisper-1', 'verbose_json');
+      }
+      throw err;
+    }
+  }
+
   const format =
     responseFormat ?? (isDiarize ? 'diarized_json' : 'verbose_json');
-
-  const llmClient =
-    model === 'whisper-large-v3' || model === 'whisper-large-v3-turbo'
-      ? groqClient
-      : client;
-
-  return await llmClient.audio.transcriptions.create({
-    model,
-    file: await toReadableFile(chunk, 'audio.mp3'),
-    response_format: format,
-    language,
-    ...(isDiarize && { chunking_strategy: 'auto' }),
-    ...rest,
-  });
+  return doTranscribe(client, model, format);
 }
 
 // Convert bytes → File object for Whisper

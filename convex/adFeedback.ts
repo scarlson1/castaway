@@ -289,6 +289,37 @@ export const getFewShotExamples = internalQuery({
   },
 });
 
+export const adjustAdBoundaries = mutation({
+  args: {
+    adId: v.id('ads'),
+    start: v.number(),
+    end: v.number(),
+  },
+  handler: async (ctx, { adId, start, end }) => {
+    const clerkId = await getClerkId(ctx.auth);
+    const ad = await ctx.db.get(adId);
+    if (!ad) throw new Error('ad not found');
+    if (end <= start) throw new Error('end must be after start');
+
+    await ctx.db.patch(adId, { correctedStart: start, correctedEnd: end });
+
+    await ctx.db.insert('adFeedback', {
+      adId,
+      clerkId,
+      episodeId: ad.episodeId,
+      podcastId: ad.podcastId,
+      action: 'boundary_adjusted',
+      originalStart: ad.start,
+      originalEnd: ad.end,
+      correctedStart: start,
+      correctedEnd: end,
+      transcriptText: ad.transcript,
+      llmConfidence: ad.confidence,
+      createdAt: Date.now(),
+    });
+  },
+});
+
 export const patchAdEmbedding = internalMutation({
   args: { adId: v.id('ads'), embedding: v.array(v.number()) },
   handler: async (ctx, { adId, embedding }) => {
