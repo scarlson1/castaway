@@ -25,17 +25,15 @@ import { SimilarPodcasts } from '~/components/SimilarPods';
 import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
 import { SuspenseFeaturedSection } from '~/components/suspense/SuspenseFeaturedSection';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
-import { trendingQueryOptions } from '~/queries';
+import { categoryQueryOptions, trendingQueryOptions } from '~/queries';
 import { fetchSpotifyPlaylist } from '~/serverFn/spotify';
-
-// TODO: add category selection at top of page
 
 export const Route = createFileRoute('/discover')({
   component: RouteComponent,
   loader: ({ context: { queryClient } }) => {
     // seed cache, but don't block
     queryClient.prefetchQuery(trendingQueryOptions({ max: 8 }));
-    // queryClient.prefetchQuery(appleChartsQueryOptions({ limit: 10 }));
+    queryClient.prefetchQuery(categoryQueryOptions());
   },
 });
 
@@ -60,6 +58,14 @@ function RouteComponent() {
       >
         <Suspense fallback={<SuspenseFeaturedSection />}>
           <Featured />
+        </Suspense>
+      </ErrorBoundary>
+
+      <Divider />
+
+      <ErrorBoundary fallback={null}>
+        <Suspense fallback={<BrowseByTopicSkeleton />}>
+          <BrowseByTopic />
         </Suspense>
       </ErrorBoundary>
 
@@ -124,7 +130,11 @@ function RouteComponent() {
 
       <Authed>
         <Box>
-          <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
+          <Typography
+            variant='overline'
+            sx={{ lineHeight: 1.2 }}
+            color='textSecondary'
+          >
             Based on your listening
           </Typography>
           <Typography variant='h6' gutterBottom>
@@ -159,7 +169,7 @@ function RouteComponent() {
         spacing={2}
         sx={{ justifyContent: 'space-between', alignItems: 'center' }}
       >
-        <Typography variant='h5' gutterBottom fontWeight={500}>
+        <Typography variant='h5' gutterBottom sx={{ fontWeight: 500 }}>
           Independent Podcast Award Winners 2025
         </Typography>
         <Link
@@ -180,6 +190,105 @@ function RouteComponent() {
         </Suspense>
       </ErrorBoundary>
     </Stack>
+  );
+}
+
+const BADGE_SX = {
+  fontFamily: "'JetBrains Mono', monospace",
+  fontSize: 9,
+  letterSpacing: '0.2em',
+  textTransform: 'uppercase',
+  color: 'text.secondary',
+  px: 1,
+  py: 0.375,
+  border: '1px solid',
+  borderColor: 'divider',
+  borderRadius: 99,
+  fontWeight: 400,
+} as const;
+
+function BrowseByTopic() {
+  const { data: categories } = useSuspenseQuery(categoryQueryOptions());
+
+  return (
+    <>
+      <Typography
+        variant='h6'
+        sx={{ display: 'flex', alignItems: 'center', gap: 1.25 }}
+      >
+        Browse by topic
+        {categories?.length ? (
+          <Box component='span' sx={BADGE_SX}>
+            {categories.length} categories
+          </Box>
+        ) : null}
+      </Typography>
+      <Box
+        sx={{
+          overflowX: 'auto',
+          mx: { xs: -2, md: -3 },
+          px: { xs: 2, md: 3 },
+          '&::-webkit-scrollbar': { display: 'none' },
+          scrollbarWidth: 'none',
+        }}
+      >
+        <Stack
+          direction='row'
+          spacing={1.5}
+          sx={{ width: 'max-content', pb: 0.5 }}
+        >
+          {categories?.map((cat) => (
+            <MuiButtonLink
+              key={cat.id}
+              to='/trending'
+              search={{ cat: cat.name, max: 100, lang: 'en' }}
+              variant='outlined'
+              color='inherit'
+              sx={{
+                borderColor: 'divider',
+                borderRadius: 1.5,
+                px: 2,
+                py: 1.25,
+                textAlign: 'left',
+                textTransform: 'none',
+                minWidth: 'max-content',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                '&:hover': { borderColor: 'text.primary' },
+              }}
+            >
+              <Typography
+                variant='body2'
+                sx={{ fontWeight: 600 }}
+                color='text.primary'
+              >
+                {cat.name}
+              </Typography>
+            </MuiButtonLink>
+          ))}
+        </Stack>
+      </Box>
+    </>
+  );
+}
+
+function BrowseByTopicSkeleton() {
+  const id = useId();
+  return (
+    <>
+      <Skeleton variant='text' width={160} height={32} />
+      <Stack direction='row' spacing={1.5}>
+        {Array.from({ length: 8 }, (_, i) => (
+          <Skeleton
+            key={`${id}-${i}`}
+            variant='rounded'
+            width={120}
+            height={44}
+          />
+        ))}
+      </Stack>
+    </>
   );
 }
 
@@ -281,7 +390,7 @@ function SimilarToLastListened() {
         {data.podcastTitle ? (
           <Typography
             variant='overline'
-            lineHeight={1.2}
+            sx={{ lineHeight: 1.2 }}
             color='textSecondary'
           >{`because you listened to ${data.podcastTitle}`}</Typography>
         ) : null}

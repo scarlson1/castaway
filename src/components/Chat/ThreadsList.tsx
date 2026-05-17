@@ -214,7 +214,7 @@ export function ChatListItem({
             size='small'
             autoFocus
             fullWidth
-            variant='standard'
+            variant='outlined'
             onChange={(e) => setDraftTitle(e.target.value)}
             onBlur={commitRename}
             onKeyDown={(e) => {
@@ -265,7 +265,7 @@ export function ChatListItem({
           <ListItemIcon>
             <EditIcon fontSize='small' />
           </ListItemIcon>
-          <Typography variant='body2' fontSize={'0.9rem'}>
+          <Typography variant='body2' sx={{ fontSize: '0.9rem' }}>
             Rename
           </Typography>
         </MenuItem>
@@ -280,7 +280,7 @@ export function ChatListItem({
           <ListItemIcon sx={{ color: 'error.main' }}>
             <DeleteIcon fontSize='small' />
           </ListItemIcon>
-          <Typography variant='body2' fontSize={'0.9rem'}>
+          <Typography variant='body2' sx={{ fontSize: '0.9rem' }}>
             Delete
           </Typography>
         </MenuItem>

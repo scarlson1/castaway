@@ -18,4 +18,13 @@ export const theme = createTheme({
     h5: { letterSpacing: '-0.01em', fontWeight: 600 },
     h6: { letterSpacing: '-0.01em', fontWeight: 600 },
   },
+  components: {
+    MuiLink: {
+      styleOverrides: {
+        root: {
+          textDecoration: 'none',
+        },
+      },
+    },
+  },
 });

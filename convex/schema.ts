@@ -256,6 +256,7 @@ export default defineSchema({
         end: v.number(),
         text: v.string(),
         speaker: v.optional(v.string()),
+        adId: v.optional(v.id('ads')),
       }),
     ),
     summaryTitle: v.optional(v.string()),

@@ -36,7 +36,16 @@ export const fn = internalAction({
         transcript: segment.transcript,
         confidence: segment.confidence,
       });
-      if (adSegmentId) adSegmentIds.push(adSegmentId);
+      if (adSegmentId) {
+        adSegmentIds.push(adSegmentId);
+        // Tag transcript segments that overlap this ad's boundaries
+        await ctx.runMutation(internal.transcripts.tagSegmentsWithAd, {
+          episodeId: adJob.episodeId,
+          adId: adSegmentId,
+          adStart: segment.start,
+          adEnd: segment.end,
+        });
+      }
     }
 
     await ctx.runMutation(internal.adJobs.patch, {

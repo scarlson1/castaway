@@ -64,7 +64,7 @@ function RouteComponent() {
             Your subscriptions
           </Typography>
         </Box>
-        <FormControl variant='standard' sx={{ minWidth: 120 }}>
+        <FormControl variant='outlined' sx={{ minWidth: 120 }}>
           <InputLabel id='sort-pod-label'>Sort by</InputLabel>
           <Select
             labelId='sort-pod-label'

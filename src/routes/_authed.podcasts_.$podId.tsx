@@ -333,7 +333,11 @@ function PodcastRating({
         size='small'
         sx={{ display: 'inline-flex' }}
       />
-      <Typography variant='body2' fontSize='0.775rem' color='textSecondary'>
+      <Typography
+        variant='body2'
+        color='textSecondary'
+        sx={{ fontSize: '0.775rem' }}
+      >
         ({data?.podcast?.reviewCount || 0} reviews)
       </Typography>
     </Stack>

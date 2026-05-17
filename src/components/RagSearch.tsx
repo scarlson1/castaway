@@ -67,7 +67,7 @@ export function RagEpisodeResults({
           ))}
         </Stack>
       ) : (
-        <Typography textAlign='center' sx={{ py: 3 }}>
+        <Typography sx={{ py: 3, textAlign: 'center' }}>
           No results found
         </Typography>
       )}

@@ -222,6 +222,19 @@ export const addManualAdSegment = mutation({
       createdAt: Date.now(),
     });
 
+    const transcript = await ctx.db
+      .query('transcripts')
+      .withIndex('by_episodeId', (q) => q.eq('episodeId', args.episodeId))
+      .order('desc')
+      .first();
+
+    if (transcript) {
+      const updated = transcript.segments.map((seg) =>
+        seg.start < args.end && seg.end > args.start ? { ...seg, adId } : seg,
+      );
+      await ctx.db.patch(transcript._id, { segments: updated });
+    }
+
     await ctx.db.insert('adFeedback', {
       adId,
       clerkId,
@@ -302,6 +315,13 @@ export const adjustAdBoundaries = mutation({
     if (end <= start) throw new Error('end must be after start');
 
     await ctx.db.patch(adId, { correctedStart: start, correctedEnd: end });
+
+    await ctx.scheduler.runAfter(0, internal.transcripts.retagSegmentsForAd, {
+      episodeId: ad.episodeId,
+      adId,
+      newStart: start,
+      newEnd: end,
+    });
 
     await ctx.db.insert('adFeedback', {
       adId,

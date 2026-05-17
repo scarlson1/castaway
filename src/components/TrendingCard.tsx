@@ -125,8 +125,7 @@ TrendingCardProps) {
           <ClampedTypography
             variant='body1'
             color='textPrimary'
-            fontWeight={500}
-            fontSize={'0.95rem'}
+            sx={{ fontWeight: 500, fontSize: '0.95rem' }}
           >
             {title}
           </ClampedTypography>

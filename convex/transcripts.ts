@@ -23,7 +23,7 @@ export const save = internalMutation({
         end: v.number(),
         text: v.string(),
         speaker: v.optional(v.string()),
-      })
+      }),
     ),
     summaryTitle: v.optional(v.string()),
     oneSentenceSummary: v.optional(v.string()),
@@ -53,8 +53,8 @@ export const update = internalMutation({
           end: v.number(),
           text: v.string(),
           speaker: v.optional(v.string()),
-        })
-      )
+        }),
+      ),
     ),
     summaryTitle: v.optional(v.string()),
     oneSentenceSummary: v.optional(v.string()),
@@ -129,8 +129,50 @@ export const create = mutation({
       {
         onComplete: internal.transcriptWorkflow.handleOnComplete,
         context: args,
-      }
+      },
     );
     return { workflowId };
+  },
+});
+
+export const tagSegmentsWithAd = internalMutation({
+  args: {
+    episodeId: v.string(),
+    adId: v.id('ads'),
+    adStart: v.number(),
+    adEnd: v.number(),
+  },
+  handler: async ({ db }, { episodeId, adId, adStart, adEnd }) => {
+    const transcript = await fetchTranscript(db, episodeId);
+    if (!transcript) return;
+    const updated = transcript.segments.map((seg) =>
+      seg.start < adEnd && seg.end > adStart ? { ...seg, adId } : seg,
+    );
+    await db.patch(transcript._id, { segments: updated });
+  },
+});
+
+// Used when correctedStart/correctedEnd change — clears old tags, applies new ones.
+export const retagSegmentsForAd = internalMutation({
+  args: {
+    episodeId: v.string(),
+    adId: v.id('ads'),
+    newStart: v.number(),
+    newEnd: v.number(),
+  },
+  handler: async ({ db }, { episodeId, adId, newStart, newEnd }) => {
+    const transcript = await fetchTranscript(db, episodeId);
+    if (!transcript) return;
+    const updated = transcript.segments.map((seg) => {
+      const wasTagged = seg.adId === adId;
+      const nowInRange = seg.start < newEnd && seg.end > newStart;
+      if (nowInRange) return { ...seg, adId };
+      if (wasTagged) {
+        const { adId: _removed, ...rest } = seg;
+        return rest;
+      }
+      return seg;
+    });
+    await db.patch(transcript._id, { segments: updated });
   },
 });

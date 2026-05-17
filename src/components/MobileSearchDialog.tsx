@@ -44,7 +44,7 @@ export function MobileSearchDialog() {
         fullScreen
         open={open}
         onClose={() => setOpen(false)}
-        TransitionComponent={SlideUp}
+        slots={{ transition: SlideUp }}
       >
         <AppBar
           position='static'

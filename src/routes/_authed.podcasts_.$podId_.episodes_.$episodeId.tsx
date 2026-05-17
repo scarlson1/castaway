@@ -11,10 +11,11 @@ import {
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import type { Id } from 'convex/_generated/dataModel';
+import type { Doc, Id } from 'convex/_generated/dataModel';
 import { format } from 'date-fns';
 import { Suspense, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
+import { AdsTimeline } from '~/components/AdsTimeline';
 import { SIDEBAR_WIDTH } from '~/components/AppSidebar';
 import { MuiLink } from '~/components/MuiLink';
 import { PageHeader } from '~/components/PageHeader';
@@ -222,7 +223,11 @@ function RouteComponent() {
                 }}
                 divider={<Typography variant='body2'>{'·'}</Typography>}
               >
-                <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+                <Stack
+                  direction='row'
+                  spacing={1}
+                  sx={{ alignItems: 'center' }}
+                >
                   {data.feedImage || data.image ? (
                     <Box
                       component='img'
@@ -258,25 +263,26 @@ function RouteComponent() {
                     {getDuration(data.durationSeconds)}
                   </Typography>
                 ) : null}
+
+                {adCount > 0 ? (
+                  <Box
+                    sx={{
+                      px: 0.75,
+                      py: 0.125,
+                      color: 'primary.main',
+                      border: (theme) =>
+                        `1px solid ${theme.vars.palette.primary.main}`,
+                      borderRadius: 0.5,
+                      fontSize: 10,
+                      fontFamily: "'JetBrains Mono', monospace",
+                      letterSpacing: '0.04em',
+                      lineHeight: 1.7,
+                    }}
+                  >
+                    {adCount} ad {adCount === 1 ? 'segment' : 'segments'}
+                  </Box>
+                ) : null}
               </Stack>
-              {adCount > 0 ? (
-                <Box
-                  sx={{
-                    px: 0.75,
-                    py: 0.125,
-                    color: 'primary.main',
-                    border: (theme) =>
-                      `1px solid ${theme.vars.palette.primary.main}`,
-                    borderRadius: 0.5,
-                    fontSize: 10,
-                    fontFamily: "'JetBrains Mono', monospace",
-                    letterSpacing: '0.04em',
-                    lineHeight: 1.7,
-                  }}
-                >
-                  {adCount} ad {adCount === 1 ? 'segment' : 'segments'}
-                </Box>
-              ) : null}
             </Box>
             {/* </Box> */}
 
@@ -592,33 +598,38 @@ function ChaptersSidebar({ chapters }: { chapters?: Chapter[] }) {
 
 type TranscriptMode = 'full' | 'chapters';
 
-interface AdSeg {
-  _id: Id<'ads'>;
-  start: number;
-  end: number;
-  duration: number;
-  verifyCount?: number;
-  rejectCount?: number;
-  verdict?: 'verified' | 'rejected';
-  source?: 'llm' | 'user';
-  correctedStart?: number;
-  correctedEnd?: number;
-}
+type AdSeg = Doc<'ads'>;
+// interface AdSeg {
+//   _id: Id<'ads'>;
+//   start: number;
+//   end: number;
+//   duration: number;
+//   verifyCount?: number;
+//   rejectCount?: number;
+//   verdict?: 'verified' | 'rejected';
+//   source?: 'llm' | 'user';
+//   correctedStart?: number;
+//   correctedEnd?: number;
+// }
 
+// type TranscriptSeg = Doc<'transcripts'>['segments'][number];
 interface TranscriptSeg {
   id: string | number;
   start: number;
   end: number;
   text: string;
   speaker?: string | null;
+  adId?: Id<'ads'>;
 }
 
 interface UtteranceBlock {
+  // same as TranscriptSeg ?? reuse ??
   speaker?: string | null;
   start: number;
   end: number;
   text: string;
   id: string | number;
+  adId?: Id<'ads'>;
 }
 
 type RowItem =
@@ -646,7 +657,7 @@ function TranscriptSection({
   podId: string;
   audioUrl: string;
 }) {
-  const [mode, setMode] = useState<TranscriptMode>('full');
+  const [mode, setMode] = useState<TranscriptMode | 'ads'>('full');
   const [search, setSearch] = useState('');
   const { data: transcript } = useSuspenseQuery(
     convexQuery(api.transcripts.getByEpisodeId, { episodeId }),
@@ -703,9 +714,9 @@ function TranscriptSection({
         </Typography>
         {transcript && (
           <Box sx={{ display: 'flex', gap: 0 }}>
-            {(['Full', 'Chapters only'] as const).map((tab) => {
-              const tabMode: TranscriptMode =
-                tab === 'Full' ? 'full' : 'chapters';
+            {(['Full', 'Chapters only', 'Ads'] as const).map((tab) => {
+              const tabMode: TranscriptMode | 'ads' =
+                tab === 'Full' ? 'full' : tab === 'Ads' ? 'ads' : 'chapters';
               return (
                 <Box
                   key={tab}
@@ -838,6 +849,9 @@ function TranscriptSection({
         {transcript && mode === 'chapters' && (
           <ChaptersTranscript chapters={chapters} />
         )}
+        {Boolean(adSegments?.length) && mode === 'ads' ? (
+          <AdsTimeline adSegments={adSegments} />
+        ) : null}
       </Box>
       {/* Similar episodes */}
       <Box
@@ -877,7 +891,6 @@ function TranscriptSection({
   );
 }
 
-// util function — works with OR without speaker data
 function groupSegments(segments: TranscriptSeg[]): UtteranceBlock[] {
   const blocks: UtteranceBlock[] = [];
 
@@ -886,19 +899,19 @@ function groupSegments(segments: TranscriptSeg[]): UtteranceBlock[] {
     const sameSpeaker =
       last && last.speaker != null && last.speaker === seg.speaker;
     const smallGap = last && seg.start - last.end < 0.8;
+    const sameAdContext = seg.adId === last?.adId;
 
-    if (last && (sameSpeaker || (!seg.speaker && smallGap))) {
-      // extend current block
+    if (last && (sameSpeaker || (!seg.speaker && smallGap)) && sameAdContext) {
       last.text += seg.text;
       last.end = seg.end;
     } else {
-      // new block
       blocks.push({
         speaker: seg.speaker,
         start: seg.start,
         end: seg.end,
         text: seg.text,
         id: seg.id,
+        adId: seg.adId,
       });
     }
   }
@@ -1042,14 +1055,9 @@ function FullTranscript({
         chapterIdx++;
       }
 
-      const ad =
-        sortedAds.find((a) => {
-          const adStart = a.correctedStart ?? a.start;
-          const adEnd = a.correctedEnd ?? a.end;
-          // Exclude grouped blocks that extend far past the ad boundary — those
-          // contain post-ad text merged in by groupSegments and should not be styled as ads.
-          return seg.start >= adStart && seg.start < adEnd && seg.end <= adEnd + 10;
-        }) || null;
+      const ad = seg.adId
+        ? (sortedAds.find((a) => a._id === seg.adId) ?? null)
+        : null;
       const isFirstAdSegment = Boolean(ad && ad._id !== lastAdStart);
       if (ad) lastAdStart = ad._id;
 

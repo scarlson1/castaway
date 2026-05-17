@@ -2,21 +2,22 @@ import {
   SentimentDissatisfiedRounded,
   SentimentVeryDissatisfiedRounded,
 } from '@mui/icons-material';
-import {
-  Timeline,
-  TimelineConnector,
-  TimelineContent,
-  TimelineDot,
-  TimelineItem,
-  TimelineOppositeContent,
-  TimelineSeparator,
-} from '@mui/lab';
-// import TimelineConnector from '@mui/lab/TimelineConnector';
-// import TimelineContent from '@mui/lab/TimelineContent';
-// import TimelineDot from '@mui/lab/TimelineDot';
-// import TimelineItem from '@mui/lab/TimelineItem';
-// import TimelineOppositeContent from '@mui/lab/TimelineOppositeContent';
-// import TimelineSeparator from '@mui/lab/TimelineSeparator';
+// import {
+//   Timeline,
+//   TimelineConnector,
+//   TimelineContent,
+//   TimelineDot,
+//   TimelineItem,
+//   TimelineOppositeContent,
+//   TimelineSeparator,
+// } from '@mui/lab';
+import Timeline from '@mui/lab/Timeline';
+import TimelineConnector from '@mui/lab/TimelineConnector';
+import TimelineContent from '@mui/lab/TimelineContent';
+import TimelineDot from '@mui/lab/TimelineDot';
+import TimelineItem from '@mui/lab/TimelineItem';
+import TimelineOppositeContent from '@mui/lab/TimelineOppositeContent';
+import TimelineSeparator from '@mui/lab/TimelineSeparator';
 import { Paper, Popper, Typography } from '@mui/material';
 import type { Doc } from 'convex/_generated/dataModel';
 import { useRef, type RefObject } from 'react';
@@ -71,7 +72,7 @@ function HoverSnippetTimelineDot({
 
   const paperRef = useRef<HTMLDivElement>(null);
   const [paperHovering] = useHover<HTMLDivElement>(
-    paperRef as RefObject<HTMLDivElement>
+    paperRef as RefObject<HTMLDivElement>,
   );
 
   return (

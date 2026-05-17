@@ -26,8 +26,8 @@ export function VolumeControl({ volume, setVol }: VolumeControlProps) {
             xs: 'none',
             md: 'flex',
           },
+          alignItems: 'center',
         })}
-        alignItems='center'
       >
         <VolumeDown />
         <Slider

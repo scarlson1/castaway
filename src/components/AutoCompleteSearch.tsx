@@ -105,7 +105,7 @@ export const AutoCompleteSearch = ({
       open={open}
       onOpen={handleOpen}
       onClose={() => setOpen(false)}
-      renderInput={({ InputProps, ...params }) => (
+      renderInput={({ ...params }) => (
         <TextField
           {...params}
           onFocus={() => setIsExpanded(true)}
@@ -115,19 +115,22 @@ export const AutoCompleteSearch = ({
             placeholder ?? (compact ? 'Search shows...' : 'Search by title')
           }
           fullWidth
-          InputProps={{
-            ...InputProps,
-            startAdornment: (
-              <InputAdornment position='start' sx={{ mx: 0.5 }}>
-                <SearchRounded
-                  fontSize='small'
-                  sx={{
-                    fontSize: compact ? 14 : undefined,
-                    color: 'text.disabled',
-                  }}
-                />
-              </InputAdornment>
-            ),
+          slotProps={{
+            ...params.slotProps,
+            input: {
+              ...params.slotProps.input,
+              startAdornment: (
+                <InputAdornment position='start' sx={{ mx: 0.5 }}>
+                  <SearchRounded
+                    fontSize='small'
+                    sx={{
+                      fontSize: compact ? 14 : undefined,
+                      color: 'text.disabled',
+                    }}
+                  />
+                </InputAdornment>
+              ),
+            },
           }}
         />
       )}
@@ -190,11 +193,11 @@ function AutoCompleteOption({ option }: { option: PodcastFeed }) {
       <Grid size='grow' sx={{ minWidth: 0, flexGrow: '1' }}>
         <Typography
           variant='body1'
-          fontWeight='medium'
           sx={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            fontWeight: 'medium',
           }}
         >
           {option.title}
@@ -211,7 +214,7 @@ function AutoCompleteOption({ option }: { option: PodcastFeed }) {
           {option.author}
         </Typography>
       </Grid>
-      <Grid size='auto' display='flex' alignItems='center'>
+      <Grid size='auto' sx={{ display: 'flex', alignItems: 'center' }}>
         <ErrorBoundary fallback={null}>
           <Suspense fallback={null}>
             <SubscribeIconButton podcastId={option.podcastGuid} />
