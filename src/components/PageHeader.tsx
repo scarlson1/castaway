@@ -1,7 +1,8 @@
 import { Box, Typography } from '@mui/material';
+import { useHotkeys } from '@tanstack/react-hotkeys';
 import { useNavigate } from '@tanstack/react-router';
-import { useCallback } from 'react';
-import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
+import { useCallback, useRef } from 'react';
+import { AutoCompleteSearch, type AutoCompleteSearchHandle } from '~/components/AutoCompleteSearch';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 interface PageHeaderProps {
@@ -11,6 +12,10 @@ interface PageHeaderProps {
 
 export const PageHeader = ({ label, searchPlaceholder }: PageHeaderProps) => {
   const navigate = useNavigate();
+
+  const searchRef = useRef<AutoCompleteSearchHandle>(null);
+
+  useHotkeys([{ hotkey: 'Mod+K', callback: () => searchRef.current?.focus() }]);
 
   const goToPod = useCallback(
     (pod: PodcastFeed) => {
@@ -40,6 +45,7 @@ export const PageHeader = ({ label, searchPlaceholder }: PageHeaderProps) => {
         workspace / {label}
       </Typography>
       <AutoCompleteSearch
+        ref={searchRef}
         onSelect={goToPod}
         compact
         placeholder={searchPlaceholder}

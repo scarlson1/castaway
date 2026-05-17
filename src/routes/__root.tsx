@@ -36,6 +36,7 @@ import { AppBottomNav } from '~/components/AppBottomNav';
 import { AppHeader } from '~/components/AppHeader';
 import { AppSidebar, SIDEBAR_WIDTH } from '~/components/AppSidebar';
 import AudioPlayer from '~/components/AudioPlayer/index';
+import { NowPlayingDrawer } from '~/components/AudioPlayer/NowPlayingDrawer';
 import { Toaster } from '~/components/Toaster';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import { useRehydrateStore } from '~/hooks/useRehydrateAudioStore';
@@ -270,6 +271,7 @@ function RootDocument({ children }: Readonly<{ children: ReactNode }>) {
                   <WrappedPlayer />
                 </Box>
                 <AudioPlayerBottomSpacer />
+                <NowPlayingDrawer />
               </>
             </Suspense>
           </ErrorBoundary>

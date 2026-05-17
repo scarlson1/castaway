@@ -3,6 +3,7 @@ import { convexQuery } from '@convex-dev/react-query';
 import { PersonRounded } from '@mui/icons-material';
 import { Box, Button, Typography } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
+import { useHotkeys, type RegisterableHotkey } from '@tanstack/react-hotkeys';
 import { useMatchRoute, useNavigate } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useConvexAuth } from 'convex/react';
@@ -22,7 +23,7 @@ const NAV_LINKS = [
     key: '⌘4',
     auth: true,
   },
-  { label: '✦ Ask', to: '/chat' as const, key: '⌘K', auth: true },
+  { label: '✦ Ask', to: '/chat' as const, key: '⌘5', auth: true },
 ] as const;
 
 export function AppSidebar({ userId }: { userId: string | null }) {
@@ -37,6 +38,13 @@ export function AppSidebar({ userId }: { userId: string | null }) {
   });
 
   const visibleLinks = NAV_LINKS.filter((l) => !l.auth || isAuthenticated);
+
+  useHotkeys(
+    visibleLinks.map(({ key, to }) => ({
+      hotkey: key.replace('⌘', 'Mod+') as RegisterableHotkey,
+      callback: () => { navigate({ to }); },
+    }))
+  );
 
   const activeTo = [...visibleLinks]
     .sort((a, b) => b.to.length - a.to.length)

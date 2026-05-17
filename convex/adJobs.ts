@@ -25,7 +25,7 @@ export const patch = internalMutation({
   // args: { id: v.id('adJobs'), updates: v. },
   handler: async (
     { db },
-    { id, updates }: { id: Id<'adJobs'>; updates: Partial<Doc<'adJobs'>> }
+    { id, updates }: { id: Id<'adJobs'>; updates: Partial<Doc<'adJobs'>> },
   ) => {
     await db.patch(id, updates);
   },
@@ -41,7 +41,7 @@ export const getWindows = internalQuery({
     return await db
       .query('adJobWindows')
       .withIndex('by_jobId_classified', (q) =>
-        q.eq('jobId', jobId).eq('classified', classified)
+        q.eq('jobId', jobId).eq('classified', classified),
       )
       .take(count);
   },
@@ -55,7 +55,7 @@ export const patchWindows = internalMutation({
       windows,
     }: {
       windows: ({ _id: Id<'adJobWindows'> } & Partial<Doc<'adJobWindows'>>)[];
-    }
+    },
   ) => {
     for (const { _id, ...window } of windows) {
       await db.patch(_id, {
@@ -65,9 +65,29 @@ export const patchWindows = internalMutation({
   },
 });
 
+export const getLastClassifiedWindowBefore = internalQuery({
+  args: { jobId: v.id('adJobs'), beforeStart: v.number() },
+  handler: async (ctx, { jobId, beforeStart }) => {
+    // Collect classified windows for this job that start before the current batch
+    const windows = await ctx.db
+      .query('adJobWindows')
+      .withIndex('by_jobId_classified', (q) =>
+        q.eq('jobId', jobId).eq('classified', true),
+      )
+      .collect();
+
+    // Return the one with the highest start time that's still before this batch
+    return (
+      windows
+        .filter((w) => w.start < beforeStart)
+        .sort((a, b) => b.start - a.start)[0] ?? null
+    );
+  },
+});
+
 export async function getAdJobsByEpisodeId(
   db: QueryCtx['db'],
-  episodeId: string
+  episodeId: string,
 ) {
   return await db
     .query('adJobs')

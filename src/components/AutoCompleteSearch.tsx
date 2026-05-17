@@ -9,24 +9,32 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { Suspense, useState } from 'react';
+import {
+  forwardRef,
+  Suspense,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { searchPodIndex } from '~/components/PodcastIndexSearch';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 import { useDebounce } from '~/hooks/useDebounce';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
-export const AutoCompleteSearch = ({
-  onSelect,
-  fullWidth = false,
-  compact = false,
-  placeholder,
-}: {
-  onSelect?: (val: PodcastFeed) => void;
-  fullWidth?: boolean;
-  compact?: boolean;
-  placeholder?: string;
-}) => {
+export interface AutoCompleteSearchHandle {
+  focus: () => void;
+}
+
+export const AutoCompleteSearch = forwardRef<
+  AutoCompleteSearchHandle,
+  {
+    onSelect?: (val: PodcastFeed) => void;
+    fullWidth?: boolean;
+    compact?: boolean;
+    placeholder?: string;
+  }
+>(({ onSelect, fullWidth = false, compact = false, placeholder }, ref) => {
   const search = useServerFn(searchPodIndex);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query.trim(), 300);
@@ -34,6 +42,12 @@ export const AutoCompleteSearch = ({
   const [inputValue, setInputValue] = useState('');
   const [isExpanded, setIsExpanded] = useState(false);
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () =>
+      rootRef.current?.querySelector<HTMLInputElement>('input')?.focus(),
+  }));
 
   const queryOptions = { query: debouncedQuery, max: 8, similar: true };
 
@@ -54,6 +68,7 @@ export const AutoCompleteSearch = ({
 
   return (
     <Autocomplete
+      ref={rootRef}
       sx={
         compact
           ? {
@@ -70,6 +85,7 @@ export const AutoCompleteSearch = ({
                   borderColor: 'text.secondary',
                   borderWidth: 1,
                 },
+                paddingRight: '30px !important',
               },
               '& .MuiInputLabel-root': { display: 'none' },
               '& .MuiInputBase-input': {
@@ -119,6 +135,7 @@ export const AutoCompleteSearch = ({
             ...params.slotProps,
             input: {
               ...params.slotProps.input,
+
               startAdornment: (
                 <InputAdornment position='start' sx={{ mx: 0.5 }}>
                   <SearchRounded
@@ -129,6 +146,20 @@ export const AutoCompleteSearch = ({
                     }}
                   />
                 </InputAdornment>
+              ),
+              endAdornment: (
+                <>
+                  {/* <InputAdornment position='end'> */}
+                  <Typography
+                    variant='body2'
+                    sx={{ fontSize: 10, color: 'text.disabled', mr: 1 }}
+                  >
+                    ⌘k
+                  </Typography>
+                  {/* </InputAdornment> */}
+                  {/* Preserve the native MUI dropdown/clear buttons */}
+                  {params.slotProps?.input?.endAdornment}
+                </>
               ),
             },
           }}
@@ -164,7 +195,7 @@ export const AutoCompleteSearch = ({
       }}
     />
   );
-};
+});
 
 function AutoCompleteOption({ option }: { option: PodcastFeed }) {
   return (

@@ -45,8 +45,20 @@ export const fn = internalAction({
         })
       : [];
 
+    // Fetch the last classified window from a previous batch so the first
+    // window in this batch gets context across the batch boundary.
+    const firstWindowStart = windows[0].start;
+    const lastClassified = await ctx.runQuery(
+      internal.adJobs.getLastClassifiedWindowBefore,
+      { jobId, beforeStart: firstWindowStart },
+    );
+
     // LLM call for the batch
-    const classifiedWindows = await classifyWindowsBatch(windows, fewShotExamples);
+    const classifiedWindows = await classifyWindowsBatch(
+      windows,
+      fewShotExamples,
+      lastClassified?.text ?? null,
+    );
 
     // write results
     await ctx.runMutation(internal.adJobs.patchWindows, {

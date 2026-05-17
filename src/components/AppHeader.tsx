@@ -239,7 +239,6 @@ const BREADCRUMB_LABELS: Record<string, string> = {
 export function DesktopHeader() {
   const navigate = useNavigate();
   const location = useLocation();
-
   const breadcrumb = useMemo(() => {
     const first = location.pathname.split('/').filter(Boolean)[0] ?? '';
     return BREADCRUMB_LABELS[first] ?? first;

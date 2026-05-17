@@ -30,13 +30,7 @@ export const Featured = () => {
   );
 };
 
-function FeaturedCard({
-  pod,
-  label,
-}: {
-  pod: Doc<'podcasts'>;
-  label: string;
-}) {
+function FeaturedCard({ pod, label }: { pod: Doc<'podcasts'>; label: string }) {
   return (
     <MuiLink
       to='/podcasts/$podId'

@@ -14,6 +14,7 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 export async function classifyWindowsBatch<T extends Record<string, any>>(
   windows: (Window & T)[],
   fewShotExamples: { text: string; is_ad: boolean }[] = [],
+  precedingWindowText: string | null = null,
 ): Promise<(ClassifiedWindow & T)[]> {
   const windowCount = windows.length;
 
@@ -34,11 +35,12 @@ Output: an array of exactly ${windowCount} objects with the following schema:
 ]
 
 Definitions:
-- "ad" includes sponsorships, promotions, calls to action, discount codes, and brand/promo messages. Also include narrative brand stories — a story featuring a company or product as the protagonist (e.g. 'No one goes to Hank's for his spreadsheets') is an ad even without an explicit call to action.
+- "ad" includes sponsorships, promotions, calls to action, discount codes, and brand/promo messages.
 - look for transition jingles that often mark the start and end of ad segments.
 - Keep reason values concise (1-2 sentences max).
 - Do not output anything outside the JSON array.
 - The output array length MUST equal ${windowCount}`.trim();
+  //  Also include narrative brand stories — a story featuring a company or product as the protagonist (e.g. 'No one goes to Hank's for his spreadsheets') is an ad even without an explicit call to action.
 
   if (fewShotExamples.length > 0) {
     const adExamples = fewShotExamples.filter((e) => e.is_ad);
@@ -64,6 +66,7 @@ ${JSON.stringify(
     index: i,
     start: w.start,
     end: w.end,
+    prev_text: i > 0 ? windows[i - 1].text : precedingWindowText,
     text: w.text,
   })),
   null,

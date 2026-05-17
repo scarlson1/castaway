@@ -208,7 +208,9 @@ const BADGE_SX = {
 } as const;
 
 function BrowseByTopic() {
-  const { data: categories } = useSuspenseQuery(categoryQueryOptions());
+  const { data } = useSuspenseQuery(categoryQueryOptions());
+
+  let categories = data?.slice(0, 40);
 
   return (
     <>
@@ -226,8 +228,8 @@ function BrowseByTopic() {
       <Box
         sx={{
           overflowX: 'auto',
-          mx: { xs: -2, md: -3 },
-          px: { xs: 2, md: 3 },
+          // mx: { xs: -2, md: -3 },
+          // px: { xs: 2, md: 3 },
           '&::-webkit-scrollbar': { display: 'none' },
           scrollbarWidth: 'none',
         }}
@@ -238,38 +240,113 @@ function BrowseByTopic() {
           sx={{ width: 'max-content', pb: 0.5 }}
         >
           {categories?.map((cat) => (
-            <MuiButtonLink
-              key={cat.id}
-              to='/trending'
-              search={{ cat: cat.name, max: 100, lang: 'en' }}
-              variant='outlined'
-              color='inherit'
-              sx={{
-                borderColor: 'divider',
-                borderRadius: 1.5,
-                px: 2,
-                py: 1.25,
-                textAlign: 'left',
-                textTransform: 'none',
-                minWidth: 'max-content',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                '&:hover': { borderColor: 'text.primary' },
-              }}
-            >
-              <Typography
-                variant='body2'
-                sx={{ fontWeight: 600 }}
-                color='text.primary'
-              >
-                {cat.name}
-              </Typography>
-            </MuiButtonLink>
+            <CategoryButton category={cat.name} />
           ))}
         </Stack>
       </Box>
     </>
+  );
+}
+
+function CategoryButton({ category }: { category: string }) {
+  const { data } = useQuery(
+    trendingQueryOptions({ cat: category, lang: 'en', max: 1 }),
+  );
+  const top = data?.feeds?.[0];
+
+  return (
+    <MuiButtonLink
+      to='/trending'
+      search={{ cat: category, max: 100, lang: 'en' }}
+      variant='outlined'
+      color='inherit'
+      sx={{
+        borderColor: 'divider',
+        borderRadius: 1.5,
+        px: 2,
+        py: 1.25,
+        textAlign: 'left',
+        textTransform: 'none',
+        // minWidth: 'max-content',
+        minWidth: 100,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'flex-start',
+        '&:hover': { borderColor: 'text.primary' },
+        overflow: 'hidden',
+        // cursor: 'pointer',
+        position: 'relative',
+      }}
+    >
+      <>
+        <Typography
+          variant='body2'
+          sx={{ fontWeight: 600, textTransform: 'capitalize', zIndex: 3 }}
+          color='text.primary'
+        >
+          {category}
+        </Typography>
+        {top?.artwork ? (
+          <Box
+            sx={[
+              {
+                '&:before': {
+                  content: `""`,
+                  position: 'absolute',
+                  // top: 0,
+                  // left: 0,
+                  // width: '100%',
+                  // height: '100%',
+                  bottom: -10,
+                  right: -10,
+                  width: 40,
+                  height: 40,
+                  transform: 'rotate(15deg)',
+                  borderRadius: 1,
+                  backgroundColor:
+                    'rgba(255, 255, 255, 0.5)' /* 40% transparent black */,
+                  // backdropFilter: 'blur(1px)',
+                  zIndex: 2 /* Ensures it sits on top */,
+                },
+              },
+              (theme) =>
+                theme.applyStyles('dark', {
+                  backgroundColor:
+                    'rgba(0, 0, 0, 0.4)' /* 40% transparent black */,
+                }),
+            ]}
+          >
+            <Box
+              component='img'
+              src={top.artwork}
+              alt={category}
+              sx={{
+                position: 'absolute',
+                bottom: -10,
+                right: -10,
+                width: 40,
+                height: 40,
+                transform: 'rotate(15deg)',
+                borderRadius: 1,
+                boxShadow: 1,
+                // backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                // backdropFilter: 'blur(10px)',
+                zIndex: 1,
+              }}
+            />
+            {/* Gradient overlay
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                background:
+                  'linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, rgba(0,0,0,0.75) 100%)',
+              }}
+            /> */}
+          </Box>
+        ) : null}
+      </>
+    </MuiButtonLink>
   );
 }
 

@@ -38,6 +38,8 @@ import type * as rag from "../rag.js";
 import type * as stats_episodes from "../stats/episodes.js";
 import type * as stats_podcasts from "../stats/podcasts.js";
 import type * as subscribe from "../subscribe.js";
+import type * as tools_recommendEpisodes from "../tools/recommendEpisodes.js";
+import type * as tools_recommendPodcasts from "../tools/recommendPodcasts.js";
 import type * as tools_searchEpisodes from "../tools/searchEpisodes.js";
 import type * as tools_updateThreadTitle from "../tools/updateThreadTitle.js";
 import type * as transcriptWorkflow from "../transcriptWorkflow.js";
@@ -91,6 +93,8 @@ declare const fullApi: ApiFromModules<{
   "stats/episodes": typeof stats_episodes;
   "stats/podcasts": typeof stats_podcasts;
   subscribe: typeof subscribe;
+  "tools/recommendEpisodes": typeof tools_recommendEpisodes;
+  "tools/recommendPodcasts": typeof tools_recommendPodcasts;
   "tools/searchEpisodes": typeof tools_searchEpisodes;
   "tools/updateThreadTitle": typeof tools_updateThreadTitle;
   transcriptWorkflow: typeof transcriptWorkflow;

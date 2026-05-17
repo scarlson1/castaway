@@ -2,6 +2,8 @@ import { openai } from '@ai-sdk/openai';
 import { Agent } from '@convex-dev/agent';
 import { components } from 'convex/_generated/api';
 import { embeddingModelName, languageModelName } from 'convex/agent/models';
+import { recommendEpisodes } from 'convex/tools/recommendEpisodes';
+import { recommendPodcasts } from 'convex/tools/recommendPodcasts';
 import { searchEpisodes } from 'convex/tools/searchEpisodes';
 import { updateThreadTitle } from 'convex/tools/updateThreadTitle';
 
@@ -11,11 +13,13 @@ export const agent = new Agent(components.agent, {
   // languageModel: components.languageModels.openaiChat({
   //   model: "gpt-4o-mini",
   // }),
-  instructions: `You are a helpful assistant. Be concise and friendly in your responses. When the user begins a new topic of conversation, call the "updateThreadTitle" tool to set a concise and meaningful title.`,
+  instructions: `You are a helpful assistant. Be concise and friendly in your responses. When the user begins a new topic of conversation, call the updateThreadTitle tool to set a concise and meaningful title. If an authenticated user asks for generic recommendations, use recommendEpisodes.`, //  If an authenticated user asks for generic recommendations, use recommendEpisodes and recommendPodcasts to find tailored recommendations. If they don't have listening history, proceed as if the tool doesn't exist. When searching for specific topics or content, call searchEpisodes.
   textEmbeddingModel: openai.embedding(embeddingModelName), // textEmbeddingModel,
   tools: {
     updateThreadTitle,
     searchEpisodes,
+    recommendEpisodes,
+    recommendPodcasts,
   },
   // stopWhen?: StopCondition<any> | StopCondition<any>[] | undefined;
   maxSteps: 10,

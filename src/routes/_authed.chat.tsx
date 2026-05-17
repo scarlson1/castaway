@@ -9,6 +9,7 @@ import {
   useTheme,
 } from '@mui/material';
 import { useMutation } from '@tanstack/react-query';
+import { useHotkeys } from '@tanstack/react-hotkeys';
 import { createFileRoute, Outlet, useNavigate } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useState } from 'react';
@@ -100,6 +101,16 @@ function RouteComponent() {
 function ChatThreadPanel({ onClose }: { onClose: () => void }) {
   const navigate = useNavigate();
 
+  useHotkeys([
+    {
+      hotkey: 'Alt+N',
+      callback: () => {
+        onClose();
+        navigate({ to: '/chat' });
+      },
+    },
+  ]);
+
   const { mutate: createThread } = useMutation({
     mutationFn: useConvexMutation(api.agent.threads.create),
     onSuccess: ({ threadId }) => {
@@ -171,7 +182,7 @@ function ChatThreadPanel({ onClose }: { onClose: () => void }) {
               opacity: 0.5,
             }}
           >
-            ⌘N
+            ⌥N
           </Box>
         </MuiButtonLink>
       </Box>

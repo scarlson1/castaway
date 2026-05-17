@@ -61,6 +61,7 @@ export const AppBottomNav = () => {
       <BottomNavigation
         value={activeValue}
         onChange={(_, newValue) => navigate({ to: newValue })}
+        sx={{ '& .MuiBottomNavigationAction-root': { minWidth: 0 } }}
       >
         {items.map((item) => (
           <BottomNavigationAction

@@ -29,14 +29,18 @@ interface Temp {
 interface QueueState {
   queue: Temp[];
   nowPlaying: Temp | null;
+  nowPlayingOpen: boolean;
   setPlaying: (ep: Temp) => void;
   addToQueue: (ep: Temp) => void;
+  setNowPlayingOpen: (open: boolean) => void;
 }
 
 export const useQueueStore = create<QueueState>()((set) => ({
   queue: [],
   nowPlaying: null,
-  setPlaying: (ep: Temp) => set((state) => ({ nowPlaying: ep })),
+  nowPlayingOpen: false,
+  setPlaying: (ep: Temp) => set(() => ({ nowPlaying: ep })),
   addToQueue: (ep: Temp) =>
     set(({ queue, nowPlaying }) => ({ nowPlaying, queue: [...queue, ep] })),
+  setNowPlayingOpen: (open: boolean) => set(() => ({ nowPlayingOpen: open })),
 }));

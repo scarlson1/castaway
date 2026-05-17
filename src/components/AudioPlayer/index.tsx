@@ -1,6 +1,11 @@
 import { convexQuery } from '@convex-dev/react-query';
-import { Forward30, Replay10 } from '@mui/icons-material';
-import { Box, IconButton, Slider, Typography } from '@mui/material';
+import {
+  Forward30,
+  KeyboardArrowUpRounded,
+  Replay10,
+  SkipNext,
+} from '@mui/icons-material';
+import { Box, IconButton, Slider, Tooltip, Typography } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { Suspense, useEffect, useEffectEvent, useMemo } from 'react';
@@ -8,10 +13,12 @@ import { ErrorBoundary } from 'react-error-boundary';
 import { RateButtons } from '~/components/AudioPlayer/RateButton';
 import { SkipAdButton } from '~/components/AudioPlayer/SkipAdButton';
 import { MuiLink } from '~/components/MuiLink';
-import { PlayPauseButton } from '~/components/PlayPauseButton';
 import { useAudioPlayer } from '~/hooks/useAudioPlayer';
 import { useAudioStore } from '~/hooks/useAudioStore';
+import { useAutoSkip } from '~/hooks/useAutoSkip';
 import { useMediaSession } from '~/hooks/useMediaSession';
+import { usePlayerSettings } from '~/hooks/usePlayerSettings';
+import { useQueueStore } from '~/hooks/useQueueStore';
 import { formatDuration } from '~/utils/format';
 
 interface AudioPlayerProps {
@@ -37,6 +44,9 @@ export default function AudioPlayer({
   dbPlayback = {},
 }: AudioPlayerProps) {
   const loadAudio = useAudioStore((s) => s.loadAudio);
+  const setNowPlayingOpen = useQueueStore((s) => s.setNowPlayingOpen);
+  const autoSkipAds = usePlayerSettings((s) => s.autoSkipAds);
+  const toggleAutoSkipAds = usePlayerSettings((s) => s.toggleAutoSkipAds);
   const {
     play,
     pause,
@@ -87,14 +97,16 @@ export default function AudioPlayer({
         },
       ]}
     >
-      {/* Left: now playing info */}
+      {/* Left: now playing info — tappable on mobile to open expanded view */}
       <Box
+        onClick={() => setNowPlayingOpen(true)}
         sx={{
           display: 'flex',
           alignItems: 'center',
           gap: 1.25,
           minWidth: 0,
           overflow: 'hidden',
+          cursor: { xs: 'pointer', sm: 'default' },
         }}
       >
         <Box
@@ -114,6 +126,7 @@ export default function AudioPlayer({
             to='/podcasts/$podId/episodes/$episodeId'
             params={{ podId: podcastId, episodeId: episodeId || '' }}
             underline='hover'
+            onClick={(e) => e.stopPropagation()}
             sx={{
               display: 'block',
               fontSize: 13,
@@ -131,6 +144,7 @@ export default function AudioPlayer({
             to='/podcasts/$podId'
             params={{ podId: podcastId }}
             underline='hover'
+            onClick={(e) => e.stopPropagation()}
             sx={{
               display: 'block',
               fontSize: 11,
@@ -209,12 +223,20 @@ export default function AudioPlayer({
         {/* Progress bar */}
         <ErrorBoundary
           fallback={
-            <CompactProgressBar position={position} duration={duration} seek={seek} />
+            <CompactProgressBar
+              position={position}
+              duration={duration}
+              seek={seek}
+            />
           }
         >
           <Suspense
             fallback={
-              <CompactProgressBar position={position} duration={duration} seek={seek} />
+              <CompactProgressBar
+                position={position}
+                duration={duration}
+                seek={seek}
+              />
             }
           >
             <CompactProgressWithAds
@@ -242,7 +264,54 @@ export default function AudioPlayer({
           </Suspense>
         </ErrorBoundary>
 
+        <ErrorBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <AutoSkipController episodeId={id} seek={seek} />
+          </Suspense>
+        </ErrorBoundary>
+
         <RateButtons rate={rate} setRate={setRate} />
+
+        <Tooltip
+          title={autoSkipAds ? 'Auto-skip ads: on' : 'Auto-skip ads: off'}
+        >
+          <IconButton
+            size='small'
+            aria-label='Toggle auto-skip ads'
+            onClick={toggleAutoSkipAds}
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: '6px',
+              border: '1px solid',
+              borderColor: autoSkipAds ? 'primary.main' : 'divider',
+              color: autoSkipAds ? 'primary.main' : 'text.disabled',
+              '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
+            }}
+          >
+            <SkipNext sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
+
+        <Tooltip title='Expand player'>
+          <IconButton
+            size='small'
+            aria-label='Expand now playing'
+            onClick={() => setNowPlayingOpen(true)}
+            sx={{
+              width: 28,
+              height: 28,
+              borderRadius: '6px',
+              border: '1px solid',
+              borderColor: 'divider',
+              color: 'text.secondary',
+              '&:hover': { bgcolor: 'action.hover', color: 'text.primary' },
+            }}
+          >
+            {/* <OpenInFull sx={{ fontSize: 14 }} /> */}
+            <KeyboardArrowUpRounded sx={{ fontSize: 14 }} />
+          </IconButton>
+        </Tooltip>
       </Box>
     </Box>
   );
@@ -255,7 +324,12 @@ interface CompactProgressProps {
   marks?: Array<{ value: number; label: string }>;
 }
 
-function CompactProgressBar({ position, duration, seek, marks }: CompactProgressProps) {
+function CompactProgressBar({
+  position,
+  duration,
+  seek,
+  marks,
+}: CompactProgressProps) {
   return (
     <Box
       sx={{
@@ -323,6 +397,17 @@ function CompactProgressBar({ position, duration, seek, marks }: CompactProgress
       </Typography>
     </Box>
   );
+}
+
+function AutoSkipController({
+  episodeId,
+  seek,
+}: {
+  episodeId: string;
+  seek: (t: number) => void;
+}) {
+  useAutoSkip({ episodeId, seek });
+  return null;
 }
 
 function CompactProgressWithAds({
