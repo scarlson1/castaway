@@ -1,3 +1,4 @@
+import { mergeTranscriptChunks } from 'convex/utils/mergeTranscriptChunks';
 import OpenAI from 'openai';
 
 export interface TranscriptSegment {
@@ -14,6 +15,9 @@ export interface TranscriptionResponse {
 
 interface WhisperResponse {
   text: string;
+  // duration of the submitted audio in seconds. Returned by `verbose_json` and
+  // `diarized_json`, absent from `json`/`text`.
+  duration?: number;
   segments?: Array<{
     id: number;
     start: number;
@@ -32,6 +36,10 @@ export interface TranscribeOptions {
   model?: OpenAITranscribeModel;
   language?: string;
   responseFormat?: 'json' | 'text' | 'diarized_json' | 'verbose_json' | 'vtt';
+  // Episode duration from the RSS feed (`episodes.durationSeconds`). Used only
+  // to work out how far to advance the timeline between chunks — never sent to
+  // the transcription API.
+  durationSeconds?: number | null;
 }
 // TODO: transcribeUrl only compatible with which response formats ??
 
@@ -43,6 +51,8 @@ export async function transcribeUrl(
   url: string,
   options: TranscribeOptions
 ): Promise<TranscriptionResponse> {
+  const { durationSeconds, ...chunkOptions } = options;
+
   // break audio into chunks of < 25MB
   const chunks = await fetchAndChunkAudio(url);
   console.log(`audio broken into ${chunks.length} chunks`);
@@ -51,35 +61,15 @@ export async function transcribeUrl(
   const transcripts: WhisperResponse[] = [];
   for (const c of chunks) {
     console.log(`transcribing chunk...`);
-    transcripts.push(await transcribeChunk(c, options));
+    transcripts.push(await transcribeChunk(c, chunkOptions));
   }
   console.log(`finished transcribing chunks`);
 
   // Merge chunks into array of timestamps and text (transcript)
-  let offset = 0;
-  const merged: TranscriptSegment[] = [];
-  let fullText = '';
-
-  for (const t of transcripts) {
-    fullText += t.text + ' ';
-    if (t.segments) {
-      for (const seg of t.segments) {
-        merged.push({
-          id: seg.id,
-          start: seg.start + offset,
-          end: seg.end + offset,
-          text: seg.text,
-        });
-      }
-      const last = t.segments.at(-1);
-      if (last) offset += last.end;
-    }
-  }
-
-  return {
-    text: fullText.trim(),
-    segments: merged,
-  };
+  return mergeTranscriptChunks(transcripts, {
+    chunkByteLengths: chunks.map((c) => c.byteLength),
+    durationSeconds,
+  });
 }
 
 // break into segments less than 25MB transcribe limit

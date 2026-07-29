@@ -109,9 +109,17 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
         };
       }
     }
-    if (!transcript) transcript = await transcribeUrl(audioUrl, {});
-
-    // const transcript = await transcribeUrl(audioUrl, {});
+    if (!transcript) {
+      // the feed duration lets transcribeUrl derive the real bytes-per-second
+      // instead of assuming 128 kbps when stitching chunk timestamps together
+      const episode: Doc<'episodes'> | null = await ctx.runQuery(
+        api.episodes.getByGuid,
+        { id: episodeId }
+      );
+      transcript = await transcribeUrl(audioUrl, {
+        durationSeconds: episode?.durationSeconds,
+      });
+    }
 
     let summary: Pick<
       Doc<'transcripts'>,
@@ -188,7 +196,16 @@ export const transcribe = internalAction({
       }
     }
 
-    const transcript = await transcribeUrl(audioUrl, {});
+    // the feed duration lets transcribeUrl derive the real bytes-per-second
+    // instead of assuming 128 kbps when stitching chunk timestamps together
+    const episode: Doc<'episodes'> | null = await ctx.runQuery(
+      api.episodes.getByGuid,
+      { id: episodeId }
+    );
+
+    const transcript = await transcribeUrl(audioUrl, {
+      durationSeconds: episode?.durationSeconds,
+    });
 
     const transcriptId: Id<'transcripts'> = await ctx.runMutation(
       internal.transcripts.save,
