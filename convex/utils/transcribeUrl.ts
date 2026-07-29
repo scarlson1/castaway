@@ -99,6 +99,7 @@ export async function transcribeUrl(
   let offset = 0;
   const merged: TranscriptSegment[] = [];
   let fullText = '';
+  let globalSegId = 0;
 
   // Assume 128 kbps MP3 for duration estimation (16000 bytes/sec).
   // This is used to advance the offset between chunks. Using last.end from
@@ -113,7 +114,7 @@ export async function transcribeUrl(
     if (t.segments) {
       for (const seg of t.segments) {
         merged.push({
-          id: seg.id,
+          id: globalSegId++,
           start: seg.start + offset,
           end: seg.end + offset,
           text: seg.text,

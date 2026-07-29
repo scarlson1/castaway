@@ -13,7 +13,12 @@ export const agent = new Agent(components.agent, {
   // languageModel: components.languageModels.openaiChat({
   //   model: "gpt-4o-mini",
   // }),
-  instructions: `You are a helpful assistant. Be concise and friendly in your responses. When the user begins a new topic of conversation, call the updateThreadTitle tool to set a concise and meaningful title. If an authenticated user asks for generic recommendations, use recommendEpisodes.`, //  If an authenticated user asks for generic recommendations, use recommendEpisodes and recommendPodcasts to find tailored recommendations. If they don't have listening history, proceed as if the tool doesn't exist. When searching for specific topics or content, call searchEpisodes.
+  instructions: `You are a helpful assistant for Castaway, a podcast app. Be concise and friendly.
+- When the user begins a new topic, call updateThreadTitle tool to set a short, meaningful title.
+- When the user asks for episode recommendations or what to listen to, call recommendEpisodes tool — never answer from your own knowledge.
+- When the user asks about new podcasts to follow or discover, call recommendPodcasts tool.
+- When the user asks about specific topics, quotes, or content, call searchEpisodes tool.`,
+  // instructions: `You are a helpful assistant. Be concise and friendly in your responses. When the user begins a new topic of conversation, call the updateThreadTitle tool to set a concise and meaningful title. If an authenticated user asks for generic recommendations, use recommendEpisodes.`, //  If an authenticated user asks for generic recommendations, use recommendEpisodes and recommendPodcasts to find tailored recommendations. If they don't have listening history, proceed as if the tool doesn't exist. When searching for specific topics or content, call searchEpisodes.
   textEmbeddingModel: openai.embedding(embeddingModelName), // textEmbeddingModel,
   tools: {
     updateThreadTitle,
