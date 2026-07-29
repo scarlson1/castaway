@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useAudioStore } from '~/hooks/useAudioStore';
 import { usePlayerSettings } from '~/hooks/usePlayerSettings';
 import { useTones } from '~/hooks/useTones';
+import { resolveSkippableAds } from '~/utils/ads';
 
 interface UseAutoSkipProps {
   episodeId: string;
@@ -21,10 +22,7 @@ export const useAutoSkip = ({ episodeId, seek }: UseAutoSkipProps) => {
     convexQuery(api.adSegments.getByEpisodeId, { id: episodeId })
   );
 
-  const ads = useMemo(
-    () => [...(adsData ?? [])].sort((a, b) => a.start - b.start),
-    [adsData]
-  );
+  const ads = useMemo(() => resolveSkippableAds(adsData), [adsData]);
 
   const warnedRef = useRef<Set<string>>(new Set());
   const skippedRef = useRef<Set<string>>(new Set());

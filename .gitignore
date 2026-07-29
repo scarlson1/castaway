@@ -9,3 +9,5 @@ convex/_generated
 convex/.DS_Store
 src/.DS_Store
 src/assets/.DS_Store
+
+.claude/worktrees/

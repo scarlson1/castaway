@@ -112,8 +112,8 @@ export function Card({
             <ClampedTypography
               variant='body1'
               color='textPrimary'
-              fontWeight='medium'
               sx={{
+                fontWeight: 'medium',
                 WebkitLineClamp: isRow ? '1' : '2',
               }}
               component='div'
@@ -129,8 +129,8 @@ export function Card({
             <ClampedTypography
               variant='body2'
               color='textSecondary'
-              fontWeight={500}
               sx={{
+                fontWeight: 500,
                 WebkitLineClamp: isRow ? '1' : '2',
               }}
               component='div'

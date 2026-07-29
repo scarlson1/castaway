@@ -9,7 +9,10 @@ export function mergeAdWindows(
   mergeGap = 2,
   confidenceThreshold = 0.4,
 ): MergedAdSegment[] {
-  const positives = windows.filter((w) => w.is_ad && w.confidence > confidenceThreshold);
+  // >= matches how recalibrateThreshold scores candidate thresholds
+  const positives = windows.filter(
+    (w) => w.is_ad && w.confidence >= confidenceThreshold,
+  );
   if (!positives.length) return [];
 
   positives.sort((a, b) => a.start - b.start);

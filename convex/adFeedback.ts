@@ -1,4 +1,5 @@
 import { internal } from 'convex/_generated/api';
+import type { Doc, Id } from 'convex/_generated/dataModel';
 import {
   internalMutation,
   internalQuery,
@@ -53,6 +54,7 @@ async function recalibrateThreshold(ctx: MutationCtx, podcastId: string) {
   let best = 0.4;
   let bestErrors = Infinity;
 
+  // scoring must match how mergeAdWindows applies the threshold (confidence >= t)
   for (const t of candidates) {
     const fp = falsePositiveConfs.filter((c) => c >= t).length;
     const fn = truePositiveConfs.filter((c) => c < t).length;
@@ -81,57 +83,104 @@ async function recalibrateThreshold(ctx: MutationCtx, podcastId: string) {
   }
 }
 
+// 'manually_added' counts as the creator's confirm vote. 'boundary_adjusted' is an
+// audit row, not a vote — it must never be mistaken for one when looking up a
+// user's existing vote, or counts drift on the next click.
+const VOTE_ACTIONS = ['confirmed', 'rejected', 'manually_added'] as const;
+type VoteAction = (typeof VOTE_ACTIONS)[number];
+
+function isConfirmingVote(action: VoteAction) {
+  return action === 'confirmed' || action === 'manually_added';
+}
+
+async function getExistingVote(
+  ctx: MutationCtx,
+  adId: Id<'ads'>,
+  clerkId: string,
+) {
+  const rows = await ctx.db
+    .query('adFeedback')
+    .withIndex('by_adId_clerkId', (q) =>
+      q.eq('adId', adId).eq('clerkId', clerkId),
+    )
+    .collect();
+
+  return (
+    rows.find((row): row is Doc<'adFeedback'> & { action: VoteAction } =>
+      (VOTE_ACTIONS as readonly string[]).includes(row.action),
+    ) ?? null
+  );
+}
+
+// Records one vote per user per ad, replacing the user's previous vote if they
+// switch sides, and recalibrates the podcast threshold when the verdict changes.
+async function castVote(
+  ctx: MutationCtx,
+  adId: Id<'ads'>,
+  vote: 'confirmed' | 'rejected',
+  reason?: string,
+) {
+  const clerkId = await getClerkId(ctx.auth);
+
+  const ad = await ctx.db.get(adId);
+  if (!ad) throw new Error('ad not found');
+
+  const existingVote = await getExistingVote(ctx, adId, clerkId);
+  const alreadyVoted = existingVote
+    ? isConfirmingVote(existingVote.action) === (vote === 'confirmed')
+    : false;
+  if (alreadyVoted) return;
+
+  let verifyCount = ad.verifyCount ?? 0;
+  let rejectCount = ad.rejectCount ?? 0;
+
+  // switching sides: drop the previous vote before counting the new one
+  if (existingVote) {
+    if (isConfirmingVote(existingVote.action)) {
+      verifyCount = Math.max(0, verifyCount - 1);
+    } else {
+      rejectCount = Math.max(0, rejectCount - 1);
+    }
+    await ctx.db.delete(existingVote._id);
+  }
+
+  if (vote === 'confirmed') verifyCount += 1;
+  else rejectCount += 1;
+
+  const verdict = computeVerdict(verifyCount, rejectCount);
+  const verdictChanged = verdict !== (ad.verdict ?? null);
+
+  await ctx.db.patch(adId, {
+    verifyCount,
+    rejectCount,
+    // undefined clears the field — a verdict that becomes contested again must
+    // not linger, since verdicts are the labels recalibrateThreshold trains on
+    verdict: verdict ?? undefined,
+  });
+
+  await ctx.db.insert('adFeedback', {
+    adId,
+    clerkId,
+    episodeId: ad.episodeId,
+    podcastId: ad.podcastId,
+    action: vote,
+    originalStart: ad.start,
+    originalEnd: ad.end,
+    transcriptText: ad.transcript,
+    llmConfidence: ad.confidence,
+    ...(reason ? { rejectionReason: reason } : {}),
+    createdAt: Date.now(),
+  });
+
+  if (verdictChanged) {
+    await recalibrateThreshold(ctx, ad.podcastId);
+  }
+}
+
 export const confirmAd = mutation({
   args: { adId: v.id('ads') },
   handler: async (ctx, { adId }) => {
-    const clerkId = await getClerkId(ctx.auth);
-
-    const ad = await ctx.db.get(adId);
-    if (!ad) throw new Error('ad not found');
-
-    const existingVote = await ctx.db
-      .query('adFeedback')
-      .withIndex('by_adId_clerkId', (q) =>
-        q.eq('adId', adId).eq('clerkId', clerkId),
-      )
-      .first();
-
-    if (existingVote?.action === 'confirmed') return;
-
-    let verifyCount = ad.verifyCount ?? 0;
-    let rejectCount = ad.rejectCount ?? 0;
-
-    if (existingVote?.action === 'rejected') {
-      rejectCount = Math.max(0, rejectCount - 1);
-      await ctx.db.delete(existingVote._id);
-    }
-
-    verifyCount += 1;
-    const verdict = computeVerdict(verifyCount, rejectCount);
-    const verdictChanged = verdict !== null && verdict !== ad.verdict;
-
-    await ctx.db.patch(adId, {
-      verifyCount,
-      rejectCount,
-      ...(verdict !== null ? { verdict } : {}),
-    });
-
-    await ctx.db.insert('adFeedback', {
-      adId,
-      clerkId,
-      episodeId: ad.episodeId,
-      podcastId: ad.podcastId,
-      action: 'confirmed',
-      originalStart: ad.start,
-      originalEnd: ad.end,
-      transcriptText: ad.transcript,
-      llmConfidence: ad.confidence,
-      createdAt: Date.now(),
-    });
-
-    if (verdictChanged) {
-      await recalibrateThreshold(ctx, ad.podcastId);
-    }
+    await castVote(ctx, adId, 'confirmed');
   },
 });
 
@@ -141,55 +190,7 @@ export const rejectAd = mutation({
     reason: v.optional(v.string()),
   },
   handler: async (ctx, { adId, reason }) => {
-    const clerkId = await getClerkId(ctx.auth);
-
-    const ad = await ctx.db.get(adId);
-    if (!ad) throw new Error('ad not found');
-
-    const existingVote = await ctx.db
-      .query('adFeedback')
-      .withIndex('by_adId_clerkId', (q) =>
-        q.eq('adId', adId).eq('clerkId', clerkId),
-      )
-      .first();
-
-    if (existingVote?.action === 'rejected') return;
-
-    let verifyCount = ad.verifyCount ?? 0;
-    let rejectCount = ad.rejectCount ?? 0;
-
-    if (existingVote?.action === 'confirmed') {
-      verifyCount = Math.max(0, verifyCount - 1);
-      await ctx.db.delete(existingVote._id);
-    }
-
-    rejectCount += 1;
-    const verdict = computeVerdict(verifyCount, rejectCount);
-    const verdictChanged = verdict !== null && verdict !== ad.verdict;
-
-    await ctx.db.patch(adId, {
-      verifyCount,
-      rejectCount,
-      ...(verdict !== null ? { verdict } : {}),
-    });
-
-    await ctx.db.insert('adFeedback', {
-      adId,
-      clerkId,
-      episodeId: ad.episodeId,
-      podcastId: ad.podcastId,
-      action: 'rejected',
-      originalStart: ad.start,
-      originalEnd: ad.end,
-      transcriptText: ad.transcript,
-      llmConfidence: ad.confidence,
-      rejectionReason: reason,
-      createdAt: Date.now(),
-    });
-
-    if (verdictChanged) {
-      await recalibrateThreshold(ctx, ad.podcastId);
-    }
+    await castVote(ctx, adId, 'rejected', reason);
   },
 });
 
@@ -266,12 +267,12 @@ export const getMyVotesForEpisode = query({
 
     const feedback = await ctx.db
       .query('adFeedback')
-      .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
+      .withIndex('by_episodeId_clerkId', (q) =>
+        q.eq('episodeId', episodeId).eq('clerkId', clerkId),
+      )
       .collect();
 
-    return feedback
-      .filter((f) => f.clerkId === clerkId)
-      .map((f) => ({ adId: f.adId, action: f.action }));
+    return feedback.map((f) => ({ adId: f.adId, action: f.action }));
   },
 });
 

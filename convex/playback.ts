@@ -86,10 +86,11 @@ export const update = mutation({
 
       positionSeconds = Math.min(positionSeconds, doc.duration || Infinity);
 
+      // mark completed once playback is within 10s of the end
       completed =
         completed ||
         (Boolean(doc.duration) &&
-          Math.abs(doc.duration || 0 - positionSeconds) < 10);
+          Math.abs((doc.duration ?? 0) - positionSeconds) < 10);
 
       let values = {
         positionSeconds,
@@ -207,8 +208,9 @@ async function getUserPlaybackByEpisodeId(
 ) {
   return await db
     .query('user_playback')
-    .withIndex('by_clerkId_lastUpdatedAt', (q) => q.eq('clerkId', clerkId))
-    .filter((q) => q.eq(q.field('episodeId'), episodeId))
+    .withIndex('by_clerkId_episodeId', (q) =>
+      q.eq('clerkId', clerkId).eq('episodeId', episodeId),
+    )
     .first();
 }
 
@@ -231,7 +233,7 @@ export async function getPlaybackByEpisodeId(
 ) {
   return await db
     .query('user_playback')
-    .filter((q) => q.eq(q.field('episodeId'), episodeId))
+    .withIndex('by_episodeId', (q) => q.eq('episodeId', episodeId))
     .collect();
 }
 

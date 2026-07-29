@@ -68,20 +68,15 @@ export const patchWindows = internalMutation({
 export const getLastClassifiedWindowBefore = internalQuery({
   args: { jobId: v.id('adJobs'), beforeStart: v.number() },
   handler: async (ctx, { jobId, beforeStart }) => {
-    // Collect classified windows for this job that start before the current batch
-    const windows = await ctx.db
+    // Highest-start classified window before this batch — one document read,
+    // since the index is ordered by start within (jobId, classified)
+    return await ctx.db
       .query('adJobWindows')
       .withIndex('by_jobId_classified', (q) =>
-        q.eq('jobId', jobId).eq('classified', true),
+        q.eq('jobId', jobId).eq('classified', true).lt('start', beforeStart),
       )
-      .collect();
-
-    // Return the one with the highest start time that's still before this batch
-    return (
-      windows
-        .filter((w) => w.start < beforeStart)
-        .sort((a, b) => b.start - a.start)[0] ?? null
-    );
+      .order('desc')
+      .first();
   },
 });
 

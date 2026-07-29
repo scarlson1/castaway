@@ -5,6 +5,7 @@ import { api } from 'convex/_generated/api';
 import { useCallback, useMemo } from 'react';
 import { useAudioStore } from '~/hooks/useAudioStore';
 import { useDebounce } from '~/hooks/useDebounce';
+import { resolveSkippableAds } from '~/utils/ads';
 
 const useDebouncedPosition = (delay = 500) => {
   const position = useAudioStore((s) => s.position);
@@ -27,11 +28,8 @@ export const SkipAdButton = ({ episodeId, seek }: SkipAdButtonProps) => {
     convexQuery(api.adSegments.getByEpisodeId, { id: episodeId })
   );
 
-  // Memoize sorted ads to prevent new array reference on every render
-  const ads = useMemo(() => {
-    if (!adsData?.length) return [];
-    return [...adsData].sort((a, b) => a.start - b.start);
-  }, [adsData]);
+  // Memoize resolved ads to prevent new array reference on every render
+  const ads = useMemo(() => resolveSkippableAds(adsData), [adsData]);
 
   const skipAd = useCallback(
     (pos: number) => {

@@ -12,6 +12,8 @@ export const usePlayerSettings = create<PlayerSettings>()(
       autoSkipAds: false,
       toggleAutoSkipAds: () => set((s) => ({ autoSkipAds: !s.autoSkipAds })),
     }),
-    { name: 'player-settings' }
+    // skipHydration keeps the first client render identical to the SSR output —
+    // useRehydrateStore() applies the persisted value in an effect instead
+    { name: 'player-settings', skipHydration: true }
   )
 );

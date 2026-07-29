@@ -65,10 +65,14 @@ export const SuspenseCard = ({
           flex: '1 1 auto',
         }}
       >
-        <Typography variant='body1' fontWeight='medium'>
+        <Typography variant='body1' sx={{ fontWeight: 'medium' }}>
           <Skeleton />
         </Typography>
-        <Typography variant='body2' color='textSecondary' fontWeight={500}>
+        <Typography
+          variant='body2'
+          color='textSecondary'
+          sx={{ fontWeight: 500 }}
+        >
           <Skeleton />
         </Typography>
       </Stack>

@@ -3,7 +3,7 @@ import { Box, InputBase, Typography } from '@mui/material';
 import { useMutation, useQuery, useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import type { Doc, Id } from 'convex/_generated/dataModel';
-import { useMemo, useState } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import { useAsyncToast } from '~/hooks/useAsyncToast';
 import { useAudioStore } from '~/hooks/useAudioStore';
 import { formatDuration, getDuration } from '~/utils/format';
@@ -165,6 +165,42 @@ export function FullTranscript({
   const [editStart, setEditStart] = useState(0);
   const [editEnd, setEditEnd] = useState(0);
 
+  // stable identities so memoized rows aren't invalidated on every render
+  const handleConfirm = useCallback(
+    (adId: Id<'ads'>) => confirmAd({ adId }),
+    [confirmAd],
+  );
+  const handleReject = useCallback(
+    (adId: Id<'ads'>) => rejectAd({ adId }),
+    [rejectAd],
+  );
+  const handleAddManualAd = useCallback(
+    (segment: TranscriptSeg | UtteranceBlock) =>
+      addManualAd({
+        episodeId,
+        podcastId: podId,
+        convexEpId: episodeConvexId,
+        audioUrl,
+        start: segment.start,
+        end: segment.end,
+        transcriptText: segment.text,
+      }),
+    [addManualAd, episodeId, podId, episodeConvexId, audioUrl],
+  );
+  const handleToggleEdit = useCallback((ad: AdSeg) => {
+    setEditStart(ad.correctedStart ?? ad.start);
+    setEditEnd(ad.correctedEnd ?? ad.end);
+    setEditingAdId((current) =>
+      current === String(ad._id) ? null : String(ad._id),
+    );
+  }, []);
+  const handleSaveBoundaries = useCallback(
+    (adId: Id<'ads'>, start: number, end: number) =>
+      adjustBoundaries({ adId, start, end }),
+    [adjustBoundaries],
+  );
+  const handleCancelEdit = useCallback(() => setEditingAdId(null), []);
+
   const myVoteMap = useMemo(() => {
     const map = new Map<string, string>();
     for (const vote of myVotes ?? []) {
@@ -292,282 +328,36 @@ export function FullTranscript({
         }
 
         const { segment, ad, isFirstAdSegment, isNewSpeaker } = row;
-        const isAd = Boolean(ad);
         const isCurrent = activeSegId !== null && segment.start === activeSegId;
-        const myVote = ad ? myVoteMap.get(ad._id) : undefined;
-        const isInEditRange =
-          editingAdId !== null &&
-          segment.start >= editStart &&
-          segment.start < editEnd;
 
         return (
-          <Box
+          <TranscriptRow
             key={segment.start}
-            sx={[
-              {
-                display: 'flex',
-                gap: 2,
-                py: 0.625,
-                borderLeft: '2px solid transparent',
-                pl: 0,
-                borderRadius: '0 4px 4px 0',
-                transition: 'background 0.2s',
-                '&:hover .ad-actions': { opacity: 1 },
-              },
-              isAd && {
-                borderLeftColor: adColor(ad),
-                pl: 1.5,
-                opacity: ad?.verdict === 'rejected' ? 0.45 : 1,
-              },
-              isCurrent && !isAd && {
-                borderLeftColor: 'text.primary',
-                pl: 1.5,
-                bgcolor: 'action.hover',
-              },
-              isInEditRange && {
-                borderLeftColor: 'warning.main',
-                pl: 1.5,
-                bgcolor: (theme: any) =>
-                  `color-mix(in srgb, ${theme.vars.palette.warning.main} 8%, transparent)`,
-              },
-            ]}
-          >
-            <Typography
-              sx={{
-                fontFamily: "'JetBrains Mono', monospace",
-                fontSize: 10,
-                color: isAd
-                  ? adColor(ad)
-                  : isCurrent
-                    ? 'text.primary'
-                    : 'text.disabled',
-                minWidth: 36,
-                flexShrink: 0,
-                pt: 0.125,
-              }}
-            >
-              {formatDuration(segment.start)}
-            </Typography>
-            <Box sx={{ flex: 1 }}>
-              {isAd && isFirstAdSegment && (
-                <Typography
-                  sx={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 9,
-                    letterSpacing: '0.1em',
-                    color: adColor(ad),
-                    mb: 0.25,
-                  }}
-                >
-                  SPONSOR
-                </Typography>
-              )}
-              {!isAd && isNewSpeaker && segment.speaker && (
-                <Typography
-                  sx={{
-                    fontFamily: "'JetBrains Mono', monospace",
-                    fontSize: 9,
-                    letterSpacing: '0.1em',
-                    color: 'text.disabled',
-                    mb: 0.25,
-                    textTransform: 'uppercase',
-                  }}
-                >
-                  {segment.speaker}
-                </Typography>
-              )}
-              <Typography
-                sx={{
-                  fontSize: 12,
-                  color: isAd ? 'text.secondary' : 'text.primary',
-                  lineHeight: 1.7,
-                  fontWeight: isCurrent ? 500 : 400,
-                }}
-              >
-                {segment.text}
-              </Typography>
-              {isAd && isFirstAdSegment && ad && editingAdId === String(ad._id) && (
-                <Box
-                  sx={{
-                    mt: 1,
-                    p: 1.25,
-                    border: '1px solid',
-                    borderColor: 'divider',
-                    borderRadius: 1,
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 0.75,
-                    bgcolor: 'background.default',
-                  }}
-                >
-                  {[
-                    { label: 'Start', value: editStart, onChange: setEditStart },
-                    { label: 'End', value: editEnd, onChange: setEditEnd },
-                  ].map(({ label, value, onChange }) => (
-                    <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <Typography
-                        sx={{
-                          fontFamily: "'JetBrains Mono', monospace",
-                          fontSize: 9,
-                          letterSpacing: '0.1em',
-                          color: 'text.disabled',
-                          textTransform: 'uppercase',
-                          minWidth: 28,
-                        }}
-                      >
-                        {label}
-                      </Typography>
-                      <InputBase
-                        type='number'
-                        value={value}
-                        onChange={(e) => onChange(Number(e.target.value))}
-                        sx={{
-                          fontSize: 11,
-                          fontFamily: "'JetBrains Mono', monospace",
-                          width: 64,
-                          border: '1px solid',
-                          borderColor: 'divider',
-                          borderRadius: 0.5,
-                          px: 0.75,
-                          py: 0.25,
-                          '& input': { p: 0 },
-                        }}
-                        inputProps={{ step: 0.5 }}
-                      />
-                      <Typography sx={{ fontSize: 10, color: 'text.disabled', minWidth: 36 }}>
-                        {formatDuration(value)}
-                      </Typography>
-                      <Box
-                        role='button'
-                        onClick={() =>
-                          onChange(Math.round(useAudioStore.getState().position * 10) / 10)
-                        }
-                        sx={{ ...voteBtnSx, fontSize: 9 }}
-                        title='Set to current playback position'
-                      >
-                        ↦ now
-                      </Box>
-                    </Box>
-                  ))}
-                  <Box sx={{ display: 'flex', gap: 0.75, mt: 0.25 }}>
-                    <Box
-                      role='button'
-                      onClick={() =>
-                        adjustBoundaries({ adId: ad._id, start: editStart, end: editEnd })
-                      }
-                      sx={{ ...voteBtnSx, color: 'success.main', borderColor: 'success.main' }}
-                    >
-                      Save
-                    </Box>
-                    <Box role='button' onClick={() => setEditingAdId(null)} sx={voteBtnSx}>
-                      Cancel
-                    </Box>
-                  </Box>
-                </Box>
-              )}
-            </Box>
-
-            {isAd && isFirstAdSegment && ad && (
-              <Box
-                role='button'
-                onClick={() => useAudioStore.getState().seek?.(ad.correctedEnd ?? ad.end)}
-                sx={skipBtnSx}
-              >
-                ↪ Skip · {getDuration((ad.correctedEnd ?? ad.end) - (ad.correctedStart ?? ad.start))}
-              </Box>
-            )}
-
-            {isAd && isFirstAdSegment && ad && (
-              <Box
-                className='ad-actions'
-                sx={{
-                  flexShrink: 0,
-                  alignSelf: 'flex-start',
-                  mt: 0.25,
-                  display: 'flex',
-                  gap: 0.5,
-                  opacity: 0,
-                  transition: 'opacity 0.15s',
-                }}
-              >
-                <Box
-                  role='button'
-                  onClick={() => confirmAd({ adId: ad._id })}
-                  title='This is an ad'
-                  sx={[
-                    voteBtnSx,
-                    (myVote === 'confirmed' || myVote === 'manually_added') && {
-                      color: 'success.main',
-                      borderColor: 'success.main',
-                    },
-                  ]}
-                >
-                  ✓ {ad.verifyCount ?? 0}
-                </Box>
-                <Box
-                  role='button'
-                  onClick={() => rejectAd({ adId: ad._id })}
-                  title='Not an ad'
-                  sx={[
-                    voteBtnSx,
-                    myVote === 'rejected' && { color: 'error.main', borderColor: 'error.main' },
-                  ]}
-                >
-                  ✕ {ad.rejectCount ?? 0}
-                </Box>
-                <Box
-                  role='button'
-                  onClick={() => {
-                    setEditStart(ad.correctedStart ?? ad.start);
-                    setEditEnd(ad.correctedEnd ?? ad.end);
-                    setEditingAdId(editingAdId === String(ad._id) ? null : String(ad._id));
-                  }}
-                  title='Adjust boundaries'
-                  sx={[
-                    voteBtnSx,
-                    editingAdId === String(ad._id) && {
-                      color: 'text.primary',
-                      borderColor: 'text.secondary',
-                    },
-                  ]}
-                >
-                  ✎
-                </Box>
-              </Box>
-            )}
-
-            {!isAd && (
-              <Box
-                className='ad-actions'
-                sx={{
-                  flexShrink: 0,
-                  alignSelf: 'flex-start',
-                  mt: 0.25,
-                  opacity: 0,
-                  transition: 'opacity 0.15s',
-                }}
-              >
-                <Box
-                  role='button'
-                  onClick={() =>
-                    addManualAd({
-                      episodeId,
-                      podcastId: podId,
-                      convexEpId: episodeConvexId,
-                      audioUrl,
-                      start: segment.start,
-                      end: segment.end,
-                      transcriptText: segment.text,
-                    })
-                  }
-                  title='Mark as ad'
-                  sx={voteBtnSx}
-                >
-                  + ad
-                </Box>
-              </Box>
-            )}
-          </Box>
+            segment={segment}
+            ad={ad}
+            isFirstAdSegment={isFirstAdSegment}
+            isNewSpeaker={isNewSpeaker}
+            isCurrent={isCurrent}
+            isInEditRange={
+              editingAdId !== null &&
+              segment.start >= editStart &&
+              segment.start < editEnd
+            }
+            myVote={ad ? myVoteMap.get(ad._id) : undefined}
+            editValues={
+              ad && editingAdId === String(ad._id)
+                ? { start: editStart, end: editEnd }
+                : null
+            }
+            onConfirm={handleConfirm}
+            onReject={handleReject}
+            onAddManualAd={handleAddManualAd}
+            onToggleEdit={handleToggleEdit}
+            onEditStartChange={setEditStart}
+            onEditEndChange={setEditEnd}
+            onSaveBoundaries={handleSaveBoundaries}
+            onCancelEdit={handleCancelEdit}
+          />
         );
       })}
     </Box>
@@ -661,3 +451,306 @@ export function NowPlayingTranscript({
     </Box>
   );
 }
+
+// ─── TranscriptRow ────────────────────────────────────────────────────────────
+// Memoized so the once-per-second playback position update only re-renders the
+// row that gained or lost the "current" highlight, not every row in the episode.
+
+interface TranscriptRowProps {
+  segment: TranscriptSeg | UtteranceBlock;
+  ad: AdSeg | null;
+  isFirstAdSegment: boolean;
+  isNewSpeaker: boolean;
+  isCurrent: boolean;
+  isInEditRange: boolean;
+  myVote?: string;
+  // null unless this row's ad is the one being edited
+  editValues: { start: number; end: number } | null;
+  onConfirm: (adId: Id<'ads'>) => void;
+  onReject: (adId: Id<'ads'>) => void;
+  onAddManualAd: (segment: TranscriptSeg | UtteranceBlock) => void;
+  onToggleEdit: (ad: AdSeg) => void;
+  onEditStartChange: (value: number) => void;
+  onEditEndChange: (value: number) => void;
+  onSaveBoundaries: (adId: Id<'ads'>, start: number, end: number) => void;
+  onCancelEdit: () => void;
+}
+
+const TranscriptRow = memo(function TranscriptRow({
+  segment,
+  ad,
+  isFirstAdSegment,
+  isNewSpeaker,
+  isCurrent,
+  isInEditRange,
+  myVote,
+  editValues,
+  onConfirm,
+  onReject,
+  onAddManualAd,
+  onToggleEdit,
+  onEditStartChange,
+  onEditEndChange,
+  onSaveBoundaries,
+  onCancelEdit,
+}: TranscriptRowProps) {
+  const isAd = Boolean(ad);
+  const isEditing = editValues !== null;
+
+  return (
+    <Box
+      sx={[
+        {
+          display: 'flex',
+          gap: 2,
+          py: 0.625,
+          borderLeft: '2px solid transparent',
+          pl: 0,
+          borderRadius: '0 4px 4px 0',
+          transition: 'background 0.2s',
+          '&:hover .ad-actions': { opacity: 1 },
+        },
+        isAd && {
+          borderLeftColor: adColor(ad),
+          pl: 1.5,
+          opacity: ad?.verdict === 'rejected' ? 0.45 : 1,
+        },
+        isCurrent && !isAd && {
+          borderLeftColor: 'text.primary',
+          pl: 1.5,
+          bgcolor: 'action.hover',
+        },
+        isInEditRange && {
+          borderLeftColor: 'warning.main',
+          pl: 1.5,
+          bgcolor: (theme: any) =>
+            `color-mix(in srgb, ${theme.vars.palette.warning.main} 8%, transparent)`,
+        },
+      ]}
+    >
+      <Typography
+        sx={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 10,
+          color: isAd
+            ? adColor(ad)
+            : isCurrent
+              ? 'text.primary'
+              : 'text.disabled',
+          minWidth: 36,
+          flexShrink: 0,
+          pt: 0.125,
+        }}
+      >
+        {formatDuration(segment.start)}
+      </Typography>
+      <Box sx={{ flex: 1 }}>
+        {isAd && isFirstAdSegment && (
+          <Typography
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.1em',
+              color: adColor(ad),
+              mb: 0.25,
+            }}
+          >
+            SPONSOR
+          </Typography>
+        )}
+        {!isAd && isNewSpeaker && segment.speaker && (
+          <Typography
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 9,
+              letterSpacing: '0.1em',
+              color: 'text.disabled',
+              mb: 0.25,
+              textTransform: 'uppercase',
+            }}
+          >
+            {segment.speaker}
+          </Typography>
+        )}
+        <Typography
+          sx={{
+            fontSize: 12,
+            color: isAd ? 'text.secondary' : 'text.primary',
+            lineHeight: 1.7,
+            fontWeight: isCurrent ? 500 : 400,
+          }}
+        >
+          {segment.text}
+        </Typography>
+        {isAd && isFirstAdSegment && ad && isEditing && (
+          <Box
+            sx={{
+              mt: 1,
+              p: 1.25,
+              border: '1px solid',
+              borderColor: 'divider',
+              borderRadius: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.75,
+              bgcolor: 'background.default',
+            }}
+          >
+            {[
+              { label: 'Start', value: editValues!.start, onChange: onEditStartChange },
+              { label: 'End', value: editValues!.end, onChange: onEditEndChange },
+            ].map(({ label, value, onChange }) => (
+              <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography
+                  sx={{
+                    fontFamily: "'JetBrains Mono', monospace",
+                    fontSize: 9,
+                    letterSpacing: '0.1em',
+                    color: 'text.disabled',
+                    textTransform: 'uppercase',
+                    minWidth: 28,
+                  }}
+                >
+                  {label}
+                </Typography>
+                <InputBase
+                  type='number'
+                  value={value}
+                  onChange={(e) => onChange(Number(e.target.value))}
+                  sx={{
+                    fontSize: 11,
+                    fontFamily: "'JetBrains Mono', monospace",
+                    width: 64,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 0.5,
+                    px: 0.75,
+                    py: 0.25,
+                    '& input': { p: 0 },
+                  }}
+                  inputProps={{ step: 0.5 }}
+                />
+                <Typography sx={{ fontSize: 10, color: 'text.disabled', minWidth: 36 }}>
+                  {formatDuration(value)}
+                </Typography>
+                <Box
+                  role='button'
+                  onClick={() =>
+                    onChange(Math.round(useAudioStore.getState().position * 10) / 10)
+                  }
+                  sx={{ ...voteBtnSx, fontSize: 9 }}
+                  title='Set to current playback position'
+                >
+                  ↦ now
+                </Box>
+              </Box>
+            ))}
+            <Box sx={{ display: 'flex', gap: 0.75, mt: 0.25 }}>
+              <Box
+                role='button'
+                onClick={() =>
+                  onSaveBoundaries(ad._id, editValues!.start, editValues!.end)
+                }
+                sx={{ ...voteBtnSx, color: 'success.main', borderColor: 'success.main' }}
+              >
+                Save
+              </Box>
+              <Box role='button' onClick={onCancelEdit} sx={voteBtnSx}>
+                Cancel
+              </Box>
+            </Box>
+          </Box>
+        )}
+      </Box>
+
+      {isAd && isFirstAdSegment && ad && (
+        <Box
+          role='button'
+          onClick={() => useAudioStore.getState().seek?.(ad.correctedEnd ?? ad.end)}
+          sx={skipBtnSx}
+        >
+          ↪ Skip · {getDuration((ad.correctedEnd ?? ad.end) - (ad.correctedStart ?? ad.start))}
+        </Box>
+      )}
+
+      {isAd && isFirstAdSegment && ad && (
+        <Box
+          className='ad-actions'
+          sx={{
+            flexShrink: 0,
+            alignSelf: 'flex-start',
+            mt: 0.25,
+            display: 'flex',
+            gap: 0.5,
+            opacity: 0,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          <Box
+            role='button'
+            onClick={() => onConfirm(ad._id)}
+            title='This is an ad'
+            sx={[
+              voteBtnSx,
+              (myVote === 'confirmed' || myVote === 'manually_added') && {
+                color: 'success.main',
+                borderColor: 'success.main',
+              },
+            ]}
+          >
+            ✓ {ad.verifyCount ?? 0}
+          </Box>
+          <Box
+            role='button'
+            onClick={() => onReject(ad._id)}
+            title='Not an ad'
+            sx={[
+              voteBtnSx,
+              myVote === 'rejected' && { color: 'error.main', borderColor: 'error.main' },
+            ]}
+          >
+            ✕ {ad.rejectCount ?? 0}
+          </Box>
+          <Box
+            role='button'
+            onClick={() => onToggleEdit(ad)}
+            title='Adjust boundaries'
+            sx={[
+              voteBtnSx,
+              isEditing && {
+                color: 'text.primary',
+                borderColor: 'text.secondary',
+              },
+            ]}
+          >
+            ✎
+          </Box>
+        </Box>
+      )}
+
+      {!isAd && (
+        <Box
+          className='ad-actions'
+          sx={{
+            flexShrink: 0,
+            alignSelf: 'flex-start',
+            mt: 0.25,
+            opacity: 0,
+            transition: 'opacity 0.15s',
+          }}
+        >
+          <Box
+            role='button'
+            onClick={() =>
+              onAddManualAd(segment)
+            }
+            title='Mark as ad'
+            sx={voteBtnSx}
+          >
+            + ad
+          </Box>
+        </Box>
+      )}
+    </Box>
+  );
+});

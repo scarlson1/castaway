@@ -224,8 +224,10 @@ export default defineSchema({
     playedPercentage: v.optional(v.float64()),
     episodeTitle: v.optional(v.string()),
     podcastTitle: v.optional(v.string()),
-  }).index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt']),
-  // .index('by_clerk_episode', ['clerkId', 'episodeId']),
+  })
+    .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt'])
+    .index('by_clerkId_episodeId', ['clerkId', 'episodeId'])
+    .index('by_episodeId', ['episodeId']),
 
   podcastStats: defineTable({
     podcastId: v.string(),
@@ -315,6 +317,7 @@ export default defineSchema({
     createdAt: v.number(),
   })
     .index('by_episodeId', ['episodeId'])
+    .index('by_episodeId_clerkId', ['episodeId', 'clerkId'])
     .index('by_podcastId_action', ['podcastId', 'action'])
     .index('by_adId_clerkId', ['adId', 'clerkId']),
 
@@ -373,7 +376,9 @@ export default defineSchema({
     is_ad: v.optional(v.boolean()),
     confidence: v.optional(v.number()),
     reason: v.optional(v.string()),
-  }).index('by_jobId_classified', ['jobId', 'classified']),
+    // start is part of the index so the previous batch's trailing window can be
+    // read directly instead of scanning every classified window for the job
+  }).index('by_jobId_classified', ['jobId', 'classified', 'start']),
   // .index('by_jobId', ['jobId']),
 
   rawUsage: defineTable({

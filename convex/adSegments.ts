@@ -46,6 +46,7 @@ export const saveAdDoc = internalMutation({
   handler: async (ctx, args) => {
     return await ctx.db.insert('ads', {
       ...args,
+      source: 'llm',
       createdAt: Date.now(),
     });
   },
