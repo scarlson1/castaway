@@ -58,14 +58,12 @@ async function seedAd(
 const getAd = (t: TestCtx, adId: Id<'ads'>) =>
   t.run(async (ctx) => await ctx.db.get(adId));
 
+// test fixtures insert a handful of rows, so a bounded read is enough here
 const getFeedback = (t: TestCtx, adId: Id<'ads'>) =>
-  t.run(
-    async (ctx) =>
-      await ctx.db
-        .query('adFeedback')
-        .withIndex('by_adId_clerkId', (q) => q.eq('adId', adId))
-        .collect(),
-  );
+  t.run(async (ctx) => {
+    const rows = await ctx.db.query('adFeedback').take(50);
+    return rows.filter((row) => row.adId === adId);
+  });
 
 // ---- one vote per user ----
 

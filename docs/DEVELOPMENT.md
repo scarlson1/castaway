@@ -536,7 +536,7 @@ User feedback on detected ads feeds back into future classification runs, improv
 
   ```json
   {
-    "source": "pipeline | user",
+    "source": "llm | user",
     "verifyCount": 2,
     "rejectCount": 1,
     "verdict": "verified | rejected | null",
@@ -546,23 +546,24 @@ User feedback on detected ads feeds back into future classification runs, improv
 
 ### Quorum Voting (`convex/adFeedback.ts`)
 
-Each user can cast one vote per ad (`confirmed` or `rejected`). Switching votes deletes the previous `adFeedback` row and adjusts counts. A verdict is only recorded once **3+ total votes** are cast and one side reaches **70% agreement**. If votes are split, no verdict is set (null).
+Each user can cast one vote per ad (`confirmed` or `rejected`). Switching votes deletes the previous `adFeedback` row and adjusts counts. A verdict is only recorded once **3+ total votes** are cast and one side reaches **70% agreement**. If votes are split, no verdict is set — and a verdict that was already recorded is **cleared** when later votes make the ad contested, since verdicts are the labels threshold calibration trains on.
 
 - `MIN_VOTES = 3` — quorum required before any verdict is recorded
 - `AGREE_THRESHOLD = 0.7` — fraction of votes needed for a verdict
 - The `by_adId_clerkId` index enforces one vote per user per ad
-- `manually_added` action counts as the creator's implicit confirm vote (`verifyCount` starts at 1)
+- `manually_added` action counts as the creator's implicit confirm vote (`verifyCount` starts at 1), so clicking ✓ on your own manual ad is a no-op rather than a second vote
+- `boundary_adjusted` rows are an audit trail, **not** a vote — vote lookups must skip them or counts drift on the next click (`getExistingVote` in `convex/adFeedback.ts`)
 
 ### Confidence Threshold Calibration
 
-When an ad's verdict changes for the first time (not on every subsequent vote), `recalibrateThreshold` runs inline in the same mutation:
+When an ad's verdict changes — including when it is cleared because the ad became contested — `recalibrateThreshold` runs inline in the same mutation:
 
 1. Queries all `verified` and `rejected` ads for the podcast via `by_podcastId_verdict` index
 2. Scans 12 threshold candidates from 0.30–0.85
 3. Picks the threshold that minimizes false positives + false negatives against the labeled set
 4. Upserts the result to `podcastAdConfig`
 
-The calibrated threshold is used by `mergeSegments.ts` when stitching classified windows into final ad segments. Falls back to `0.4` if no config exists yet.
+The calibrated threshold is used by `mergeSegments.ts` when stitching classified windows into final ad segments. Falls back to `0.4` if no config exists yet. Both sides compare with `confidence >= threshold` — `mergeAdWindows` and the candidate scoring in `recalibrateThreshold` must agree, or the chosen threshold is scored against semantics the pipeline doesn't use.
 
 > **Note:** `ad.confidence` stored on the `ads` doc is the rolling average of merged window scores, not raw per-window LLM output. Calibration is an approximation; accuracy improves with more feedback samples (minimum 5 to run).
 >

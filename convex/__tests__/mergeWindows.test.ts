@@ -22,16 +22,23 @@ describe('mergeAdWindows', () => {
     expect(mergeAdWindows(windows)).toEqual([]);
   });
 
-  it('filters out windows with confidence <= 0.4', () => {
-    const windows = [adWindow(0, 10, true, 0.4)];
+  it('filters out windows with confidence below the threshold', () => {
+    const windows = [adWindow(0, 10, true, 0.39)];
     expect(mergeAdWindows(windows)).toEqual([]);
   });
 
-  it('includes windows with confidence > 0.4', () => {
+  it('includes windows at exactly the threshold', () => {
+    // >= matches how recalibrateThreshold scores candidate thresholds
     // duration must be >= minDuration (5s default)
-    const windows = [adWindow(0, 10, true, 0.41)];
-    const result = mergeAdWindows(windows);
-    expect(result).toHaveLength(1);
+    const windows = [adWindow(0, 10, true, 0.4)];
+    expect(mergeAdWindows(windows)).toHaveLength(1);
+  });
+
+  it('honors a calibrated threshold passed by the caller', () => {
+    const windows = [adWindow(0, 10, true, 0.6)];
+    // per-podcast threshold from podcastAdConfig overrides the 0.4 default
+    expect(mergeAdWindows(windows, 5, 2, 0.7)).toEqual([]);
+    expect(mergeAdWindows(windows, 5, 2, 0.6)).toHaveLength(1);
   });
 
   it('merges adjacent windows within mergeGap', () => {
