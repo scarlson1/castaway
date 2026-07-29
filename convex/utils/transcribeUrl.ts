@@ -1,3 +1,4 @@
+import { mergeTranscriptChunks } from 'convex/utils/mergeTranscriptChunks';
 import OpenAI from 'openai';
 import type { AudioResponseFormat } from 'openai/resources/index.mjs';
 
@@ -16,6 +17,9 @@ export interface TranscriptionResponse {
 
 interface WhisperResponse {
   text: string;
+  // duration of the submitted audio in seconds. Returned by `verbose_json` and
+  // `diarized_json`, absent from `json`/`text`.
+  duration?: number;
   segments?: Array<{
     id: number | string;
     start: number;
@@ -66,7 +70,13 @@ type TranscribeOptions = (
   | GbtTranscribeOptions
   | WhisperOptions
   | GroqOptions
-) & { language?: string };
+) & {
+  language?: string;
+  // Episode duration from the RSS feed (`episodes.durationSeconds`). Used only
+  // to work out how far to advance the timeline between chunks — never sent to
+  // the transcription API.
+  durationSeconds?: number | null;
+};
 
 const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const groqClient = new OpenAI({
@@ -96,56 +106,10 @@ export async function transcribeUrl(
   console.log(`finished transcribing chunks`);
 
   // Merge chunks into array of timestamps and text (transcript)
-  let offset = 0;
-  const merged: TranscriptSegment[] = [];
-  let fullText = '';
-  let globalSegId = 0;
-
-  // Assume 128 kbps MP3 for duration estimation (16000 bytes/sec).
-  // This is used to advance the offset between chunks. Using last.end from
-  // whisper is wrong — whisper stops producing segments early (e.g. during ads
-  // or silence), so last.end undershoots the actual chunk duration and shifts
-  // all subsequent chunks' timestamps left, creating gaps in the display.
-  const BYTES_PER_SECOND = 16000;
-
-  for (let i = 0; i < transcripts.length; i++) {
-    const t = transcripts[i];
-    fullText += t.text + ' ';
-    if (t.segments) {
-      for (const seg of t.segments) {
-        merged.push({
-          id: globalSegId++,
-          start: seg.start + offset,
-          end: seg.end + offset,
-          text: seg.text,
-          speaker: seg.speaker,
-        });
-      }
-    }
-    // Advance offset by actual chunk byte length, not last segment timestamp.
-    offset += chunks[i].byteLength / BYTES_PER_SECOND;
-  }
-
-  // for (const t of transcripts) {
-  //   fullText += t.text + ' ';
-  //   if (t.segments) {
-  //     for (const seg of t.segments) {
-  //       merged.push({
-  //         id: seg.id,
-  //         start: seg.start + offset,
-  //         end: seg.end + offset,
-  //         text: seg.text,
-  //         speaker: seg.speaker,
-  //       });
-  //     }
-  //   const last = t.segments.at(-1);
-  //   if (last) offset += last.end;
-  // }
-
-  return {
-    text: fullText.trim(),
-    segments: merged,
-  };
+  return mergeTranscriptChunks(transcripts, {
+    chunkByteLengths: chunks.map((c) => c.byteLength),
+    durationSeconds: options.durationSeconds,
+  });
 }
 
 /*
@@ -252,6 +216,9 @@ async function transcribeChunk(
     model = 'whisper-1',
     language = 'en',
     responseFormat,
+    // pulled out so it does not reach the API via ...rest — it only informs
+    // how chunk timestamps are stitched back together
+    durationSeconds: _durationSeconds,
     ...rest
   } = options;
   const isDiarize = model === 'gpt-4o-transcribe-diarize';

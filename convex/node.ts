@@ -120,13 +120,21 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
         };
       }
     }
-    if (!transcript)
+    if (!transcript) {
+      // the feed duration lets transcribeUrl derive the real bytes-per-second
+      // if a chunk response comes back without a duration of its own
+      const episode: Doc<'episodes'> | null = await ctx.runQuery(
+        api.episodes.getByGuid,
+        { id: episodeId },
+      );
       transcript = await transcribeUrl(audioUrl, {
         model: 'whisper-large-v3-turbo', // 'whisper-1',
         responseFormat: 'verbose_json',
         // model: 'gpt-4o-transcribe-diarize',
         // responseFormat: 'diarized_json',
+        durationSeconds: episode?.durationSeconds,
       });
+    }
 
     let summary: Pick<
       Doc<'transcripts'>,
@@ -206,11 +214,19 @@ export const transcribe = internalAction({
     // TODO: use diarize
     // temporarily override to not use diarize if audio is > 30 mins
 
+    // the feed duration lets transcribeUrl derive the real bytes-per-second
+    // if a chunk response comes back without a duration of its own
+    const episode: Doc<'episodes'> | null = await ctx.runQuery(
+      api.episodes.getByGuid,
+      { id: episodeId },
+    );
+
     const transcript = await transcribeUrl(audioUrl, {
       model: 'whisper-large-v3-turbo', // 'whisper-1',
       responseFormat: 'verbose_json',
       // model: 'gpt-4o-transcribe-diarize',
       // responseFormat: 'diarized_json',
+      durationSeconds: episode?.durationSeconds,
     });
 
     const transcriptId: Id<'transcripts'> = await ctx.runMutation(
