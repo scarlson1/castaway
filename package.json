@@ -39,13 +39,14 @@
     "@emotion/styled": "^11.14.1",
     "@fontsource-variable/roboto": "^5.2.8",
     "@mui/icons-material": "^7.3.4",
-    "@mui/lab": "7.0.1-beta.19",
-    "@mui/material": "^7.3.4",
+    "@mui/lab": "9.0.0-beta.3",
+    "@mui/material": "^9.0.1",
     "@sentry/tanstackstart-react": "^10.27.0",
     "@spotify/web-api-ts-sdk": "^1.2.0",
     "@tanstack/devtools-vite": "^0.3.11",
     "@tanstack/react-devtools": "^0.8.1",
     "@tanstack/react-form": "^1.23.8",
+    "@tanstack/react-hotkeys": "^0.10.0",
     "@tanstack/react-query": "^5.90.7",
     "@tanstack/react-query-devtools": "^5.90.2",
     "@tanstack/react-router": "^1.134.9",
@@ -102,6 +103,9 @@
   "pnpm": {
     "overrides": {
       "srvx": "0.8.15"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

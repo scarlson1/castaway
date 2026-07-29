@@ -2,12 +2,14 @@ import { Grid } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { api } from 'convex/_generated/api';
 import { useAction } from 'convex/react';
+import { Suspense } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Card } from '~/components/Card';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
 export const RecommendedPods = ({ limit = 8 }: { limit?: number }) => {
   const getPersonalizedRecommendations = useAction(
-    api.podcasts.getPersonalizedRecommendations
+    api.podcasts.getPersonalizedRecommendations,
   );
   const { data } = useSuspenseQuery({
     queryKey: ['recs', 'podcasts', { limit }],
@@ -28,7 +30,11 @@ export const RecommendedPods = ({ limit = 8 }: { limit?: number }) => {
               params: { podId: pod.podcastId },
             }}
           >
-            <SubscribeIconButton podcastId={pod.podcastId} />
+            <ErrorBoundary fallback={null}>
+              <Suspense fallback={null}>
+                <SubscribeIconButton podcastId={pod.podcastId} />
+              </Suspense>
+            </ErrorBoundary>
           </Card>
         </Grid>
       ))}

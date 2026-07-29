@@ -1,4 +1,5 @@
 import {
+  Box,
   Chip,
   Divider,
   FormControl,
@@ -21,6 +22,7 @@ import { Suspense, useCallback, useMemo, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { Card } from '~/components/Card';
 import { StatsMostPlayedPodcasts } from '~/components/MostStreamedPodcasts';
+import { PageHeader } from '~/components/PageHeader';
 import { StatsMostPlayedEpisodes } from '~/components/StatsMostPlayedEpisodes';
 import { SubscribeIconButtonITunes } from '~/components/SubscribeIconButtonITunes';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
@@ -43,13 +45,12 @@ export const Route = createFileRoute('/trending')({
     // fetch but don't block/await
     queryClient.prefetchQuery(
       trendingQueryOptions({
-        // ...params,
         max: deps.max || 100,
         lang: deps.lang || 'en',
         since: weekToSeconds(4),
         cat: deps.cat,
         notcat: deps.notcat,
-      })
+      }),
     );
   },
 });
@@ -83,6 +84,9 @@ function RouteComponent() {
 
   return (
     <>
+      <Box sx={{ pt: { xs: 2, md: 3 } }}>
+        <PageHeader label='trending' />
+      </Box>
       <Stack
         direction='row'
         sx={{ justifyContent: 'space-between', alignItems: 'center' }}
@@ -118,7 +122,7 @@ function RouteComponent() {
       >
         {cat ? (
           <>
-            <Typography variant='h6' gutterBottom fontWeight={500}>
+            <Typography variant='h6' gutterBottom sx={{ fontWeight: 500 }}>
               {`Popular in ${cat}`}
             </Typography>
             <ErrorBoundary
@@ -133,7 +137,7 @@ function RouteComponent() {
 
         {!cat ? (
           <>
-            <Typography variant='h6' gutterBottom fontWeight={500}>
+            <Typography variant='h6' gutterBottom sx={{ fontWeight: 500 }}>
               Most streamed episodes
             </Typography>
             <ErrorBoundary
@@ -158,7 +162,7 @@ function RouteComponent() {
 
         {!cat ? (
           <>
-            <Typography variant='h6' gutterBottom fontWeight={500}>
+            <Typography variant='h6' gutterBottom sx={{ fontWeight: 500 }}>
               Most streamed podcasts
             </Typography>
             <ErrorBoundary fallback={<div>Error loading most played pods</div>}>
@@ -182,7 +186,7 @@ function RouteComponent() {
         ) : null}
 
         <>
-          <Typography variant='h6' fontWeight={500}>
+          <Typography variant='h6' sx={{ fontWeight: 500 }}>
             Podcast Index Trending
           </Typography>
           <ErrorBoundary fallback={<div>something went wrong</div>}>
@@ -223,7 +227,7 @@ function TrendingCardsGrid({
   since,
 }: FetchTrendingOptions) {
   const { data } = useSuspenseQuery(
-    trendingQueryOptions({ max, lang, cat, notcat, since })
+    trendingQueryOptions({ max, lang, cat, notcat, since }),
   );
 
   return (
@@ -266,12 +270,12 @@ function CategoryMostPopular({
   const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
 
   const { data } = useSuspenseQuery(
-    trendingQueryOptions({ max: 8, lang, cat: category, since })
+    trendingQueryOptions({ max: 8, lang, cat: category, since }),
   );
 
   const items = useMemo(
     () => data?.feeds?.slice(0, isSmallScreen ? 4 : 8),
-    [data, isSmallScreen]
+    [data, isSmallScreen],
   );
 
   return (
@@ -313,7 +317,7 @@ function SkeletonCardSection({ numItems }: { numItems: number }) {
     <Stack spacing={3} sx={{ py: { xs: 3, md: 5 } }}>
       <Divider flexItem />
 
-      <Typography variant='h5' gutterBottom fontWeight='medium'>
+      <Typography variant='h5' gutterBottom sx={{ fontWeight: 'medium' }}>
         <Skeleton />
       </Typography>
 

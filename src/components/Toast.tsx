@@ -38,7 +38,7 @@ const ToastCircularProgress = styled(CircularProgress)(({ theme }) => ({
 }));
 
 function getProgressProps<
-  T extends LinearProgressProps | CircularProgressProps
+  T extends LinearProgressProps | CircularProgressProps,
 >(t: Toast): Partial<T> {
   switch (t.type) {
     case 'success':
@@ -77,7 +77,7 @@ const CloseToastButton = ({
       </IconButton>
       <ToastCircularProgress
         variant='determinate'
-        value={timeRemaining}
+        value={Math.max(0, timeRemaining)}
         size={28}
         color='inherit'
         thickness={2}

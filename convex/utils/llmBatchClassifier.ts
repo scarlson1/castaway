@@ -4,14 +4,21 @@ import OpenAI from 'openai';
 
 // include previously classified ads for additional context ??
 
+/*
+Could potentially add backward-expansion pass after merging (medium effort)
+After mergeAdWindows produces a segment, look at the windows immediately preceding adStart. Send them plus the ad's transcript to the LLM with a focused prompt: "The following was classified as an ad. Does the text immediately before it appear to be the beginning of the same ad?" If yes, extend adStart backward. This is a targeted second pass rather than reclassifying everything.
+*/
+
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 export async function classifyWindowsBatch<T extends Record<string, any>>(
-  windows: (Window & T)[]
+  windows: (Window & T)[],
+  fewShotExamples: { text: string; is_ad: boolean }[] = [],
+  precedingWindowText: string | null = null,
 ): Promise<(ClassifiedWindow & T)[]> {
   const windowCount = windows.length;
 
-  const system =
+  let system =
     `You are a classifier. You must output **pure JSON only** with no explanations.
 
 CRITICAL REQUIREMENTS:
@@ -29,9 +36,28 @@ Output: an array of exactly ${windowCount} objects with the following schema:
 
 Definitions:
 - "ad" includes sponsorships, promotions, calls to action, discount codes, and brand/promo messages.
+- look for transition jingles that often mark the start and end of ad segments.
 - Keep reason values concise (1-2 sentences max).
 - Do not output anything outside the JSON array.
 - The output array length MUST equal ${windowCount}`.trim();
+  //  Also include narrative brand stories — a story featuring a company or product as the protagonist (e.g. 'No one goes to Hank's for his spreadsheets') is an ad even without an explicit call to action.
+
+  if (fewShotExamples.length > 0) {
+    const adExamples = fewShotExamples.filter((e) => e.is_ad);
+    const notAdExamples = fewShotExamples.filter((e) => !e.is_ad);
+    system +=
+      '\n\nExamples from this specific podcast to guide your classification:';
+    if (adExamples.length) {
+      system +=
+        '\n\nKnown ads from this podcast:\n' +
+        adExamples.map((e) => `- "${e.text.slice(0, 200)}"`).join('\n');
+    }
+    if (notAdExamples.length) {
+      system +=
+        '\n\nNot ads from this podcast:\n' +
+        notAdExamples.map((e) => `- "${e.text.slice(0, 200)}"`).join('\n');
+    }
+  }
 
   const user = `Classify each of the ${windowCount} windows below. Return exactly ${windowCount} classification results in a JSON array.
 
@@ -40,10 +66,11 @@ ${JSON.stringify(
     index: i,
     start: w.start,
     end: w.end,
+    prev_text: i > 0 ? windows[i - 1].text : precedingWindowText,
     text: w.text,
   })),
   null,
-  2
+  2,
 )}
 
 Remember: Return exactly ${windowCount} items in your JSON array.`;
@@ -81,7 +108,7 @@ Remember: Return exactly ${windowCount} items in your JSON array.`;
 
   if (parsed.length !== windows.length) {
     console.warn(
-      `WARNING: LLM returned ${parsed.length} results but expected ${windows.length}. Filling missing results with defaults.`
+      `WARNING: LLM returned ${parsed.length} results but expected ${windows.length}. Filling missing results with defaults.`,
     );
   }
 

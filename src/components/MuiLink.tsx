@@ -10,7 +10,7 @@ import React from 'react';
 type MuiLinkProps = LinkProps;
 
 const MuiLinkComponent = React.forwardRef<HTMLAnchorElement, MuiLinkProps>(
-  (props, ref) => <Link ref={ref} {...props} />
+  (props, ref) => <Link ref={ref} {...props} />,
 );
 
 const CreatedLinkComponent = createLink(MuiLinkComponent);
@@ -18,5 +18,3 @@ const CreatedLinkComponent = createLink(MuiLinkComponent);
 export const MuiLink: LinkComponent<typeof MuiLinkComponent> = (props) => {
   return <CreatedLinkComponent preload={'intent'} {...props} />;
 };
-
-// Can also be styled

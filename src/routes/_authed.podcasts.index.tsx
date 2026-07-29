@@ -8,14 +8,18 @@ import {
   Select,
   Stack,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { useSuspenseQuery } from '@tanstack/react-query';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { orderBy } from 'lodash-es';
-import { useMemo, useState } from 'react';
+import { Suspense, useMemo, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Card } from '~/components/Card';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
+import { PageHeader } from '~/components/PageHeader';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 
 export const Route = createFileRoute('/_authed/podcasts/')({
@@ -28,6 +32,9 @@ function RouteComponent() {
   const [sort, setSort] = useState<SortOption>('recent');
   const { data } = useSuspenseQuery(convexQuery(api.subscribe.allDetails, {}));
 
+  const theme = useTheme();
+  const isSmallScreen = useMediaQuery(theme.breakpoints.down('sm'));
+
   const sorted = useMemo(() => {
     if (sort === 'recent')
       return data.sort(
@@ -39,19 +46,25 @@ function RouteComponent() {
   }, [data, sort]);
 
   return (
-    <Box>
+    <Box sx={{ pt: { xs: 2, md: 3 } }}>
+      <PageHeader label='podcasts' />
       <Box
         sx={{
           display: 'flex',
           justifyContent: 'space-between',
-          alignItems: 'center',
-          pb: 2,
+          alignItems: 'flex-end',
+          mb: 3,
         }}
       >
-        <Typography variant='h4' gutterBottom>
-          My Podcasts
-        </Typography>
-        <FormControl variant='standard' fullWidth sx={{ maxWidth: 200 }}>
+        <Box>
+          <Typography variant='h4' sx={{ mb: 0.5, letterSpacing: '-0.03em' }}>
+            Podcasts.
+          </Typography>
+          <Typography variant='body2' color='textSecondary'>
+            Your subscriptions
+          </Typography>
+        </Box>
+        <FormControl variant='outlined' sx={{ minWidth: 120 }}>
           <InputLabel id='sort-pod-label'>Sort by</InputLabel>
           <Select
             labelId='sort-pod-label'
@@ -59,6 +72,7 @@ function RouteComponent() {
             value={sort}
             label='Sort by'
             onChange={(e) => setSort(e.target.value)}
+            sx={{ fontSize: 13 }}
           >
             <MenuItem value={''}>Default</MenuItem>
             <MenuItem value={'recent'}>Recent</MenuItem>
@@ -68,8 +82,12 @@ function RouteComponent() {
       </Box>
 
       {sorted.length === 0 ? (
-        <Stack direction='column' spacing={2} sx={{ alignItems: 'center' }}>
-          <Typography variant='subtitle1'>
+        <Stack
+          direction='column'
+          spacing={2}
+          sx={{ alignItems: 'center', py: 8 }}
+        >
+          <Typography variant='subtitle1' color='textSecondary'>
             Your followed podcasts will show up here
           </Typography>
           <MuiButtonLink to='/discover' variant='contained'>
@@ -83,7 +101,7 @@ function RouteComponent() {
         columnSpacing={{ xs: 1.5, sm: 1.5, md: 2 }}
         rowSpacing={{ xs: 2, sm: 3, md: 4 }}
       >
-        {sorted.map((pod, i) => (
+        {sorted.map((pod) => (
           <Grid key={pod._id} size={{ xs: 4, sm: 3, md: 2 }}>
             <Card
               orientation='vertical'
@@ -94,8 +112,13 @@ function RouteComponent() {
                 to: '/podcasts/$podId',
                 params: { podId: pod.podcastId },
               }}
+              coverOnly={isSmallScreen}
             >
-              <SubscribeIconButton podcastId={pod.podcastId} />
+              <ErrorBoundary fallback={null}>
+                <Suspense fallback={null}>
+                  <SubscribeIconButton podcastId={pod.podcastId} />
+                </Suspense>
+              </ErrorBoundary>
             </Card>
           </Grid>
         ))}

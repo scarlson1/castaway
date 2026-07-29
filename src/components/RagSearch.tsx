@@ -26,7 +26,7 @@ export function RagEpisodeResults({
       globalNamespace: true,
       limit: 5,
     }),
-    [podcastId, query]
+    [podcastId, query],
   );
 
   const search = useConvexAction(api.rag.search);
@@ -67,7 +67,7 @@ export function RagEpisodeResults({
           ))}
         </Stack>
       ) : (
-        <Typography textAlign='center' sx={{ py: 3 }}>
+        <Typography sx={{ py: 3, textAlign: 'center' }}>
           No results found
         </Typography>
       )}
@@ -162,6 +162,7 @@ function TempEpisodeRow({
               audioUrl,
               feedImage: image || '',
             }}
+            color='primary'
             // positionSeconds={playback?.positionSeconds || 0}
             // playedPercentage={playback?.playedPercentage}
           />

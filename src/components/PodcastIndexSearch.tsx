@@ -106,16 +106,15 @@ function SearchResults({ results }: { results: SearchByTermResult['feeds'] }) {
         params: { podId: `${pod.id}` },
       });
     },
-    [navigate]
+    [navigate],
   );
 
   return (
     <>
       {results.map((h) => (
         <Box
-          display='flex'
           id={h.podcastGuid}
-          sx={{ my: 1, '&:hover': { cursor: 'pointer' } }}
+          sx={{ display: 'flex', my: 1, '&:hover': { cursor: 'pointer' } }}
           onClick={() => handleSelect(h)}
         >
           <Box

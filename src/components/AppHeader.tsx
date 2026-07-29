@@ -5,11 +5,11 @@ import {
   UserButton,
 } from '@clerk/tanstack-react-start';
 import { PersonRounded } from '@mui/icons-material';
-import { alpha, Button, GlobalStyles, Stack, styled } from '@mui/material';
+import { alpha, Button, GlobalStyles, Stack, styled, Typography } from '@mui/material';
 import Box from '@mui/material/Box';
 import Container from '@mui/material/Container';
 import { useLocation, useNavigate } from '@tanstack/react-router';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { AutoCompleteSearch } from '~/components/AutoCompleteSearch';
 // import { HeaderNavBar } from '~/components/HeaderNavBar';
 // import HeaderNavDropdown from '~/components/HeaderNavDropdown';
@@ -17,20 +17,22 @@ import CastawayLogo from '~/components/icons/CastawayLogo';
 import { MobileSearchDialog } from '~/components/MobileSearchDialog';
 import { ModeToggle } from '~/components/ModeToggle';
 import { MuiLink } from '~/components/MuiLink';
+import { SIDEBAR_WIDTH } from '~/components/AppSidebar';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
 const Header = styled('header')(({ theme }) => [
   {
-    // position: 'sticky',
     position: 'fixed',
     width: '100%',
     top: 0,
     transition: theme.transitions.create('top'),
-    // zIndex: theme.zIndex.appBar,
     zIndex: theme.zIndex.drawer + 1,
     backgroundColor: 'rgba(255,255,255,0.6)',
     backdropFilter: 'blur(16px)',
     borderBottom: `1px solid ${(theme.vars || theme).palette.divider}`,
+    [theme.breakpoints.up('md')]: {
+      display: 'none',
+    },
   } as const,
   theme.applyStyles('dark', {
     backdropFilter: 'blur(16px)',
@@ -104,6 +106,7 @@ const Navigation = styled('nav')(({ theme }) => [
 ]);
 
 const HEIGHT = 60; // TODO: use theme.mixins.toolbar.minHeight ??
+export const DESKTOP_HEADER_HEIGHT = 44;
 
 export function AppHeader() {
   const navigate = useNavigate();
@@ -119,12 +122,17 @@ export function AppHeader() {
   return (
     <Header>
       <GlobalStyles
-        styles={{
+        styles={(theme) => ({
           ':root': {
             '--Castaway-header-height': `${HEIGHT}px`,
-            '--Castaway-bottom-nav-height': '56px', // MUI default
+            '--Castaway-bottom-nav-height': '56px',
           },
-        }}
+          [theme.breakpoints.up('md')]: {
+            ':root': {
+              '--Castaway-header-height': '0px',
+            },
+          },
+        })}
       />
       <Container
         sx={{ display: 'flex', alignItems: 'center', minHeight: HEIGHT }}
@@ -215,5 +223,72 @@ export function AppHeader() {
         </Box> */}
       </Container>
     </Header>
+  );
+}
+
+const BREADCRUMB_LABELS: Record<string, string> = {
+  '': 'today',
+  today: 'today',
+  discover: 'discover',
+  podcasts: 'podcasts',
+  chat: 'ask',
+  trending: 'trending',
+  settings: 'settings',
+};
+
+export function DesktopHeader() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const breadcrumb = useMemo(() => {
+    const first = location.pathname.split('/').filter(Boolean)[0] ?? '';
+    return BREADCRUMB_LABELS[first] ?? first;
+  }, [location.pathname]);
+
+  const goToPod = useCallback(
+    (pod: PodcastFeed) => {
+      navigate({ to: '/podcast/$podId', params: { podId: pod.id.toString() } });
+    },
+    [navigate],
+  );
+
+  return (
+    <Box
+      sx={[
+        {
+          display: { xs: 'none', md: 'flex' },
+          position: 'fixed',
+          top: 0,
+          left: `${SIDEBAR_WIDTH}px`,
+          right: 0,
+          height: DESKTOP_HEADER_HEIGHT,
+          alignItems: 'center',
+          px: 4.5,
+          gap: 2,
+          borderBottom: '1px solid',
+          borderColor: 'divider',
+          zIndex: (theme) => theme.zIndex.appBar,
+          bgcolor: 'rgba(255,255,255,0.85)',
+          backdropFilter: 'blur(12px)',
+        },
+        (t) => t.applyStyles('dark', {
+          bgcolor: 'rgba(18,17,15,0.85)',
+        }),
+      ]}
+    >
+      <Typography
+        sx={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 10,
+          letterSpacing: '0.08em',
+          color: 'text.disabled',
+          flex: 1,
+          minWidth: 0,
+        }}
+      >
+        workspace / {breadcrumb}
+      </Typography>
+
+      <AutoCompleteSearch onSelect={goToPod} compact />
+    </Box>
   );
 }

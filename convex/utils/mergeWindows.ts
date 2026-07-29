@@ -6,9 +6,13 @@ import type { ClassifiedWindow, MergedAdSegment } from 'convex/adSegments';
 export function mergeAdWindows(
   windows: ClassifiedWindow[],
   minDuration = 5,
-  mergeGap = 2
+  mergeGap = 2,
+  confidenceThreshold = 0.4,
 ): MergedAdSegment[] {
-  const positives = windows.filter((w) => w.is_ad && w.confidence > 0.4);
+  // >= matches how recalibrateThreshold scores candidate thresholds
+  const positives = windows.filter(
+    (w) => w.is_ad && w.confidence >= confidenceThreshold,
+  );
   if (!positives.length) return [];
 
   positives.sort((a, b) => a.start - b.start);

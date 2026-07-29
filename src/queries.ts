@@ -22,7 +22,7 @@ export const podDetailsQueryOptions = (id: number) =>
 
 export const episodesQueryOptions = (
   id: string,
-  options: { max?: number } = {}
+  options: { max?: number } = {},
 ) =>
   queryOptions({
     queryKey: ['podIndex', 'podcasts', id, 'episodes', options],
@@ -34,7 +34,8 @@ export const trendingQueryOptions = (options: FetchTrendingOptions) =>
   queryOptions({
     queryKey: ['podIndex', 'podcasts', 'trending', options],
     queryFn: () => fetchTrending({ data: options }),
-    staleTime: Infinity, // Or a suitable value for your use case
+    staleTime: Infinity,
+    gcTime: 1000 * 60 * 60 * 48,
   });
 
 export const podDetailsITunesQueryOptions = (id: number) =>

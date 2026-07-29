@@ -4,3 +4,12 @@ node_modules
 convex/_generated
 .vercel
 .env*.local
+
+.DS_Store
+convex/.DS_Store
+src/.DS_Store
+src/assets/.DS_Store
+
+.claude/worktrees/
+
+.tanstack/

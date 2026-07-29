@@ -1,14 +1,8 @@
 import { convexQuery, useConvexAction } from '@convex-dev/react-query';
-import {
-  ClearRounded,
-  ExplicitRounded,
-  LinkRounded,
-  MicRounded,
-} from '@mui/icons-material';
+import { ExplicitRounded, LinkRounded, MicRounded } from '@mui/icons-material';
 import {
   Box,
   Button,
-  Divider,
   IconButton,
   InputAdornment,
   Link,
@@ -24,12 +18,15 @@ import { api } from 'convex/_generated/api';
 import { Suspense, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesList, EpisodesOptionsButton } from '~/components/EpisodesList';
+import { EpisodesTableWrapper } from '~/components/EpisodeTableWrapper';
 import { ExpandableSearchBar } from '~/components/ExpandableSearchBar';
 import { FollowingButtons } from '~/components/FollowingButtons';
+import { PageHeader } from '~/components/PageHeader';
 import { RagEpisodeResults } from '~/components/RagSearch';
 import { SimilarPodcasts } from '~/components/SimilarPods';
 import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
+import { SuspensePodDetails } from '~/components/suspense/SuspensePodDetails';
 import { useDebounce } from '~/hooks/useDebounce';
 import {
   podchaserPodcast,
@@ -41,7 +38,7 @@ export const Route = createFileRoute('/_authed/podcasts_/$podId')({
   component: RouteComponent,
   loader: ({ context: { queryClient }, params }) => {
     queryClient.prefetchQuery(
-      convexQuery(api.podcasts.getPodByGuid, { id: params.podId })
+      convexQuery(api.podcasts.getPodByGuid, { id: params.podId }),
     );
   },
 });
@@ -50,52 +47,52 @@ function RouteComponent() {
   const { podId } = Route.useParams();
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query, 500);
-
   const isSearching = Boolean(debouncedQuery.trim());
-  // TODO: use same component to render search/table episodes
-  // const episodes = isSearching ? useQuery(ragSearch) : useQuery(table)
 
   return (
-    <>
+    <Box sx={{ pt: { xs: 2, md: 3 } }}>
+      <PageHeader label='podcasts' />
       <ErrorBoundary fallback={<div>Error loading podcast details</div>}>
         <Suspense fallback={<SuspensePodDetails />}>
           <PodDetails podId={podId} />
         </Suspense>
       </ErrorBoundary>
-      <Divider sx={{ my: 3 }} />
-      <Stack
-        direction='row'
-        spacing={2}
-        sx={{ alignItems: 'center', justifyContent: 'space-between', mb: 1 }}
+
+      {/* Episodes header + search */}
+      <Box
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          mb: 1.5,
+          mt: { xs: 1.5, sm: 2 },
+          gap: 1.5,
+        }}
       >
-        <Typography variant='h6' gutterBottom sx={{ flex: '1 1 auto' }}>
+        <Typography variant='h6' sx={{ flex: '1 1 auto' }}>
           Episodes
         </Typography>
-        <Box>
-          <ExpandableSearchBar
-            value={query}
-            onChange={(val) => setQuery(val)}
-            fullWidth
-            placeholder='search episodes'
-            endAdornment={
-              <InputAdornment position='end'>
-                <IconButton
-                  aria-label={'clear search'}
-                  onClick={() => setQuery('')}
-                  edge='end'
-                  size='small'
-                >
-                  <ClearRounded fontSize='inherit' />
-                </IconButton>
-              </InputAdornment>
-            }
-          />
-        </Box>
-        <Box>
-          <EpisodesOptionsButton podId={podId} />
-        </Box>
-      </Stack>
-      <Divider />
+        <ExpandableSearchBar
+          value={query}
+          onChange={(val) => setQuery(val)}
+          placeholder='search episodes'
+          endAdornment={
+            <InputAdornment position='end'>
+              <IconButton
+                aria-label='clear search'
+                onClick={() => setQuery('')}
+                edge='end'
+                size='small'
+              >
+                ×
+              </IconButton>
+            </InputAdornment>
+          }
+        />
+        <EpisodesOptionsButton podId={podId} />
+      </Box>
+
+      {/* Episode list */}
       {isSearching ? (
         <ErrorBoundary fallback={<div>Error loading episodes</div>}>
           <RagEpisodeResults podcastId={podId} query={debouncedQuery} />
@@ -103,51 +100,48 @@ function RouteComponent() {
       ) : (
         <ErrorBoundary fallback={<div>Error loading episodes</div>}>
           <Suspense fallback={<SuspenseEpisodeList numItems={10} />}>
-            <EpisodesList podId={podId} />
+            {/* <EpisodesTable podId={podId} />
+             */}
+            <EpisodesTableWrapper>
+              <EpisodesList podId={podId} />
+            </EpisodesTableWrapper>
           </Suspense>
         </ErrorBoundary>
       )}
 
-      {/* TODO: error boundary fallback / sentry */}
       <ErrorBoundary fallback={null}>
         <Suspense
           fallback={
             <>
               <Typography variant='h6' gutterBottom>
                 <Skeleton />
-                <SuspenseGridCards
-                  numItems={8}
-                  columnSpacing={2}
-                  rowSpacing={1}
-                  columns={16}
-                  childGridProps={{ size: { xs: 8, sm: 4, md: 4, lg: 2 } }}
-                />
               </Typography>
+              <SuspenseGridCards
+                numItems={8}
+                columnSpacing={2}
+                rowSpacing={1}
+                columns={16}
+                childGridProps={{ size: { xs: 8, sm: 4, md: 4, lg: 2 } }}
+              />
             </>
           }
         >
-          <>
+          <Box sx={{ mt: 4 }}>
             <Typography variant='h6' gutterBottom>
               Similar Pods
             </Typography>
             <SimilarPodcasts podId={podId} />
-          </>
+          </Box>
         </Suspense>
       </ErrorBoundary>
       <Outlet />
-      {/* <ErrorBoundary fallback={<div>search error</div>}>
-        <WrappedTranscriptSearch podId={podId} />
-      </ErrorBoundary> */}
-      {/* <ErrorBoundary fallback={<Typography>Error rendering search</Typography>}>
-        <RagSearch podcastId={podId} />
-      </ErrorBoundary> */}
-    </>
+    </Box>
   );
 }
 
 function PodDetails({ podId }: { podId: string }) {
   const { data } = useSuspenseQuery(
-    convexQuery(api.podcasts.getPodByGuid, { id: podId })
+    convexQuery(api.podcasts.getPodByGuid, { id: podId }),
   );
 
   const { mutate: embedPod, isPending } = useMutation({
@@ -155,34 +149,93 @@ function PodDetails({ podId }: { podId: string }) {
   });
 
   return (
-    <Stack direction='row' spacing={2}>
+    <Box
+      sx={[
+        {
+          display: 'grid',
+          gridTemplateColumns: { xs: '96px 1fr', sm: '200px 1fr' },
+          gap: { xs: 2, sm: 3.5 },
+          p: { xs: 2, sm: 3 },
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1.75,
+          mb: 3,
+        },
+      ]}
+    >
       <Box
         component='img'
         src={data?.imageUrl || ''}
         alt={`${data?.title} cover art`}
         sx={{
-          height: { xs: 100, sm: 160, md: 200 },
-          width: { xs: 100, sm: 160, md: 200 },
-          objectFit: 'contain',
-          borderRadius: 1, // TODO: size box and render image as child ??
+          width: { xs: 96, sm: 200 },
+          height: { xs: 96, sm: 200 },
+          objectFit: 'cover',
+          borderRadius: 1.25,
         }}
       />
-      <Box sx={{ flex: '1 1 auto' }}>
+      <Box>
+        {/* Kicker */}
+        {data?.categoryArray?.length ? (
+          <Stack
+            direction='row'
+            spacing={1}
+            divider={<span>·</span>}
+            sx={{ alignItems: 'center' }}
+          >
+            {data.categoryArray.map((c) => (
+              <Typography
+                key={c}
+                sx={{
+                  fontFamily: "'JetBrains Mono', monospace",
+                  fontSize: 10,
+                  letterSpacing: '0.16em',
+                  textTransform: 'uppercase',
+                  color: 'text.secondary',
+                  mb: 1,
+                }}
+              >
+                {c}
+              </Typography>
+            ))}
+          </Stack>
+        ) : (
+          <Typography
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+              mb: 1,
+            }}
+          >
+            Podcast
+          </Typography>
+        )}
+
+        {/* Title row */}
         <Stack
           direction='row'
-          sx={{ justifyContent: 'space-between', alignItems: 'center' }}
+          sx={{ alignItems: 'flex-start', gap: 1, mb: 0.5, flexWrap: 'wrap' }}
         >
-          <Typography variant='h5'>{data?.title}</Typography>
+          <Typography
+            variant='h4'
+            sx={{ flex: '1 1 auto', letterSpacing: '-0.03em' }}
+          >
+            {data?.title}
+          </Typography>
           {data?._id && !data?.embedding ? (
             <Button
+              size='small'
               loading={isPending}
               onClick={() => embedPod({ convexId: data._id })}
-              sx={{ ml: 'auto' }}
+              sx={{ flexShrink: 0 }}
             >
               Embed
             </Button>
           ) : null}
-
           {data?.podcastId ? (
             <ErrorBoundary fallback={<div />}>
               <Suspense
@@ -197,22 +250,14 @@ function PodDetails({ podId }: { podId: string }) {
             </ErrorBoundary>
           ) : null}
         </Stack>
+
+        {/* Rating */}
         {data?.itunesId ? (
           <ErrorBoundary
-            fallback={
-              <Rating name='rating' value={5} disabled readOnly size='small' />
-            }
+            fallback={<Rating value={5} disabled readOnly size='small' />}
           >
             <Suspense
-              fallback={
-                <Rating
-                  name='rating'
-                  value={0}
-                  disabled
-                  readOnly
-                  size='small'
-                />
-              }
+              fallback={<Rating value={0} disabled readOnly size='small' />}
             >
               <PodcastRating
                 podId={`${data?.itunesId}`}
@@ -222,45 +267,48 @@ function PodDetails({ podId }: { podId: string }) {
           </ErrorBoundary>
         ) : null}
 
-        <Divider sx={{ my: 1 }} />
-        <Stack direction='row' spacing={2}>
-          <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+        {/* Meta */}
+        <Stack
+          direction='row'
+          spacing={2}
+          sx={{ mt: 1, flexWrap: 'wrap', alignItems: 'center' }}
+        >
+          <Stack direction='row' spacing={0.75} sx={{ alignItems: 'center' }}>
             <MicRounded fontSize='small' color='secondary' />
-            <Typography variant='subtitle2' color='textSecondary'>
+            <Typography variant='body2' color='textSecondary'>
               {data?.author || data?.ownerName}
             </Typography>
           </Stack>
           {data?.link ? (
-            <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
+            <Stack direction='row' spacing={0.75} sx={{ alignItems: 'center' }}>
               <LinkRounded fontSize='small' color='secondary' />
               <Link
                 target='_blank'
                 rel='noopener noreferrer'
                 href={data.link}
-                underline='none'
+                underline='hover'
+                variant='body2'
               >
                 {getRootDomain(data.link)}
               </Link>
             </Stack>
           ) : null}
-          {/* <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
-            <RadioRounded fontSize='small' color='secondary' />
-            <Typography
-              variant='subtitle2'
-              color='textSecondary'
-            >{`${data?.episodeCount} episodes`}</Typography>
-          </Stack> */}
           {data?.explicit ? (
             <Tooltip title='Explicit'>
               <ExplicitRounded fontSize='small' color='error' />
             </Tooltip>
           ) : null}
         </Stack>
-        <Typography variant='body2' sx={{ py: 2 }}>
+
+        <Typography
+          variant='body2'
+          color='textSecondary'
+          sx={{ mt: 1.5, lineHeight: 1.6 }}
+        >
           {data?.description}
         </Typography>
       </Box>
-    </Stack>
+    </Box>
   );
 }
 
@@ -277,9 +325,8 @@ function PodcastRating({
   });
 
   return (
-    <Stack direction='row' spacing={1}>
+    <Stack direction='row' spacing={1} sx={{ alignItems: 'center' }}>
       <Rating
-        name='rating'
         value={data?.podcast?.ratingAverage ?? 0}
         precision={0.05}
         readOnly
@@ -288,58 +335,11 @@ function PodcastRating({
       />
       <Typography
         variant='body2'
-        fontSize={'0.775rem'}
         color='textSecondary'
-      >{`(${data?.podcast?.reviewCount || 0} reviews)`}</Typography>
-    </Stack>
-  );
-}
-
-function SuspensePodDetails() {
-  return (
-    <Stack direction='row' spacing={2}>
-      <Skeleton variant='rounded'>
-        <Box
-          height={{ xs: 100, sm: 160, md: 200 }}
-          width={{ xs: 100, sm: 160, md: 200 }}
-        />
-      </Skeleton>
-      <Box sx={{ flex: '1 1 auto' }}>
-        <Stack
-          direction='row'
-          sx={{ justifyContent: 'space-between', alignItems: 'center' }}
-        >
-          <Typography variant='h5'>
-            <Skeleton />
-          </Typography>
-          <Skeleton variant='rounded'>
-            <Button size='small'>Follow</Button>
-          </Skeleton>
-        </Stack>
-        <Skeleton variant='rounded'>
-          <Rating size='small' />
-        </Skeleton>
-
-        <Divider sx={{ my: 1 }} />
-
-        <Stack direction='row' spacing={2}>
-          <Typography variant='subtitle2' color='textSecondary'>
-            <Skeleton width={80} />
-          </Typography>
-          <Typography variant='subtitle2' color='textSecondary'>
-            <Skeleton width={100} />
-          </Typography>
-        </Stack>
-
-        <Box sx={{ py: 2 }}>
-          <Typography variant='body2'>
-            <Skeleton />
-          </Typography>
-          <Typography variant='body2'>
-            <Skeleton />
-          </Typography>
-        </Box>
-      </Box>
+        sx={{ fontSize: '0.775rem' }}
+      >
+        ({data?.podcast?.reviewCount || 0} reviews)
+      </Typography>
     </Stack>
   );
 }

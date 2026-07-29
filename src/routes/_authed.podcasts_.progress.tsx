@@ -1,104 +1,271 @@
 import { useConvexPaginatedQuery } from '@convex-dev/react-query';
-import { Box, Button, Divider, Stack, Typography } from '@mui/material';
+import {
+  Box,
+  Button,
+  Skeleton,
+  Typography,
+} from '@mui/material';
 import { createFileRoute } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
-import { Suspense, useId } from 'react';
+import { Suspense } from 'react';
 import { useInView } from 'react-intersection-observer';
-import { SuspenseTrendingCard } from '~/components/suspense/SuspenseTrendingCard';
-import { TrendingCard } from '~/components/TrendingCard';
+import { PlaybackButton } from '~/components/PlaybackButton';
+import { PageHeader } from '~/components/PageHeader';
+import { MuiLink } from '~/components/MuiLink';
+import { formatRelativeTime, getDuration } from '~/utils/format';
+import type { Doc } from 'convex/_generated/dataModel';
 
 export const Route = createFileRoute('/_authed/podcasts_/progress')({
   component: RouteComponent,
-  // TODO: preload data
 });
 
 function RouteComponent() {
   return (
-    <Box>
-      <Typography variant='h5' gutterBottom>
-        In Progress
+    <Box sx={{ pt: { xs: 2, md: 3 } }}>
+      <PageHeader label='in-progress' />
+      <Typography variant='h4' sx={{ mb: 0.5, letterSpacing: '-0.03em' }}>
+        In Progress.
       </Typography>
-      {/* <ErrorBoundary fallback=> */}
-      <Suspense fallback={<SkeletonUserPlayback numItems={10} />}>
+      <Typography variant='body2' color='textSecondary' sx={{ mb: 3 }}>
+        Episodes you've started
+      </Typography>
+      <Suspense fallback={<ProgressTableSkeleton />}>
         <UserPlayback />
       </Suspense>
-      {/* </ErrorBoundary> */}
     </Box>
   );
 }
 
 const PAGE_SIZE = 10;
-// use join episode data or pass episode ID to component and look up individually ??
+
 function UserPlayback() {
   const [ref, inView] = useInView();
 
-  const { results, status, loadMore, isLoading } = useConvexPaginatedQuery(
+  const { results, status, loadMore } = useConvexPaginatedQuery(
     api.playback.inProgress,
     {},
-    { initialNumItems: PAGE_SIZE }
+    { initialNumItems: PAGE_SIZE },
   );
 
-  // if (!results?.length)
-  //   return <Typography>No playback history found</Typography>;
+  if (!results?.length) {
+    return (
+      <Box
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1.25,
+          bgcolor: 'background.paper',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          py: 8,
+        }}
+      >
+        <Typography variant='body2' color='textSecondary'>
+          No episodes in progress
+        </Typography>
+      </Box>
+    );
+  }
 
   return (
-    <>
-      <Stack direction='column' spacing={1} divider={<Divider />}>
-        {results.map((ep) => (
-          <TrendingCard
-            key={ep._id}
-            title={ep.title}
-            secondaryText={ep.podcastTitle}
-            // actionText={formatRelativeTime(new Date(ep.publishedAt))}
-            publishedAt={ep.publishedAt}
-            podId={ep.podcastId}
-            episodeId={ep.episodeId}
-            imgSrc={ep.feedImage || ep.image || ''}
-            audioUrl={ep.audioUrl}
-            duration={ep.durationSeconds}
-          />
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1.25,
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+      }}
+    >
+      {/* Table header */}
+      <Box
+        sx={[
+          {
+            display: { xs: 'none', sm: 'grid' },
+            gridTemplateColumns: '48px 1fr 90px 60px 40px',
+            gap: 1.75,
+            alignItems: 'center',
+            px: 2,
+            py: 1,
+            borderBottom: '1px solid',
+            borderColor: 'divider',
+            bgcolor: '#f4f3ee',
+          },
+          (t) => t.applyStyles('dark', { bgcolor: '#1a1813' }),
+        ]}
+      >
+        {['', 'Episode', 'When', 'Length', ''].map((h, i) => (
+          <Typography
+            key={i}
+            sx={{
+              fontFamily: "'JetBrains Mono', monospace",
+              fontSize: 10,
+              letterSpacing: '0.16em',
+              textTransform: 'uppercase',
+              color: 'text.secondary',
+            }}
+          >
+            {h}
+          </Typography>
         ))}
-      </Stack>
-      {status !== 'Exhausted' ? (
+      </Box>
+
+      {/* Rows */}
+      {results.map((ep, i) => (
+        <ProgressRow key={ep._id} episode={ep} index={i} />
+      ))}
+
+      {/* Load more */}
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          py: 1.5,
+          borderTop: '1px solid',
+          borderColor: 'divider',
+        }}
+      >
         <Button
           ref={ref}
+          size='small'
           onClick={() => loadMore(PAGE_SIZE)}
-          loading={isLoading}
-          disabled={isLoading || status !== 'CanLoadMore'}
-          sx={{ mt: 2 }}
+          loading={status === 'LoadingMore'}
+          disabled={status !== 'CanLoadMore'}
+          sx={{ fontSize: 12, color: 'text.secondary' }}
         >
-          {`${status === 'CanLoadMore' ? 'Load more' : 'fetching...'}`}
+          {status === 'CanLoadMore' ? 'Load more' : 'All caught up'}
         </Button>
-      ) : null}
-    </>
+      </Box>
+    </Box>
   );
 }
 
-function SkeletonUserPlayback({ numItems }: { numItems: number }) {
-  const id = useId();
-  const data = Array.from({ length: numItems }, (_, i) => `${id}-${i}`);
+type ProgressEpisode = Omit<Doc<'episodes'>, '_id' | '_creationTime'> & Omit<Doc<'user_playback'>, keyof Omit<Doc<'episodes'>, '_id' | '_creationTime'>>;
 
+function ProgressRow({ episode, index }: { episode: ProgressEpisode; index: number }) {
   return (
-    <Stack direction='column' spacing={1} divider={<Divider />}>
-      {data.map((d) => (
-        <SuspenseTrendingCard key={d} />
-      ))}
-    </Stack>
+    <Box
+      sx={[
+        {
+          display: 'grid',
+          gridTemplateColumns: { xs: '48px 1fr 40px', sm: '48px 1fr 90px 60px 40px' },
+          gap: 1.75,
+          alignItems: 'center',
+          px: 2,
+          py: 1.25,
+          borderTop: index === 0 ? 'none' : '1px solid',
+          borderColor: 'divider',
+          '&:hover': { bgcolor: 'action.hover' },
+          transition: 'background 0.1s',
+        },
+      ]}
+    >
+      {/* Art */}
+      <Box
+        component='img'
+        src={episode.feedImage || episode.image || ''}
+        alt={episode.podcastTitle || ''}
+        sx={{ width: 40, height: 40, borderRadius: 0.75, objectFit: 'cover', flexShrink: 0 }}
+      />
+
+      {/* Title + podcast */}
+      <Box sx={{ minWidth: 0 }}>
+        <MuiLink
+          to='/podcasts/$podId/episodes/$episodeId'
+          params={{ podId: episode.podcastId, episodeId: episode.episodeId }}
+          underline='hover'
+          sx={{
+            color: 'text.primary',
+            fontSize: 14,
+            fontWeight: 500,
+            letterSpacing: '-0.01em',
+            display: 'block',
+            overflow: 'hidden',
+            textOverflow: 'ellipsis',
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {episode.title}
+        </MuiLink>
+        <Typography
+          variant='body2'
+          color='textSecondary'
+          sx={{ fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+        >
+          {episode.podcastTitle}
+        </Typography>
+      </Box>
+
+      {/* When */}
+      <Typography
+        sx={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
+          color: 'text.secondary',
+          display: { xs: 'none', sm: 'block' },
+        }}
+      >
+        {formatRelativeTime(new Date(episode.publishedAt))}
+      </Typography>
+
+      {/* Duration */}
+      <Typography
+        sx={{
+          fontFamily: "'JetBrains Mono', monospace",
+          fontSize: 11,
+          color: 'text.secondary',
+          display: { xs: 'none', sm: 'block' },
+        }}
+      >
+        {episode.durationSeconds ? getDuration(episode.durationSeconds) : '—'}
+      </Typography>
+
+      {/* Play */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+        <Suspense fallback={<Skeleton variant='circular' width={28} height={28} />}>
+          <PlaybackButton episode={episode} size='small' color='primary' />
+        </Suspense>
+      </Box>
+    </Box>
   );
 }
 
-// function EpisodeRowSkeleton({ orientation }: { orientation: string }) {
-//   let isRow = orientation === 'horizontal';
-//   return (
-//     <Stack direction={isRow ? 'row' : 'column'} spacing={isRow ? 2 : 0.5}>
-//       <Skeleton variant='rounded' width={52} height={52} />
-//       <Stack direction='column' spacing={0.5} sx={{ minWidth: 0, pr: 2 }}>
-//         <Skeleton variant='text' sx={{ fontSize: '1rem' }} />
-//         <Skeleton variant='text' sx={{ fontSize: '0.825rem' }} />
-//         <Box sx={{ ml: 'auto !important', flex: `0 0 100px` }}>
-//           <Skeleton variant='text' sx={{ fontSize: '0.825rem' }} />
-//         </Box>
-//       </Stack>
-//     </Stack>
-//   );
-// }
+function ProgressTableSkeleton() {
+  return (
+    <Box
+      sx={{
+        border: '1px solid',
+        borderColor: 'divider',
+        borderRadius: 1.25,
+        overflow: 'hidden',
+        bgcolor: 'background.paper',
+      }}
+    >
+      {Array.from({ length: 6 }).map((_, i) => (
+        <Box
+          key={i}
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: '48px 1fr 90px 60px 40px',
+            gap: 1.75,
+            px: 2,
+            py: 1.25,
+            borderTop: i === 0 ? 'none' : '1px solid',
+            borderColor: 'divider',
+            alignItems: 'center',
+          }}
+        >
+          <Skeleton variant='rounded' width={40} height={40} />
+          <Box>
+            <Skeleton width='75%' height={16} />
+            <Skeleton width='45%' height={12} sx={{ mt: 0.5 }} />
+          </Box>
+          <Skeleton width={50} height={14} />
+          <Skeleton width={30} height={14} />
+          <Skeleton variant='circular' width={28} height={28} />
+        </Box>
+      ))}
+    </Box>
+  );
+}

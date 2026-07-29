@@ -7,7 +7,7 @@ import {
   SearchRounded,
 } from '@mui/icons-material';
 import { BottomNavigation, BottomNavigationAction, Paper } from '@mui/material';
-import { useLocation, useNavigate } from '@tanstack/react-router';
+import { useMatchRoute, useNavigate } from '@tanstack/react-router';
 import { useClerkAuth } from '~/hooks/useClerkAuth';
 
 const NAV_ITEMS = [
@@ -29,14 +29,20 @@ const SIGNED_IN_ITEMS = [
 
 export const AppBottomNav = () => {
   const navigate = useNavigate();
-  const { pathname } = useLocation();
+  // const { pathname } = useLocation();
+  const matchRoute = useMatchRoute();
   const { isAuthenticated } = useClerkAuth();
 
   const items = isAuthenticated
     ? [...NAV_ITEMS, ...SIGNED_IN_ITEMS]
     : NAV_ITEMS;
+  // const activeValue =
+  //   items.find((item) => pathname.startsWith(item.to))?.to ?? false;
   const activeValue =
-    items.find((item) => pathname.startsWith(item.to))?.to ?? false;
+    [...items]
+      .sort((a, b) => b.to.length - a.to.length)
+      .find((item) => matchRoute({ to: item.to, fuzzy: true }))?.to ?? false;
+  // .find((item) => pathname.startsWith(item.to))?.to ?? false;
 
   return (
     <Paper
@@ -46,13 +52,16 @@ export const AppBottomNav = () => {
         bottom: 0,
         left: 0,
         right: 0,
-        xIndex: (theme) => theme.zIndex.drawer + 1,
+        zIndex: (theme) => theme.zIndex.drawer + 1,
+        paddingBottom: 'env(safe-area-inset-bottom)',
+        px: 2,
       }}
       elevation={3}
     >
       <BottomNavigation
         value={activeValue}
         onChange={(_, newValue) => navigate({ to: newValue })}
+        sx={{ '& .MuiBottomNavigationAction-root': { minWidth: 0 } }}
       >
         {items.map((item) => (
           <BottomNavigationAction

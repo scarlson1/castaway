@@ -40,7 +40,11 @@ export function DefaultCatchBoundary({ error }: ErrorComponentProps) {
       }}
     >
       <ErrorComponent error={error} />
-      <Stack direction='row' spacing={2} alignItems='center' flexWrap='wrap'>
+      <Stack
+        direction='row'
+        spacing={2}
+        sx={{ alignItems: 'center', flexWrap: 'wrap' }}
+      >
         <Button
           variant='contained'
           color='primary'

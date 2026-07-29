@@ -11,6 +11,7 @@ import { EpisodeCard } from '~/components/EpisodeCard';
 import { Featured } from '~/components/Featured';
 import { MuiButtonLink } from '~/components/MuiButtonLink';
 import { MuiLink } from '~/components/MuiLink';
+import { PageHeader } from '~/components/PageHeader';
 import { RecommendedEpisodes } from '~/components/RecommendedEpisodes';
 import { RecommendedPods } from '~/components/RecommendedPods';
 import { SuspenseGridCards } from '~/components/suspense/SuspenseGridCards';
@@ -75,7 +76,11 @@ function Home() {
     isAuthenticated && (
       <Box sx={{ width: '100%' }}>
         <Box>
-          <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
+          <Typography
+            variant='overline'
+            sx={{ lineHeight: 1.2 }}
+            color='textSecondary'
+          >
             Based on your listening
           </Typography>
           <Typography variant='h5' gutterBottom>
@@ -107,7 +112,11 @@ function Home() {
     isAuthenticated && (
       <Box sx={{ width: '100%' }}>
         <Box>
-          <Typography variant='overline' lineHeight={1.2} color='textSecondary'>
+          <Typography
+            variant='overline'
+            sx={{ lineHeight: 1.2 }}
+            color='textSecondary'
+          >
             Based on your listening
           </Typography>
           <Typography variant='h5' gutterBottom>
@@ -145,7 +154,12 @@ function Home() {
       direction='column'
       spacing={{ xs: 4, sm: 5, md: 6 }}
       divider={<Divider flexItem />}
+      sx={{ pt: { xs: 2, md: 3 }, pb: { xs: 4, md: 6 } }}
     >
+      <PageHeader
+        label='today'
+        searchPlaceholder='Search episodes, transcripts...'
+      />
       {stackItems}
     </Stack>
   );
@@ -312,11 +326,11 @@ function EpisodeItem({
           underline='none'
           variant='subtitle1'
           color='textPrimary'
-          fontWeight='medium'
           sx={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            fontWeight: 'medium',
           }}
         >
           {title}
@@ -327,11 +341,11 @@ function EpisodeItem({
           variant='subtitle2'
           color='textSecondary'
           underline='none'
-          fontWeight={500}
           sx={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            fontWeight: 500,
           }}
         >
           {subtitle}

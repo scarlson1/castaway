@@ -9,28 +9,45 @@ import {
 } from '@mui/material';
 import { useQuery } from '@tanstack/react-query';
 import { useServerFn } from '@tanstack/react-start';
-import { useState } from 'react';
+import {
+  forwardRef,
+  Suspense,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { searchPodIndex } from '~/components/PodcastIndexSearch';
 import { SubscribeIconButton } from '~/components/SubscribeIconButton';
 import { useDebounce } from '~/hooks/useDebounce';
 import type { PodcastFeed } from '~/lib/podcastIndexTypes';
 
-export const AutoCompleteSearch = ({
-  onSelect,
-  fullWidth = false,
-}: {
-  onSelect?: (val: PodcastFeed) => void;
-  fullWidth?: boolean;
-}) => {
+export interface AutoCompleteSearchHandle {
+  focus: () => void;
+}
+
+export const AutoCompleteSearch = forwardRef<
+  AutoCompleteSearchHandle,
+  {
+    onSelect?: (val: PodcastFeed) => void;
+    fullWidth?: boolean;
+    compact?: boolean;
+    placeholder?: string;
+  }
+>(({ onSelect, fullWidth = false, compact = false, placeholder }, ref) => {
   const search = useServerFn(searchPodIndex);
   const [query, setQuery] = useState('');
   const debouncedQuery = useDebounce(query.trim(), 300);
   const [value, setValue] = useState<PodcastFeed | null>(null);
   const [inputValue, setInputValue] = useState('');
-  // const [options, setOptions] = useState<readonly PlaceType[]>(emptyOptions);
-  // only need one of the following??
   const [isExpanded, setIsExpanded] = useState(false);
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    focus: () =>
+      rootRef.current?.querySelector<HTMLInputElement>('input')?.focus(),
+  }));
 
   const queryOptions = { query: debouncedQuery, max: 8, similar: true };
 
@@ -51,10 +68,37 @@ export const AutoCompleteSearch = ({
 
   return (
     <Autocomplete
-      sx={{
-        width,
-        transition: 'width 0.3s ease-in-out',
-      }}
+      ref={rootRef}
+      sx={
+        compact
+          ? {
+              width,
+              transition: 'width 0.3s ease-in-out',
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 0.75,
+                fontSize: 12,
+                py: '6px !important',
+                bgcolor: 'background.default',
+                '& fieldset': { borderColor: 'divider' },
+                '&:hover fieldset': { borderColor: 'text.disabled' },
+                '&.Mui-focused fieldset': {
+                  borderColor: 'text.secondary',
+                  borderWidth: 1,
+                },
+                paddingRight: '30px !important',
+              },
+              '& .MuiInputLabel-root': { display: 'none' },
+              '& .MuiInputBase-input': {
+                py: '0 !important',
+                fontSize: 12,
+                '&::placeholder': { color: 'text.disabled', opacity: 1 },
+              },
+            }
+          : {
+              width,
+              transition: 'width 0.3s ease-in-out',
+            }
+      }
       size='small'
       getOptionLabel={(option) =>
         typeof option === 'string' ? option : option.title
@@ -67,50 +111,60 @@ export const AutoCompleteSearch = ({
       filterSelectedOptions
       value={value}
       onChange={(event: any, newValue: PodcastFeed | null) => {
-        console.log('ON CHANGE: ', newValue);
-        // setOptions(newValue ? [newValue, ...options] : options);
         setValue(newValue);
         if (newValue && onSelect) onSelect(newValue);
       }}
       onInputChange={(event, newInputValue) => {
-        console.log('SET INPUT VALUE:', newInputValue);
         setQuery(newInputValue);
         setInputValue(newInputValue);
       }}
       open={open}
       onOpen={handleOpen}
       onClose={() => setOpen(false)}
-      renderInput={({ InputProps, ...params }) => (
+      renderInput={({ ...params }) => (
         <TextField
           {...params}
           onFocus={() => setIsExpanded(true)}
           onBlur={() => setIsExpanded(false)}
-          label='Search'
-          placeholder='Search by title'
+          label={compact ? undefined : 'Search'}
+          placeholder={
+            placeholder ?? (compact ? 'Search shows...' : 'Search by title')
+          }
           fullWidth
-          InputProps={{
-            ...InputProps,
-            startAdornment: (
-              <InputAdornment position='start' sx={{ mx: 0.5 }}>
-                <SearchRounded color='secondary' fontSize='small' />
-              </InputAdornment>
-            ),
+          slotProps={{
+            ...params.slotProps,
+            input: {
+              ...params.slotProps.input,
+
+              startAdornment: (
+                <InputAdornment position='start' sx={{ mx: 0.5 }}>
+                  <SearchRounded
+                    fontSize='small'
+                    sx={{
+                      fontSize: compact ? 14 : undefined,
+                      color: 'text.disabled',
+                    }}
+                  />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <>
+                  {/* <InputAdornment position='end'> */}
+                  <Typography
+                    variant='body2'
+                    sx={{ fontSize: 10, color: 'text.disabled', mr: 1 }}
+                  >
+                    ⌘k
+                  </Typography>
+                  {/* </InputAdornment> */}
+                  {/* Preserve the native MUI dropdown/clear buttons */}
+                  {params.slotProps?.input?.endAdornment}
+                </>
+              ),
+            },
           }}
-          // slotProps={{
-          //   ...InputProps,
-          //   input: {
-          //     startAdornment: (
-          //       <InputAdornment position='start' sx={{ ml: '4px', mr: '4px' }}>
-          //         <SearchRounded color='secondary' fontSize='small' />
-          //       </InputAdornment>
-          //     ),
-          //   },
-          // }}
         />
       )}
-      // slots={{
-      //   popper: RepositionPopper,
-      // }}
       slotProps={{
         listbox: {
           sx: { maxHeight: '80vh' },
@@ -133,7 +187,6 @@ export const AutoCompleteSearch = ({
             onClick={(e) => {
               if ((e.target as HTMLElement).closest('button')) return;
               props.onClick?.(e);
-              // if (onSelect) onSelect(option);
             }}
           >
             <AutoCompleteOption option={option} />
@@ -142,7 +195,7 @@ export const AutoCompleteSearch = ({
       }}
     />
   );
-};
+});
 
 function AutoCompleteOption({ option }: { option: PodcastFeed }) {
   return (
@@ -171,11 +224,11 @@ function AutoCompleteOption({ option }: { option: PodcastFeed }) {
       <Grid size='grow' sx={{ minWidth: 0, flexGrow: '1' }}>
         <Typography
           variant='body1'
-          fontWeight='medium'
           sx={{
             overflow: 'hidden',
             textOverflow: 'ellipsis',
             whiteSpace: 'nowrap',
+            fontWeight: 'medium',
           }}
         >
           {option.title}
@@ -192,8 +245,12 @@ function AutoCompleteOption({ option }: { option: PodcastFeed }) {
           {option.author}
         </Typography>
       </Grid>
-      <Grid size='auto' display='flex' alignItems='center'>
-        <SubscribeIconButton podcastId={option.podcastGuid} />
+      <Grid size='auto' sx={{ display: 'flex', alignItems: 'center' }}>
+        <ErrorBoundary fallback={null}>
+          <Suspense fallback={null}>
+            <SubscribeIconButton podcastId={option.podcastGuid} />
+          </Suspense>
+        </ErrorBoundary>
       </Grid>
     </Grid>
   );

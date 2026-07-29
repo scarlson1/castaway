@@ -14,6 +14,17 @@ import OpenAI from 'openai';
 
 const openai = new OpenAI();
 
+export const fillAdEmbedding = internalAction({
+  args: { adId: v.id('ads'), transcript: v.string() },
+  handler: async (ctx, { adId, transcript }) => {
+    const embedding = await embed(transcript);
+    await ctx.runMutation(internal.adFeedback.patchAdEmbedding, {
+      adId,
+      embedding,
+    });
+  },
+});
+
 export const saveAdSegment = internalAction({
   args: {
     // sourceId: v.string(),
@@ -43,7 +54,7 @@ export const saveAdSegment = internalAction({
         transcript: args.transcript,
         confidence: args.confidence,
         embedding,
-      }
+      },
     );
 
     return result;
@@ -93,13 +104,13 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
   },
   handler: async (
     ctx,
-    { audioUrl, episodeId, episodeTitle, forceTranscribe = false }
+    { audioUrl, episodeId, episodeTitle, forceTranscribe = false },
   ) => {
     let transcript;
     if (!forceTranscribe) {
       let existingTranscript: Doc<'transcripts'> | null = await ctx.runQuery(
         api.transcripts.getByEpisodeId,
-        { episodeId }
+        { episodeId },
       );
       if (existingTranscript) {
         console.log('using existing transcript');
@@ -109,9 +120,21 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
         };
       }
     }
-    if (!transcript) transcript = await transcribeUrl(audioUrl, {});
-
-    // const transcript = await transcribeUrl(audioUrl, {});
+    if (!transcript) {
+      // the feed duration lets transcribeUrl derive the real bytes-per-second
+      // if a chunk response comes back without a duration of its own
+      const episode: Doc<'episodes'> | null = await ctx.runQuery(
+        api.episodes.getByGuid,
+        { id: episodeId },
+      );
+      transcript = await transcribeUrl(audioUrl, {
+        model: 'whisper-large-v3-turbo', // 'whisper-1',
+        responseFormat: 'verbose_json',
+        // model: 'gpt-4o-transcribe-diarize',
+        // responseFormat: 'diarized_json',
+        durationSeconds: episode?.durationSeconds,
+      });
+    }
 
     let summary: Pick<
       Doc<'transcripts'>,
@@ -149,7 +172,7 @@ export const transcribeEpisodeAndSaveTranscript = internalAction({
     console.log('saving transcript... ', summary.summaryTitle);
     const transcriptId: Id<'transcripts'> = await ctx.runMutation(
       internal.transcripts.save,
-      summary
+      summary,
     );
 
     console.log('ADDING TRANSCRIPT TO RAG: ', summary);
@@ -175,12 +198,12 @@ export const transcribe = internalAction({
   },
   handler: async (
     ctx,
-    { audioUrl, episodeId, forceTranscribe = false }
+    { audioUrl, episodeId, forceTranscribe = false },
   ): Promise<{ transcriptId: Id<'transcripts'>; exists: boolean }> => {
     if (!forceTranscribe) {
       let existingTranscript: Doc<'transcripts'> | null = await ctx.runQuery(
         api.transcripts.getByEpisodeId,
-        { episodeId }
+        { episodeId },
       );
       if (existingTranscript) {
         console.log('using existing transcript');
@@ -188,7 +211,23 @@ export const transcribe = internalAction({
       }
     }
 
-    const transcript = await transcribeUrl(audioUrl, {});
+    // TODO: use diarize
+    // temporarily override to not use diarize if audio is > 30 mins
+
+    // the feed duration lets transcribeUrl derive the real bytes-per-second
+    // if a chunk response comes back without a duration of its own
+    const episode: Doc<'episodes'> | null = await ctx.runQuery(
+      api.episodes.getByGuid,
+      { id: episodeId },
+    );
+
+    const transcript = await transcribeUrl(audioUrl, {
+      model: 'whisper-large-v3-turbo', // 'whisper-1',
+      responseFormat: 'verbose_json',
+      // model: 'gpt-4o-transcribe-diarize',
+      // responseFormat: 'diarized_json',
+      durationSeconds: episode?.durationSeconds,
+    });
 
     const transcriptId: Id<'transcripts'> = await ctx.runMutation(
       internal.transcripts.save,
@@ -197,7 +236,7 @@ export const transcribe = internalAction({
         audioUrl,
         fullText: transcript.text,
         segments: transcript.segments || [],
-      }
+      },
     );
 
     return { transcriptId, exists: false };
@@ -212,11 +251,11 @@ export const summarize = internalAction({
   },
   handler: async (
     ctx,
-    { transcriptId, forceSummarize }
+    { transcriptId, forceSummarize },
   ): Promise<EpisodeSummary & { exists: boolean }> => {
     const transcript: Doc<'transcripts'> | null = await ctx.runQuery(
       api.transcripts.getByConvexId,
-      { id: transcriptId }
+      { id: transcriptId },
     );
     if (!transcript) throw new Error('transcript not found');
 

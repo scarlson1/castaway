@@ -15,6 +15,7 @@ import {
   useQueryClient,
   useSuspenseQuery,
 } from '@tanstack/react-query';
+import { ClientOnly } from '@tanstack/react-router';
 import { api } from 'convex/_generated/api';
 import { useCallback } from 'react';
 import { useClerkAuth } from '~/hooks/useClerkAuth';
@@ -25,7 +26,13 @@ interface SubscribeIconButtonProps extends IconButtonProps {
   podcastId: string;
 }
 
-export const SubscribeIconButton = ({
+export const SubscribeIconButton = (props: SubscribeIconButtonProps) => (
+  <ClientOnly>
+    <SubscribeIconButtonComponent {...props} />
+  </ClientOnly>
+);
+
+const SubscribeIconButtonComponent = ({
   podcastId,
   size = 'small',
   disableRipple = true,
@@ -34,7 +41,7 @@ export const SubscribeIconButton = ({
   // don't need to invalidate cache b/c convex reactively updates ??
   const { isAuthenticated } = useClerkAuth();
   const { data: subscribed } = useSuspenseQuery(
-    convexQuery(api.subscribe.all, {})
+    convexQuery(api.subscribe.all, {}),
   );
 
   const queryClient = useQueryClient();

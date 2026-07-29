@@ -31,7 +31,7 @@ export const SuspenseTrendingCard = ({
           // whiteSpace: 'nowrap',
         }}
       >
-        <Typography variant='body1' fontSize={'0.95rem'}>
+        <Typography variant='body1' sx={{ fontSize: '0.95rem' }}>
           <Skeleton />
         </Typography>
         <Typography variant='body2'>

@@ -23,6 +23,8 @@ export interface AudioState {
   setDuration: (duration: number) => void;
   setVolume: (volume: number) => void;
   setRate: (rate: number) => void;
+  seek: ((seconds: number) => void) | null;
+  registerSeek: (fn: ((seconds: number) => void) | null) => void;
 
   reset: () => void;
 }
@@ -82,6 +84,8 @@ export const useAudioStore = create<AudioState>()(
       setDuration: (duration) => set({ duration }),
       setVolume: (volume) => set({ volume }),
       setRate: (rate) => set({ rate }),
+      seek: null,
+      registerSeek: (fn) => set({ seek: fn }),
 
       reset: () =>
         set({

@@ -33,10 +33,10 @@ export default defineSchema({
               status: v.any(), // v.string(),
               strategy: v.any(), // v.string(),
             }),
-            v.null()
+            v.null(),
           ),
-        })
-      )
+        }),
+      ),
     ),
     enterprise_accounts: v.optional(v.array(v.any())),
     external_accounts: v.array(v.any()),
@@ -95,7 +95,7 @@ export default defineSchema({
     categoryArray: v.optional(v.array(v.string())),
     explicit: v.optional(v.union(v.boolean(), v.null())),
     funding: v.optional(
-      v.object({ url: v.union(v.string(), v.null()), message: v.string() })
+      v.object({ url: v.union(v.string(), v.null()), message: v.string() }),
     ),
     embedding: v.optional(v.array(v.number())),
     // embeddingId: v.optional(v.id('episodeEmbeddings')),
@@ -150,7 +150,7 @@ export default defineSchema({
     embeddingId: v.optional(v.id('episodeEmbeddings')),
     chaptersUrl: v.optional(v.union(v.string(), v.null())),
     transcripts: v.optional(
-      v.array(v.object({ url: v.string(), type: v.string() }))
+      v.array(v.object({ url: v.string(), type: v.string() })),
     ),
     persons: v.optional(
       v.array(
@@ -161,8 +161,8 @@ export default defineSchema({
           group: v.optional(v.string()),
           href: v.optional(v.string()),
           img: v.optional(v.string()),
-        })
-      )
+        }),
+      ),
     ),
     socialInteract: v.optional(
       v.array(
@@ -173,8 +173,8 @@ export default defineSchema({
           accountId: v.optional(v.string()),
           accountUrl: v.optional(v.string()),
           priority: v.optional(v.number()),
-        })
-      )
+        }),
+      ),
     ),
     // LLM computed data
     summaryTitle: v.optional(v.string()),
@@ -224,8 +224,10 @@ export default defineSchema({
     playedPercentage: v.optional(v.float64()),
     episodeTitle: v.optional(v.string()),
     podcastTitle: v.optional(v.string()),
-  }).index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt']),
-  // .index('by_clerk_episode', ['clerkId', 'episodeId']),
+  })
+    .index('by_clerkId_lastUpdatedAt', ['clerkId', 'lastUpdatedAt'])
+    .index('by_clerkId_episodeId', ['clerkId', 'episodeId'])
+    .index('by_episodeId', ['episodeId']),
 
   podcastStats: defineTable({
     podcastId: v.string(),
@@ -255,7 +257,9 @@ export default defineSchema({
         start: v.number(),
         end: v.number(),
         text: v.string(),
-      })
+        speaker: v.optional(v.string()),
+        adId: v.optional(v.id('ads')),
+      }),
     ),
     summaryTitle: v.optional(v.string()),
     oneSentenceSummary: v.optional(v.string()),
@@ -275,16 +279,54 @@ export default defineSchema({
     duration: v.number(),
     transcript: v.string(),
     confidence: v.number(),
-    embedding: v.array(v.number()),
+    embedding: v.optional(v.array(v.number())), // optional — manual adds fill this in async
     createdAt: v.number(),
-    // TODO: add feedback score
+    source: v.optional(v.union(v.literal('llm'), v.literal('user'))),
+    verifyCount: v.optional(v.number()),
+    rejectCount: v.optional(v.number()),
+    verdict: v.optional(v.union(v.literal('verified'), v.literal('rejected'))),
+    correctedStart: v.optional(v.number()),
+    correctedEnd: v.optional(v.number()),
   })
     .vectorIndex('by_embedding', {
       vectorField: 'embedding',
       dimensions: embeddingDimension, // text-embedding-3-small (1536)  text-embedding-3-large (3072)
       filterFields: ['podcastId'],
     })
-    .index('by_episodeId', ['episodeId']),
+    .index('by_episodeId', ['episodeId'])
+    .index('by_podcastId_verdict', ['podcastId', 'verdict']),
+
+  adFeedback: defineTable({
+    adId: v.id('ads'),
+    clerkId: v.string(),
+    episodeId: v.string(),
+    podcastId: v.string(),
+    action: v.union(
+      v.literal('confirmed'),
+      v.literal('rejected'),
+      v.literal('manually_added'),
+      v.literal('boundary_adjusted'),
+    ),
+    originalStart: v.number(),
+    originalEnd: v.number(),
+    correctedStart: v.optional(v.number()),
+    correctedEnd: v.optional(v.number()),
+    transcriptText: v.string(),
+    llmConfidence: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index('by_episodeId', ['episodeId'])
+    .index('by_episodeId_clerkId', ['episodeId', 'clerkId'])
+    .index('by_podcastId_action', ['podcastId', 'action'])
+    .index('by_adId_clerkId', ['adId', 'clerkId']),
+
+  podcastAdConfig: defineTable({
+    podcastId: v.string(),
+    confidenceThreshold: v.number(),
+    lastCalibratedAt: v.number(),
+    feedbackSampleSize: v.number(),
+  }).index('by_podcastId', ['podcastId']),
 
   adJobs: defineTable({
     workflowId: vWorkflowId,
@@ -319,8 +361,8 @@ export default defineSchema({
           duration: v.number(),
           transcript: v.string(),
           confidence: v.number(),
-        })
-      )
+        }),
+      ),
     ),
   }).index('by_episodeId', ['episodeId']),
 
@@ -334,7 +376,9 @@ export default defineSchema({
     is_ad: v.optional(v.boolean()),
     confidence: v.optional(v.number()),
     reason: v.optional(v.string()),
-  }).index('by_jobId_classified', ['jobId', 'classified']),
+    // start is part of the index so the previous batch's trailing window can be
+    // read directly instead of scanning every classified window for the job
+  }).index('by_jobId_classified', ['jobId', 'classified', 'start']),
   // .index('by_jobId', ['jobId']),
 
   rawUsage: defineTable({
@@ -363,7 +407,7 @@ export default defineSchema({
     status: v.union(
       v.literal('pending'),
       v.literal('paid'),
-      v.literal('failed')
+      v.literal('failed'),
     ),
   }).index('billingPeriod_userId', ['billingPeriod', 'userId']),
 });

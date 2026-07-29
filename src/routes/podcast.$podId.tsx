@@ -29,12 +29,17 @@ import {
 import { Suspense, useCallback } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { EpisodesOptionsButton } from '~/components/EpisodesList';
+import { EpisodesTableWrapper } from '~/components/EpisodeTableWrapper';
 import { FollowingButtons } from '~/components/FollowingButtons';
+import { PageHeader } from '~/components/PageHeader';
 import { SuspenseEpisodeList } from '~/components/suspense/SuspenseEpisodeRow';
+import { SuspensePodDetails } from '~/components/suspense/SuspensePodDetails';
 import { useQueueStore } from '~/hooks/useQueueStore';
 import type { EpisodeItem, PodcastFeed } from '~/lib/podcastIndexTypes';
 import { episodesQueryOptions, podDetailsQueryOptions } from '~/queries';
 import { getRootDomain } from '~/utils/getDomain';
+
+// Podcast Index Podcast details (not guaranteed to be in DB yet - user clicks from discovery/pod index query result)
 
 // podcast index ID (not pod guid)
 export const Route = createFileRoute('/podcast/$podId')({
@@ -52,10 +57,16 @@ function RouteComponent() {
   if (!data.feed) throw new Error(`Error finding podcast with ID ${podId}`);
 
   return (
-    <>
-      <PodDetails feed={data.feed} />
+    <Box sx={{ pt: { xs: 2, md: 3 } }}>
+      <PageHeader label='podcasts' />
 
-      <Box sx={{ py: 4 }}>
+      <ErrorBoundary fallback={<div>Error loading podcast details</div>}>
+        <Suspense fallback={<SuspensePodDetails />}>
+          <PodDetails feed={data.feed} />
+        </Suspense>
+      </ErrorBoundary>
+
+      <Box sx={{ py: 2 }}>
         <Stack
           direction='row'
           spacing={2}
@@ -68,17 +79,19 @@ function RouteComponent() {
             <EpisodesOptionsButton podId={podId} />
           </Box>
         </Stack>
-        <Divider />
+
         <ErrorBoundary fallback={<div>Something went wrong</div>}>
           <Suspense fallback={<SuspenseEpisodeList numItems={8} />}>
-            <EpisodesList
-              podId={data.feed.podcastGuid}
-              podTitle={data.feed.title}
-            />
+            <EpisodesTableWrapper>
+              <EpisodesList
+                podId={data.feed.podcastGuid}
+                podTitle={data.feed.title}
+              />
+            </EpisodesTableWrapper>
           </Suspense>
         </ErrorBoundary>
       </Box>
-    </>
+    </Box>
   );
 }
 
@@ -86,7 +99,23 @@ function PodDetails({ feed }: { feed: PodcastFeed }) {
   const navigate = Route.useNavigate();
 
   return (
-    <Stack direction='row' spacing={2}>
+    <Stack
+      direction='row'
+      spacing={2}
+      sx={[
+        {
+          // display: 'grid',
+          // gridTemplateColumns: { xs: '96px 1fr', sm: '200px 1fr' },
+          // gap: { xs: 2, sm: 3.5 },
+          p: { xs: 2, sm: 3 },
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderRadius: 1.75,
+          mb: 3,
+        },
+      ]}
+    >
       <Box
         sx={{
           // height: { xs: 100, sm: 160, md: 200 },
@@ -186,7 +215,7 @@ function EpisodesList({
   limit?: number;
 }) {
   const { data } = useSuspenseQuery(
-    episodesQueryOptions(podId, { max: limit })
+    episodesQueryOptions(podId, { max: limit }),
   );
   const setPlaying = useQueueStore((state) => state.setPlaying);
 
@@ -202,25 +231,60 @@ function EpisodesList({
         podcastId: ep.podcastGuid,
       });
     },
-    [setPlaying]
+    [setPlaying],
   );
 
+  if (!data?.count)
+    return (
+      <Typography sx={{ alignSelf: 'center', px: 'auto', py: 2 }}>
+        No episodes found
+      </Typography>
+    );
+
   return (
-    <>
-      {/* <TextField placeholder='search episodes' label='TODO: episode search' /> */}
+    <Stack
+      direction='column'
+      spacing={1}
+      divider={<Divider flexItem />}
+      sx={{
+        // display: 'flex',
+        // flexDirection: 'column',
+        overflow: 'auto',
+        maxHeight: 'clamp(300px, calc(100vh - 320px), 600px)',
+        py: 1,
+        px: 1.5,
+      }}
+    >
       {data?.items?.map((e) => (
-        <Box key={e.id}>
-          <EpisodeRow
-            episode={e}
-            podId={podId}
-            podTitle={podTitle}
-            setPlaying={handleSetPlaying}
-          />
-          <Divider />
-        </Box>
+        // <Box key={e.id}>
+        <EpisodeRow
+          key={e.id}
+          episode={e}
+          podId={podId}
+          podTitle={podTitle}
+          setPlaying={handleSetPlaying}
+        />
+        // </Box>
       ))}
-    </>
+    </Stack>
   );
+
+  // return (
+  //   <>
+  //     {/* <TextField placeholder='search episodes' label='TODO: episode search' /> */}
+  //     {data?.items?.map((e) => (
+  //       <Box key={e.id}>
+  //         <EpisodeRow
+  //           episode={e}
+  //           podId={podId}
+  //           podTitle={podTitle}
+  //           setPlaying={handleSetPlaying}
+  //         />
+  //         {/* // <Divider /> */}
+  //       </Box>
+  //     ))}
+  //   </>
+  // );
 }
 
 // TODO: use tanstack table or mui X datagrid
@@ -239,9 +303,12 @@ function EpisodeRow({
   return (
     <Stack
       direction='row'
-      sx={{ alignItems: 'center', my: { xs: 0.5, sm: 1 } }}
+      sx={{ alignItems: 'center', my: { xs: 0.5, sm: 1 }, flexWrap: 'nowrap' }}
     >
-      <Typography color='textSecondary' sx={{ width: 80, overflow: 'hidden' }}>
+      <Typography
+        color='textSecondary'
+        sx={{ width: 80, flexShrink: 0, overflow: 'hidden' }}
+      >
         {getEpisodeLabel(episode)}
       </Typography>
       <Typography
@@ -249,7 +316,8 @@ function EpisodeRow({
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
-          flex: '1 1 60%',
+          flex: '1 1 auto',
+          minWidth: 0,
         }}
       >
         {episode.title}
@@ -259,6 +327,7 @@ function EpisodeRow({
         color='textSecondary'
         sx={{
           width: 100,
+          flexShrink: 0,
           overflow: 'hidden',
           textOverflow: 'ellipsis',
           whiteSpace: 'nowrap',
@@ -266,7 +335,11 @@ function EpisodeRow({
       >
         {formatTimestamp(episode.datePublished * 1000)}
       </Typography>
-      <Typography variant='body2' color='textSecondary' sx={{ width: 80 }}>
+      <Typography
+        variant='body2'
+        color='textSecondary'
+        sx={{ width: 80, flexShrink: 0 }}
+      >
         {episode.duration ? getDuration(episode.duration) : ''}
       </Typography>
       <Box

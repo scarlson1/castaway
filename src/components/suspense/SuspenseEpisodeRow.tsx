@@ -13,7 +13,7 @@ const SuspenseEpisodeRow = () => {
       direction='row'
       sx={{ alignItems: 'center', my: { xs: 0.5, sm: 1 } }}
     >
-      <Typography variant='body1' width={80}>
+      <Typography variant='body1' sx={{ width: 80 }}>
         <Skeleton />
       </Typography>
       <Typography variant='body1' sx={{ flex: '1 1 60%' }}>

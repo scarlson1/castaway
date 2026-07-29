@@ -40,7 +40,7 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
   const { results, status, loadMore, isLoading } = useConvexPaginatedQuery(
     api.episodes.getByPodcast,
     { podId },
-    { initialNumItems: pageSize }
+    { initialNumItems: pageSize },
   );
 
   // If the DB cache was pruned, fetch fresh episodes from the Podcast Index API
@@ -68,7 +68,7 @@ export const EpisodesList = ({ podId }: EpisodesListProps) => {
           //   playbackId = userPlayback.data![found]?._id;
 
           const playback = userPlayback?.data?.find(
-            (p) => p.episodeId === e.episodeId
+            (p) => p.episodeId === e.episodeId,
           );
 
           return (

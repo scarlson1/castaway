@@ -2,7 +2,7 @@ import { Box, Skeleton, Typography } from '@mui/material';
 
 export const SuspenseFeaturedSection = () => {
   return (
-    <Box display='flex'>
+    <Box sx={{ display: 'flex' }}>
       <Box
         sx={{
           objectFit: 'cover',
@@ -25,20 +25,20 @@ export const SuspenseFeaturedSection = () => {
       >
         <Skeleton variant='rounded' />
       </Box>
-      <Box flex='1 1 auto' sx={{ ml: 2 }}>
+      <Box sx={{ ml: 2, flex: '1 1 auto' }}>
         <Typography
           variant='overline'
           color='primary'
           component='div'
-          fontWeight='medium'
+          sx={{ fontWeight: 'medium' }}
         >
           <Skeleton />
         </Typography>
-        <Typography variant='h5' fontWeight={500} gutterBottom>
+        <Typography variant='h5' sx={{ fontWeight: 500 }} gutterBottom>
           <Skeleton />
         </Typography>
 
-        <Typography variant='subtitle1' fontWeight={500} gutterBottom>
+        <Typography variant='subtitle1' sx={{ fontWeight: 500 }} gutterBottom>
           <Skeleton />
         </Typography>
 
